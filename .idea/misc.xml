@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ExternalStorageConfigurationManager" enabled="true" />
+  <component name="MavenProjectsManager">
+    <option name="originalFiles">
+      <list>
+        <option value="$PROJECT_DIR$/SAFE-Rescue-F4.Back-API-Perfiles/API_Perfiles/pom.xml" />
+        <option value="$PROJECT_DIR$/SAFE-Rescue_Backend_API-Comunicacion/pom.xml" />
+        <option value="$PROJECT_DIR$/SAFE-Rescue-F4.Back-API-Registros/API_Registros/pom.xml" />
+        <option value="$PROJECT_DIR$/SAFE-Rescue_Backend_API_Geolocalización/pom.xml" />
+        <option value="$PROJECT_DIR$/SAFE-Rescue_Backend_API_Donaciones/pom.xml" />
+        <option value="$PROJECT_DIR$/SAFE-Rescue_Backend_API-Incidentes/pom.xml" />
+        <option value="$PROJECT_DIR$/SAFE-Rescue-F4.Back-API-Perfiles/pom.xml" />
+        <option value="$PROJECT_DIR$/SAFE-Rescue-F4.Back-API-Registros/pom.xml" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_24" default="true" project-jdk-name="openjdk-24" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/out" />
+  </component>
+</project>

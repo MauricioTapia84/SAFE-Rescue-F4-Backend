@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/SAFE-Rescue-F4.Back-API-Perfiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/SAFE-Rescue-F4.Back-API-Registros" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/SAFE-Rescue_Backend_API-Comunicacion" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/SAFE-Rescue_Backend_API-Incidentes" vcs="Git" />
+  </component>
+</project>

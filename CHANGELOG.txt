@@ -1,0 +1,19 @@
+❚❙❘ VERSIÓN 0.0.2
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─•
+├─•
+├─•
+├─•
+└─•
+
+->>>
+
+❚❙❘ VERSIÓN 0.0.1
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Creación inicial del repositorio con todas las carpetas de las APIS
+├─• Se configuran las conexiones a la base de datos
+├─• Se Actualizan y agregan las dependencias necesarias
+├─• Se Implementa la estructura y contenido (Service,Modelo,Controller,Repository)
+└─• Se implementan los test para la API de geolocalización
+
+->>> Corregir nombres de funciones y de Test
