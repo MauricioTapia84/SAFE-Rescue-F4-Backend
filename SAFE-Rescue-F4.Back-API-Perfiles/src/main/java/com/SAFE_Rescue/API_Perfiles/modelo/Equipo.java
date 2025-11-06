@@ -2,6 +2,8 @@ package com.SAFE_Rescue.API_Perfiles.modelo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull; // Necesitas esta importación
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -25,14 +27,15 @@ public class Equipo {
     @Column(name = "id_equipo")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Schema(description = "Identificador único del equipo", example = "1")
-    private int idEquipo;
+    private Integer idEquipo; // Sugerencia: Cambiado a Integer
 
     /**
      * Nombre del equipo (máximo 50 caracteres).
      */
     @Column(name = "nombre_equipo", length = 50, nullable = false)
     @Schema(description = "Nombre del equipo", example = "Equipo Alfa", required = true)
-    @Size(max = 50)
+    @NotBlank(message = "El nombre del equipo es obligatorio") // Sugerencia: Validación
+    @Size(max = 50, message = "El nombre no puede exceder los 50 caracteres")
     private String nombre;
 
     /**
@@ -46,28 +49,28 @@ public class Equipo {
 
     /**
      * Compañía a la que pertenece el equipo.
-     * Relación muchos-a-uno con la entidad Compania.
      */
     @ManyToOne
-    @JoinColumn(name = "compania_id", referencedColumnName = "id_compania")
+    @JoinColumn(name = "compania_id", referencedColumnName = "id_compania", nullable = false) // Asegura que la columna DB sea NOT NULL
+    @NotNull(message = "La compañía es obligatoria") // Sugerencia: Validación
     @Schema(description = "Compañía a la que pertenece el equipo")
     private Compania compania;
 
     /**
      * Tipo de equipo (especialización).
-     * Relación muchos-a-uno con la entidad TipoEquipo.
      */
     @ManyToOne
-    @JoinColumn(name = "tipo_equipo_id", referencedColumnName = "id_tipo_equipo")
+    @JoinColumn(name = "tipo_equipo_id", referencedColumnName = "id_tipo_equipo", nullable = false) // Asegura que la columna DB sea NOT NULL
+    @NotNull(message = "El tipo de equipo es obligatorio") // Sugerencia: Validación
     @Schema(description = "Tipo de equipo asignado")
     private TipoEquipo tipoEquipo;
 
     /**
      * Estado equipo.
-     * Relación Muchos-a-uno con la entidad Estado equipo que pertenece a la API Configuraciones.
      */
     @ManyToOne
-    @JoinColumn(name = "estado_id", referencedColumnName = "id_estado")
+    @JoinColumn(name = "estado_id", referencedColumnName = "id_estado", nullable = false) // Asumiendo que el estado es obligatorio
+    @NotNull(message = "El estado es obligatorio") // Sugerencia: Validación
     @Schema(description = "Estado del equipo")
-    private Estado estado;
+    private EstadoDTO estadoDTO;
 }

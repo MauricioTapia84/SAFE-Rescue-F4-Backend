@@ -1,4 +1,4 @@
-❚❙❘ VERSIÓN 0.0.2
+❚❙❘ VERSIÓN 0.0.3
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─•
 ├─•
@@ -7,6 +7,19 @@
 └─•
 
 ->>>
+
+
+❚❙❘ VERSIÓN 0.0.2
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se corrije estructura de API Perfiles
+├─• Se separa el manejo global de excepciones para los controlladores
+├─• Se corrije el uso de compañia implementandola nativa dentro de la API Perfiles
+├─• Se le agrega conexion con la API de Geolocalizacion para la direccion de la compañia
+├─• Se convierten en DTO las clases que vienen de otras APIs
+└─• Correccion de DTOs, Service, Controlladores y Webclient
+
+->>> Falta corregir problema de conexiones webclient
+->>> Falta corregir las pruebas unitarias
 
 ❚❙❘ VERSIÓN 0.0.1
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺

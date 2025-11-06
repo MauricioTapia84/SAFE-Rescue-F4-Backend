@@ -95,12 +95,18 @@ public class TipoUsuarioService {
      *
      * @param id Identificador del tipo de usuario a eliminar
      * @throws NoSuchElementException Si no se encuentra el tipo de usuario
+     * @throws IllegalStateException Si el tipo de usuario tiene referencias activas (usuarios asociados)
      */
     public void delete(Integer id) {
-        if (!tipoUsuarioRepository.existsById(id)) {
-            throw new NoSuchElementException("Tipo de usuario no encontrado");
+        // Reusa findById para asegurar que existe y obtener la entidad
+        TipoUsuario tipoUsuario = findById(id);
+
+        try {
+            tipoUsuarioRepository.delete(tipoUsuario);
+        } catch (DataIntegrityViolationException e) {
+            // Manejar el caso de que la clave foránea esté en uso
+            throw new IllegalStateException("No se puede eliminar el tipo de usuario porque tiene usuarios asociados.");
         }
-        tipoUsuarioRepository.deleteById(id);
     }
 
     // MÉTODOS PRIVADOS DE VALIDACIÓN Y UTILIDADES

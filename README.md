@@ -12,14 +12,16 @@ SAFE Rescue es una aplicación diseñada para la gestión eficiente y rápida de
 
 ## Últimos cambios
 
-### ❚❙❘ VERSIÓN 0.0.1
+### ❚❙❘ VERSIÓN 0.0.2
 
-> <br>• Creación inicial del repositorio con todas las carpetas de las APIS
-> <br>• Se configuran las conexiones a la base de datos
-> <br>• Se Actualizan y agregan las dependencias necesarias
-> <br>• Se Implementa la estructura y contenido (Service,Modelo,Controller,Repository)
-> <br>• Se implementan los test para la API de geolocalización
-> <br> > > > Corregir nombres de funciones y de Test
+> <br>• Se corrije estructura de API Perfiles
+> <br>• Se separa el manejo global de excepciones para los controlladores
+> <br>• Se corrije el uso de compañia implementandola nativa dentro de la API Perfiles
+> <br>• Se le agrega conexion con la API de Geolocalizacion para la direccion de la compañia
+> <br>• Se convierten en DTO las clases que vienen de otras APIs
+> <br>• Correccion de DTOs, Service, Controlladores y Webclient
+> <br> > > > Falta corregir problema de conexiones webclient
+> <br> > > > Falta corregir las pruebas unitarias
 > <br>
 
 ---
@@ -34,7 +36,7 @@ La comunicación oportuna hace la diferencia. SAFE Rescue proporciona un canal d
 </p>
 
 ### Gestión de Recursos en Terreno
-La valentía y la preparación salvan vidas. La aplicación equipa a los bomberos y personal de emergencia con herramientas para visualizar la ubicación de los recursos, actualizar el estado de los incidentes y recibir instrucciones claras, optimizando cada segundo de la operación.
+La valentía y la preparación salvan vidas. La aplicación equipa a los bomberos y personal de emergencia con herramientas para visualizar la ubicación de los recursos, actualizar el estadoDTO de los incidentes y recibir instrucciones claras, optimizando cada segundo de la operación.
 
 <p align="center">
   <img src="./README/bomberos_en_accion.jpg" alt="Bomberos en acción" width="500px">

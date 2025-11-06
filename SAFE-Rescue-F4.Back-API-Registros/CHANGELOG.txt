@@ -8,8 +8,8 @@
 ├─• Se Agrega a historial la relación uno a muchos de Categoría
 ├─• Se Arreglan los comentarios utilizando JavaDoc y swagger
 ├─• Se Arreglan las validaciones de los servicios
-├─• Se agregan metodos y endpoints para buscar por nombre la categoria y estado
-├─• Se agregan metodos y endpoints para buscar por estado el historial
+├─• Se agregan metodos y endpoints para buscar por nombre la categoria y estadoDTO
+├─• Se agregan metodos y endpoints para buscar por estadoDTO el historial
 └─• Se realizan pruebas de endpoints
 
 ❚❙❘ VERSIÓN 1.1.1+2025/09/30

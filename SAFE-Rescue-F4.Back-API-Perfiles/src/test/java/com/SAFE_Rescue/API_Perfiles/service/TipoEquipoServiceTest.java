@@ -103,7 +103,9 @@ public class TipoEquipoServiceTest {
         assertNotNull(actualizado);
         assertEquals("Nombre Actualizado", actualizado.getNombre());
         verify(tipoEquipoRepository, times(1)).findById(id);
-        verify(tipoEquipoRepository, times(1)).save(tipoEquipo);
+        verify(tipoEquipoRepository, times(1)).save(argThat(
+                t -> t.getNombre().equals("Nombre Actualizado") // Asegura que el objeto que se guardó tiene el nuevo nombre
+        ));
     }
 
     @Test

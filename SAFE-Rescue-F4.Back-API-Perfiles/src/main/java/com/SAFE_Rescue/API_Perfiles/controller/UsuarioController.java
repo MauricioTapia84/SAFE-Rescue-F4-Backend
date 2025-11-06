@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,11 +17,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 /**
  * Controlador REST para la gestión de usuarios
- * Proporciona endpoints para operaciones CRUD y gestión de relaciones de usuarios
+ * Proporciona endpoints para operaciones CRUD y gestión de fotos de usuarios
  */
 @RestController
 @RequestMapping("/api-perfiles/v1/usuarios")
@@ -30,12 +30,8 @@ public class UsuarioController {
     @Autowired
     private UsuarioService usuarioService;
 
-    // OPERACIONES CRUD BÁSICAS
+    // --- OPERACIONES CRUD BÁSICAS ---
 
-    /**
-     * Obtiene todos los usuarios registrados en el sistema.
-     * @return ResponseEntity con lista de usuarios o estado NO_CONTENT si no hay registros
-     */
     @GetMapping
     @Operation(summary = "Obtener todos los usuarios", description = "Obtiene una lista con todos los usuarios")
     @ApiResponses(value = {
@@ -52,11 +48,6 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarios);
     }
 
-    /**
-     * Busca un usuario por su ID.
-     * @param id ID del usuario a buscar
-     * @return ResponseEntity con el usuario encontrado o mensaje de error
-     */
     @GetMapping("/{id}")
     @Operation(summary = "Obtiene un usuario por su ID", description = "Obtiene un usuario al buscarlo por su ID")
     @ApiResponses(value = {
@@ -65,105 +56,86 @@ public class UsuarioController {
                             schema = @Schema(implementation = Usuario.class))),
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado.")
     })
-    public ResponseEntity<?> buscarUsuario(@Parameter(description = "ID del usuario a buscar", required = true)
-                                           @PathVariable int id) {
-        Usuario usuario;
-        try {
-            usuario = usuarioService.findById(id);
-        } catch (NoSuchElementException e) {
-            return new ResponseEntity<>("Usuario no encontrado", HttpStatus.NOT_FOUND);
-        }
+    public ResponseEntity<Usuario> buscarUsuario(
+            @Parameter(description = "ID del usuario a buscar", required = true)
+            @PathVariable Integer id) {
+
+        // Asumiendo que findById lanza NoSuchElementException (capturado por Global Handler 404)
+        Usuario usuario = usuarioService.findById(id);
         return ResponseEntity.ok(usuario);
     }
 
-    /**
-     * Crea un nuevo usuario.
-     * @param usuario Datos del usuario a crear
-     * @return ResponseEntity con mensaje de confirmación o error
-     */
     @PostMapping
     @Operation(summary = "Crear un nuevo usuario", description = "Crea un nuevo usuario en el sistema")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Usuario creado con éxito."),
-            @ApiResponse(responseCode = "400", description = "Error en la solicitud."),
-            @ApiResponse(responseCode = "500", description = "Error interno del servidor.")
+            @ApiResponse(responseCode = "201", description = "Usuario creado con éxito.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Usuario.class))),
+            @ApiResponse(responseCode = "400", description = "Error en la solicitud (Validación, RUN/Correo existente, TipoUsuario/Estado no existe).")
     })
-    public ResponseEntity<String> agregarUsuario(@RequestBody @Parameter(description = "Datos del usuario a crear", required = true)
-                                                 Usuario usuario) {
-        try {
-            usuarioService.save(usuario);
-            return ResponseEntity.status(HttpStatus.CREATED).body("Usuario creado con éxito.");
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor.");
-        }
+    public ResponseEntity<Usuario> agregarUsuario(
+            @RequestBody @Valid // Dispara las validaciones de Usuario.java
+            @Parameter(description = "Datos del usuario a crear", required = true)
+            Usuario usuario) {
+
+        Usuario nuevoUsuario = usuarioService.save(usuario);
+        return ResponseEntity.status(HttpStatus.CREATED).body(nuevoUsuario);
     }
 
-    /**
-     * Actualiza un usuario existente.
-     * @param id ID del usuario a actualizar
-     * @param usuario Datos actualizados del usuario
-     * @return ResponseEntity con mensaje de confirmación o error
-     */
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar un usuario existente", description = "Actualiza los datos de un usuario por su ID")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Usuario actualizado con éxito."),
+            @ApiResponse(responseCode = "200", description = "Usuario actualizado con éxito.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Usuario.class))),
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado."),
-            @ApiResponse(responseCode = "400", description = "Error en la solicitud."),
-            @ApiResponse(responseCode = "500", description = "Error interno del servidor.")
+            @ApiResponse(responseCode = "400", description = "Error en la solicitud (Validación/Integridad/Relaciones).")
     })
-    public ResponseEntity<String> actualizarUsuario(@Parameter(description = "ID del usuario a actualizar", required = true)
-                                                    @PathVariable Integer id,
-                                                    @RequestBody @Parameter(description = "Datos actualizados del usuario", required = true)
-                                                    Usuario usuario) {
-        try {
-            usuarioService.update(usuario, id);
-            return ResponseEntity.ok("Actualizado con éxito");
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor.");
-        }
+    public ResponseEntity<Usuario> actualizarUsuario(
+            @Parameter(description = "ID del usuario a actualizar", required = true)
+            @PathVariable Integer id,
+            @RequestBody @Valid // Dispara las validaciones
+            @Parameter(description = "Datos actualizados del usuario", required = true)
+            Usuario usuario) {
+
+        Usuario usuarioActualizado = usuarioService.update(usuario, id);
+        return ResponseEntity.ok(usuarioActualizado);
     }
 
-    /**
-     * Elimina un usuario del sistema.
-     * @param id ID del usuario a eliminar
-     * @return ResponseEntity con mensaje de confirmación
-     */
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar un usuario", description = "Elimina un usuario del sistema por su ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Usuario eliminado con éxito."),
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado."),
-            @ApiResponse(responseCode = "500", description = "Error interno del servidor.")
+            @ApiResponse(responseCode = "400", description = "Error en la solicitud (Referencia Activa).")
     })
-    public ResponseEntity<String> eliminarUsuario(@Parameter(description = "ID del usuario a eliminar", required = true)
-                                                  @PathVariable Integer id) {
-        try {
-            usuarioService.delete(id);
-            return ResponseEntity.ok("Usuario eliminada con éxito.");
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrada");
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor.");
-        }
+    public ResponseEntity<String> eliminarUsuario(
+            @Parameter(description = "ID del usuario a eliminar", required = true)
+            @PathVariable Integer id) {
+
+        usuarioService.delete(id);
+        return ResponseEntity.ok("Usuario eliminado con éxito.");
     }
 
+    // --- GESTIÓN DE FOTOS ---
+
     @PostMapping("/{id}/subir-foto")
-    public ResponseEntity<String> subirFotoUsuario(@PathVariable Integer id, @RequestParam("foto") MultipartFile archivo) {
-        try {
-            // Se delega la lógica de subir y guardar la URL al servicio
-            String fotoUrl = usuarioService.subirYActualizarFotoUsuario(id, archivo);
-            return ResponseEntity.ok("Foto subida y URL guardada con éxito: " + fotoUrl);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al subir la foto: " + e.getMessage());
-        }
+    @Operation(summary = "Sube foto de perfil y retorna el usuario actualizado", description = "Sube un archivo de imagen, lo asocia al usuario y retorna el objeto Usuario actualizado.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Foto subida y usuario retornado con éxito.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Usuario.class))), // Retornamos el Usuario
+            @ApiResponse(responseCode = "404", description = "Usuario no encontrado."),
+            @ApiResponse(responseCode = "500", description = "Error al comunicarse con el servicio de fotos o al actualizar la DB.")
+    })
+    public ResponseEntity<Usuario> subirFotoUsuario( // ¡Cambiamos el tipo de retorno a Usuario!
+                                                     @Parameter(description = "ID del usuario al que se asociará la foto", required = true)
+                                                     @PathVariable Integer id,
+                                                     @Parameter(description = "Archivo de imagen a subir", required = true)
+                                                     @RequestParam("foto") MultipartFile archivo) {
+
+        // Asumimos que el servicio se modifica para devolver el objeto Usuario actualizado
+        Usuario usuarioActualizado = usuarioService.subirYActualizarFotoUsuario(id, archivo);
+        return ResponseEntity.ok(usuarioActualizado);
     }
 }

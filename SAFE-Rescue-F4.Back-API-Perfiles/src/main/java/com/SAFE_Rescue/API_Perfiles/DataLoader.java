@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClient; // Se mantiene la importación
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.time.LocalDate;
@@ -24,6 +24,8 @@ public class DataLoader implements CommandLineRunner {
     @Autowired private TipoUsuarioRepository tipoUsuarioRepository;
     @Autowired private TipoEquipoRepository tipoEquipoRepository;
     @Autowired private EquipoRepository equipoRepository;
+
+    // Se mantienen los WebClients inyectados para la carga masiva (obtener listas)
     @Autowired private WebClient estadoWebClient;
     @Autowired private WebClient companiaWebClient;
 
@@ -44,20 +46,20 @@ public class DataLoader implements CommandLineRunner {
             List<TipoUsuario> tiposUsuario = crearTiposUsuario();
             List<TipoEquipo> tiposEquipo = crearTiposEquipo();
 
-            // Obtener entidades de APIs externas
-            List<Estado> estados = obtenerEntidadesExternas(estadoWebClient, "/estados", Estado.class);
+            // Obtener entidades de APIs externas (usando los WebClients inyectados)
+            List<EstadoDTO> estadoDTOS = obtenerEntidadesExternas(estadoWebClient, "/estados", EstadoDTO.class);
             List<Compania> companias = obtenerEntidadesExternas(companiaWebClient, "/companias", Compania.class);
 
-            if (tiposUsuario.isEmpty() || tiposEquipo.isEmpty() || estados.isEmpty() || companias.isEmpty()) {
+            if (tiposUsuario.isEmpty() || tiposEquipo.isEmpty() || estadoDTOS.isEmpty() || companias.isEmpty()) {
                 System.err.println("Error: No se pudieron obtener entidades de catálogo. Deteniendo la carga.");
                 return;
             }
 
             // Generar Equipos
-            List<Equipo> equipos = crearEquipos(tiposEquipo, companias, estados);
+            List<Equipo> equipos = crearEquipos(tiposEquipo, companias, estadoDTOS);
 
             // Generar Usuarios y Bomberos
-            crearUsuarios(tiposUsuario, estados, equipos);
+            crearUsuarios(tiposUsuario, estadoDTOS, equipos);
 
             System.out.println("Carga de datos finalizada.");
         } catch (Exception e) {
@@ -66,7 +68,7 @@ public class DataLoader implements CommandLineRunner {
         }
     }
 
-    // Métodos para crear entidades locales
+    // --- Métodos para crear entidades locales ---
 
     private List<TipoUsuario> crearTiposUsuario() {
         List<String> nombres = Arrays.asList("Jefe de Compañía", BOMBERO_TIPO, OPERADOR_TIPO, "Administrador", "Ciudadano");
@@ -93,37 +95,37 @@ public class DataLoader implements CommandLineRunner {
         return tiposEquipo;
     }
 
-    private List<Equipo> crearEquipos(List<TipoEquipo> tiposEquipo, List<Compania> companias, List<Estado> estados) {
+    private List<Equipo> crearEquipos(List<TipoEquipo> tiposEquipo, List<Compania> companias, List<EstadoDTO> estadoDTOS) {
         List<Equipo> equipos = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
             Equipo equipo = new Equipo();
             equipo.setNombre(faker.team().name());
             equipo.setTipoEquipo(tiposEquipo.get(faker.random().nextInt(tiposEquipo.size())));
             equipo.setCompania(companias.get(faker.random().nextInt(companias.size())));
-            equipo.setEstado(estados.get(faker.random().nextInt(estados.size())));
+            equipo.setEstadoDTO(estadoDTOS.get(faker.random().nextInt(estadoDTOS.size())));
             equipos.add(equipoRepository.save(equipo));
         }
         return equipos;
     }
 
-    // Método para crear usuarios y bomberos
+    // --- Método CORREGIDO para crear usuarios y bomberos ---
 
-    private void crearUsuarios(List<TipoUsuario> tiposUsuario, List<Estado> estados, List<Equipo> equipos) {
+    private void crearUsuarios(List<TipoUsuario> tiposUsuario, List<EstadoDTO> estadoDTOS, List<Equipo> equipos) {
         for (TipoUsuario tipo : tiposUsuario) {
             int cantidad = 2; // Cantidad de usuarios por tipo
             for (int i = 0; i < cantidad; i++) {
                 Usuario usuario;
+
+                // 1. Instanciar la clase correcta (Bombero o Usuario)
                 if (tipo.getNombre().equalsIgnoreCase(BOMBERO_TIPO) || tipo.getNombre().equalsIgnoreCase(OPERADOR_TIPO)) {
                     usuario = new Bombero();
                     // Casting seguro para asignar el equipo
                     ((Bombero) usuario).setEquipo(equipos.get(faker.random().nextInt(equipos.size())));
-                    bomberoRepository.save((Bombero) usuario);
                 } else {
                     usuario = new Usuario();
-                    usuarioRepository.save(usuario);
                 }
 
-                // Asignar los atributos base a la instancia recién creada (Usuario o Bombero)
+                // 2. Asignar los atributos base
                 usuario.setRun(crearRunUnico());
                 usuario.setDv(calcularDv(usuario.getRun()));
                 usuario.setNombre(faker.name().firstName());
@@ -137,17 +139,26 @@ public class DataLoader implements CommandLineRunner {
                 usuario.setRazonBaneo(null);
                 usuario.setDiasBaneo(null);
                 usuario.setTipoUsuario(tipo);
-                usuario.setEstado(estados.get(faker.random().nextInt(estados.size())));
+                usuario.setEstado(estadoDTOS.get(faker.random().nextInt(estadoDTOS.size())));
+
+                // 3. PERSISTIR AL FINAL con el repositorio correcto
+                if (usuario instanceof Bombero) {
+                    bomberoRepository.save((Bombero) usuario); // Guarda el objeto Bombero completo
+                } else {
+                    usuarioRepository.save(usuario); // Guarda el objeto Usuario completo
+                }
             }
         }
     }
 
-    // Métodos de utilidad para crear datos únicos
+
+    // --- Métodos de utilidad para crear datos únicos ---
+
     private String crearRunUnico() {
         String run;
         do {
             run = faker.number().digits(8);
-        } while (!uniqueRuns.add(run)); // Usa 'add' para evitar duplicados y verificar al mismo tiempo
+        } while (!uniqueRuns.add(run));
         return run;
     }
 
@@ -167,7 +178,8 @@ public class DataLoader implements CommandLineRunner {
         return correo;
     }
 
-    // Método para obtener datos de APIs externas
+    // --- Método para obtener datos de APIs externas (usando WebClient para listas) ---
+
     private <T> List<T> obtenerEntidadesExternas(WebClient client, String uri, Class<T> clazz) {
         try {
             return client.get()
@@ -186,7 +198,8 @@ public class DataLoader implements CommandLineRunner {
         }
     }
 
-    // Método de utilidad para calcular el DV del RUN
+    // --- Método de utilidad para calcular el DV del RUN ---
+
     private String calcularDv(String runStr) {
         int run = Integer.parseInt(runStr);
         int suma = 0;

@@ -92,12 +92,18 @@ public class TipoEquipoService {
      *
      * @param id Identificador del tipo de equipo a eliminar
      * @throws NoSuchElementException Si no se encuentra el tipo de equipo
+     * @throws IllegalStateException Si el tipo de equipo tiene referencias activas (equipos asociados)
      */
     public void delete(Integer id) {
-        if (!tipoEquipoRepository.existsById(id)) {
-            throw new NoSuchElementException("Tipo de equipo no encontrado");
+        // Reusamos findById para obtener la entidad o lanzar NoSuchElementException
+        TipoEquipo tipoEquipo = findById(id);
+
+        try {
+            tipoEquipoRepository.delete(tipoEquipo);
+        } catch (DataIntegrityViolationException e) {
+            // Manejamos el error si existen claves foráneas que referencian a este tipo de equipo
+            throw new IllegalStateException("No se puede eliminar el tipo de equipo porque tiene equipos asociados.");
         }
-        tipoEquipoRepository.deleteById(id);
     }
 
     // MÉTODOS PRIVADOS DE VALIDACIÓN Y UTILIDADES

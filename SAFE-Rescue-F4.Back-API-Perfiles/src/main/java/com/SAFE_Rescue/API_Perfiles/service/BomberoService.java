@@ -1,6 +1,7 @@
 package com.SAFE_Rescue.API_Perfiles.service;
 
 import com.SAFE_Rescue.API_Perfiles.modelo.Bombero;
+import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
 import com.SAFE_Rescue.API_Perfiles.repositoy.BomberoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -10,8 +11,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
- * Servicio para la gestión de entidades Bombero.
- * Maneja operaciones CRUD y validaciones de negocio.
+ * Servicio para la gestión de bomberos.
+ * Hereda propiedades de Usuario y maneja lógica específica de Bombero.
  */
 @Service
 public class BomberoService {
@@ -26,9 +27,9 @@ public class BomberoService {
     private EquipoService equipoService;
 
     /**
-     * Obtiene todos los bomberos registrados.
+     * Obtiene todos los bomberos registrados en el sistema.
      *
-     * @return Una lista de todos los bomberos.
+     * @return Lista de todos los usuarios.
      */
     public List<Bombero> findAll() {
         return bomberoRepository.findAll();
@@ -48,51 +49,43 @@ public class BomberoService {
 
     /**
      * Guarda un nuevo bombero.
-     *
-     * @param bombero El objeto Bombero a guardar.
-     * @return El bombero guardado.
-     * @throws IllegalArgumentException Si los datos del bombero son inválidos.
      */
     public Bombero save(Bombero bombero) {
         if (bombero == null) {
             throw new IllegalArgumentException("El objeto Bombero no puede ser nulo.");
         }
 
-        // Se utilizan las validaciones del servicio padre para los atributos de Usuario
-        usuarioService.validarAtributosUsuario(bombero);
+        // 1. Validar las relaciones heredadas (TipoUsuario, ID Estado)
+        usuarioService.validarExistencia(bombero);
 
-        // Se valida la existencia de la relación específica de Bombero
+        // 2. Validar las relaciones específicas (Equipo)
         validarRelacionesBombero(bombero);
 
         try {
             return bomberoRepository.save(bombero);
         } catch (DataIntegrityViolationException e) {
-            throw new IllegalArgumentException("Error de integridad de datos. El RUN, correo o teléfono ya existen.");
+            // Captura errores de unicidad del padre (RUN, correo, teléfono)
+            throw new IllegalArgumentException("Error de integridad de datos. El RUN, correo o teléfono ya existen.", e);
         }
     }
 
     /**
      * Actualiza un bombero existente.
-     *
-     * @param bombero El objeto Bombero con los datos actualizados.
-     * @param id      El ID del bombero a actualizar.
-     * @return El bombero actualizado.
-     * @throws IllegalArgumentException Si los datos del bombero son inválidos.
-     * @throws NoSuchElementException   Si el bombero no es encontrado.
      */
     public Bombero update(Bombero bombero, Integer id) {
         if (bombero == null) {
             throw new IllegalArgumentException("El objeto Bombero a actualizar no puede ser nulo.");
         }
 
-        // Se validan los atributos de Usuario y las relaciones específicas de Bombero
-        usuarioService.validarAtributosUsuario(bombero);
+        // 1. Validar las relaciones heredadas (TipoUsuario, ID Estado)
+        usuarioService.validarExistencia(bombero);
+
+        // 2. Validar las relaciones específicas (Equipo)
         validarRelacionesBombero(bombero);
 
-        Bombero bomberoExistente = bomberoRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Bombero no encontrado con ID: " + id));
+        Bombero bomberoExistente = findById(id); // Reusamos findById
 
-        // Actualizar los campos del objeto Bombero existente
+        // Actualizar los campos heredados de Usuario
         bomberoExistente.setRun(bombero.getRun());
         bomberoExistente.setDv(bombero.getDv());
         bomberoExistente.setNombre(bombero.getNombre());
@@ -105,43 +98,52 @@ public class BomberoService {
         bomberoExistente.setIntentosFallidos(bombero.getIntentosFallidos());
         bomberoExistente.setRazonBaneo(bombero.getRazonBaneo());
         bomberoExistente.setDiasBaneo(bombero.getDiasBaneo());
+
+        // CORRECCIÓN: Usar los IDs (Claves Foráneas Lógicas) en lugar de objetos
+        bomberoExistente.setIdEstado(bombero.getIdEstado());
+        bomberoExistente.setIdFoto(bombero.getIdFoto());
+
+        // Actualizar la relación local de TipoUsuario
         bomberoExistente.setTipoUsuario(bombero.getTipoUsuario());
-        bomberoExistente.setEstado(bombero.getEstado());
+
+        // Actualizar el campo específico de Bombero
         bomberoExistente.setEquipo(bombero.getEquipo());
 
         try {
             return bomberoRepository.save(bomberoExistente);
         } catch (DataIntegrityViolationException e) {
-            throw new IllegalArgumentException("Error de integridad de datos. El RUN, correo o teléfono ya existen.");
+            throw new IllegalArgumentException("Error de integridad de datos. El RUN, correo o teléfono ya existen.", e);
         }
     }
 
     /**
      * Elimina un bombero por su ID.
-     *
-     * @param id El ID del bombero a eliminar.
-     * @throws NoSuchElementException Si el bombero no es encontrado.
      */
     public void delete(Integer id) {
-        if (!bomberoRepository.existsById(id)) {
-            throw new NoSuchElementException("Bombero no encontrado con ID: " + id);
+        Bombero bombero = findById(id); // Usamos findById para consistencia y NotFound
+
+        try {
+            bomberoRepository.delete(bombero);
+        } catch (DataIntegrityViolationException e) {
+            // Un bombero como subclase tiene el riesgo de que el registro padre (Usuario) esté referenciado
+            // (ej. si el Usuario era el líder de un Equipo).
+            throw new IllegalStateException("No se puede eliminar el bombero. Verifique que el registro de Usuario asociado no tenga referencias activas (ej. líder de equipo).", e);
         }
-        bomberoRepository.deleteById(id);
     }
 
     /**
-     * Valida las relaciones específicas de Bombero, como la existencia de un equipo.
-     *
-     * @param bombero El objeto Bombero a validar.
-     * @throws IllegalArgumentException Si el equipo no existe.
+     * Valida las relaciones específicas de Bombero, asegurando que el equipo exista y no sea nulo.
      */
     private void validarRelacionesBombero(Bombero bombero) {
-        if (bombero.getEquipo() != null) {
-            try {
-                equipoService.findById(bombero.getEquipo().getIdEquipo());
-            } catch (NoSuchElementException e) {
-                throw new IllegalArgumentException("El equipo asociado no existe.");
-            }
+        if (bombero.getEquipo() == null) {
+            throw new IllegalArgumentException("El equipo es obligatorio para un bombero.");
+        }
+
+        try {
+            // Intenta encontrar el equipo para validar su existencia
+            equipoService.findById(bombero.getEquipo().getIdEquipo());
+        } catch (NoSuchElementException e) {
+            throw new IllegalArgumentException("El equipo asociado no existe.", e);
         }
     }
 }

@@ -2,7 +2,7 @@ package com.SAFE_Rescue.API_Perfiles.service;
 
 import com.SAFE_Rescue.API_Perfiles.modelo.Bombero;
 import com.SAFE_Rescue.API_Perfiles.modelo.Equipo;
-import com.SAFE_Rescue.API_Perfiles.modelo.Estado;
+import com.SAFE_Rescue.API_Perfiles.modelo.EstadoDTO;
 import com.SAFE_Rescue.API_Perfiles.modelo.TipoUsuario;
 import com.SAFE_Rescue.API_Perfiles.repositoy.BomberoRepository;
 import net.datafaker.Faker;
@@ -47,7 +47,7 @@ public class BomberoServiceTest {
         id = faker.number().numberBetween(1, 100);
 
         // Objetos de dependencia para la prueba
-        Estado estado = new Estado(1, "Activo", "Descripción");
+        EstadoDTO estadoDTO = new EstadoDTO(1, "Activo", "Descripción");
         TipoUsuario tipoUsuario = new TipoUsuario(1, "Bombero");
         Equipo equipo = new Equipo(1, "Equipo 1", null, null, null, null);
 
@@ -67,7 +67,7 @@ public class BomberoServiceTest {
         bombero.setRazonBaneo(null);
         bombero.setDiasBaneo(0);
         bombero.setTipoUsuario(tipoUsuario);
-        bombero.setEstado(estado);
+        bombero.setEstado(estadoDTO);
         bombero.setEquipo(equipo);
     }
 

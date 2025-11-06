@@ -1,8 +1,8 @@
 package com.SAFE_Rescue.API_Perfiles.service;
 
 import com.SAFE_Rescue.API_Perfiles.config.WebClienteConfig;
-import com.SAFE_Rescue.API_Perfiles.modelo.Estado;
-import com.SAFE_Rescue.API_Perfiles.modelo.Foto;
+import com.SAFE_Rescue.API_Perfiles.modelo.EstadoDTO;
+import com.SAFE_Rescue.API_Perfiles.modelo.FotoDTO;
 import com.SAFE_Rescue.API_Perfiles.modelo.TipoUsuario;
 import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
 import com.SAFE_Rescue.API_Perfiles.repositoy.UsuarioRepository;
@@ -70,7 +70,7 @@ public class UsuarioServiceTest {
 
         // Crear objetos de dependencia
         TipoUsuario tipoUsuario = new TipoUsuario(1, "Bombero");
-        Estado estado = new Estado(1, "Activo", "Descripción");
+        EstadoDTO estadoDTO = new EstadoDTO(1, "Activo", "Descripción");
 
         // Crear objeto Usuario con datos simulados
         usuario = new Usuario();
@@ -88,8 +88,8 @@ public class UsuarioServiceTest {
         usuario.setRazonBaneo(null);
         usuario.setDiasBaneo(0);
         usuario.setTipoUsuario(tipoUsuario);
-        usuario.setEstado(estado);
-        usuario.setFoto(new Foto()); // Inicializar el objeto Foto para evitar NullPointerException
+        usuario.setEstado(estadoDTO);
+        usuario.setFoto(new FotoDTO()); // Inicializar el objeto Foto para evitar NullPointerException
     }
 
     // --- Pruebas de operaciones CRUD exitosas ---
@@ -144,7 +144,7 @@ public class UsuarioServiceTest {
         Usuario usuarioExistente = new Usuario();
         usuarioExistente.setIdUsuario(id);
         usuarioExistente.setNombre("Nombre Antiguo");
-        usuarioExistente.setFoto(new Foto()); // Inicializar foto para evitar NullPointerException
+        usuarioExistente.setFoto(new FotoDTO()); // Inicializar foto para evitar NullPointerException
 
         when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuarioExistente));
         when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);

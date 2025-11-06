@@ -20,12 +20,6 @@ public class DireccionService {
     @Autowired
     private DireccionRepository direccionRepository;
 
-    // Se recomienda inyectar también los servicios de Comuna y Geolocalizacion
-    // si se necesita validar su existencia antes de guardar o actualizar la Dirección.
-    // @Autowired
-    // private ComunaService comunaService;
-    // @Autowired
-    // private GeolocalizacionService geolocalizacionService;
 
     // MÉTODOS CRUD PRINCIPALES
 

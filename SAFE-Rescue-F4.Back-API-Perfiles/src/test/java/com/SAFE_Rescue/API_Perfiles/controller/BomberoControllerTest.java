@@ -1,7 +1,7 @@
 package com.SAFE_Rescue.API_Perfiles.controller;
 
 import com.SAFE_Rescue.API_Perfiles.modelo.Bombero;
-import com.SAFE_Rescue.API_Perfiles.modelo.Estado;
+import com.SAFE_Rescue.API_Perfiles.modelo.EstadoDTO;
 import com.SAFE_Rescue.API_Perfiles.modelo.TipoUsuario;
 import com.SAFE_Rescue.API_Perfiles.service.BomberoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -63,7 +63,7 @@ public class BomberoControllerTest {
         bombero.setCorreo(faker.internet().emailAddress());
         bombero.setContrasenia(faker.internet().password());
         bombero.setIntentosFallidos(0);
-        bombero.setEstado(new Estado(1, "Activo", "Descripción"));
+        bombero.setEstado(new EstadoDTO(1, "Activo", "Descripción"));
         bombero.setTipoUsuario(new TipoUsuario(1, "Bombero"));
     }
 
