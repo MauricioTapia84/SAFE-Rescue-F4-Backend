@@ -1,13 +1,13 @@
 package com.SAFE_Rescue.API_Perfiles.service;
 
-import com.SAFE_Rescue.API_Perfiles.config.WebClienteConfig;
+import com.SAFE_Rescue.API_Perfiles.config.EstadoClient; // NUEVA INYECCIÓN
+import com.SAFE_Rescue.API_Perfiles.config.FotoClient;   // NUEVA INYECCIÓN
 import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
 import com.SAFE_Rescue.API_Perfiles.repositoy.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -15,7 +15,7 @@ import java.util.NoSuchElementException;
 /**
  * Servicio para la gestión de usuarios.
  * Maneja operaciones CRUD y validaciones de negocio.
- * Este servicio interactúa con APIs externas (Estado y Foto) a través de WebClienteConfig.
+ * Este servicio interactúa con APIs externas (Estado y Foto) a través de Clientes WebClient dedicados.
  */
 @Service
 public class UsuarioService {
@@ -23,15 +23,15 @@ public class UsuarioService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    // Se elimina la inyección directa de WebClient, usamos la clase de configuración
-    // @Autowired
-    // private WebClient estadoWebClient; // REMOVED
-
     @Autowired
     private TipoUsuarioService tipoUsuarioService;
 
+    // INYECCIONES CORREGIDAS: Inyectamos los clientes dedicados en lugar de WebClientConfig
     @Autowired
-    private WebClienteConfig webClienteConfig;
+    private EstadoClient estadoClient;
+
+    @Autowired
+    private FotoClient fotoClient;
 
     /**
      * Obtiene todos los usuarios registrados en el sistema.
@@ -112,7 +112,6 @@ public class UsuarioService {
         usuarioExistente.setDiasBaneo(usuario.getDiasBaneo());
 
         // --- AJUSTE DE CLAVES FORÁNEAS LÓGICAS (Microservicios) ---
-        // Ahora se actualizan los IDs directamente en lugar de objetos @ManyToOne
         usuarioExistente.setIdEstado(usuario.getIdEstado());
         usuarioExistente.setIdFoto(usuario.getIdFoto());
 
@@ -187,17 +186,13 @@ public class UsuarioService {
         }
 
         // Valida la existencia del Estado (externo)
-        // Usamos el ID de estado de la entidad Usuario (Clave Foránea Lógica)
         if (usuario.getIdEstado() != null) {
             try {
-                // Usamos el método helper de WebClienteConfig para verificar el estado
-                webClienteConfig.getEstadoById(usuario.getIdEstado());
-            } catch (NoSuchElementException e) {
-                // Captura el error si la API externa devuelve 404
-                throw new IllegalArgumentException("El ID de estado asociado al usuario no existe en la API externa.", e);
-            } catch (Exception e) {
-                // Captura otros errores de conexión
-                throw new IllegalArgumentException("Error al comunicarse con la API de estados.", e);
+                // CORRECCIÓN: Usamos el cliente dedicado EstadoClient
+                estadoClient.getEstadoById(usuario.getIdEstado());
+            } catch (RuntimeException e) { // Captura las RuntimeException lanzadas por el cliente (4xx, 5xx, u otros)
+                // Se lanza una excepción de negocio con un mensaje claro
+                throw new IllegalArgumentException("El ID de estado asociado no es válido o el servicio externo falló. Detalle: " + e.getMessage(), e);
             }
         } else {
             throw new IllegalArgumentException("El ID de estado es un campo obligatorio.");
@@ -214,13 +209,13 @@ public class UsuarioService {
      * @return El objeto **Usuario actualizado** con el nuevo ID de foto.
      * @throws IllegalArgumentException si el archivo está vacío.
      * @throws NoSuchElementException si el usuario no es encontrado.
-     * @throws RuntimeException si la API externa devuelve un formato de ID incorrecto.
+     * @throws RuntimeException si la API externa devuelve un formato de ID incorrecto o falla la comunicación.
      */
     public Usuario subirYActualizarFotoUsuario(Integer id, MultipartFile archivo) {
 
         // 1. Lógica para subir el archivo a la otra API.
-        // Asumimos que webClienteConfig.uploadFoto retorna el ID de la nueva foto como un String.
-        String fotoIdString = webClienteConfig.uploadFoto(archivo);
+        // CORRECCIÓN: Usamos el cliente dedicado FotoClient
+        String fotoIdString = fotoClient.uploadFoto(archivo);
 
         Integer idFoto;
         try {
@@ -229,6 +224,9 @@ public class UsuarioService {
         } catch (NumberFormatException e) {
             // Manejamos el caso si la API externa no devolvió un ID numérico
             throw new RuntimeException("La API externa de fotos no devolvió un ID de foto válido (Integer). Se recibió: " + fotoIdString, e);
+        } catch (RuntimeException e) {
+            // Captura si el FotoClient falló (4xx, 5xx, IO)
+            throw new RuntimeException("Error al subir la foto a la API externa. Detalle: " + e.getMessage(), e);
         }
 
         // 2. Buscar al usuario y actualizar su ID de foto

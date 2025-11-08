@@ -1,5 +1,6 @@
 package com.SAFE_Rescue.API_Geolocalizacion.modelo;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
@@ -15,6 +16,7 @@ import lombok.NoArgsConstructor;
 @Data
 @Entity
 @Table(name = "pais")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Pais {
 
     @Id

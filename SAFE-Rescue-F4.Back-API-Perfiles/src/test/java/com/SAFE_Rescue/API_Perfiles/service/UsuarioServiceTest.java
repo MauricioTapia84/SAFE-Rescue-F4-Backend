@@ -1,6 +1,6 @@
 package com.SAFE_Rescue.API_Perfiles.service;
 
-import com.SAFE_Rescue.API_Perfiles.config.WebClienteConfig;
+import com.SAFE_Rescue.API_Perfiles.config.WebClientConfig;
 import com.SAFE_Rescue.API_Perfiles.modelo.EstadoDTO;
 import com.SAFE_Rescue.API_Perfiles.modelo.FotoDTO;
 import com.SAFE_Rescue.API_Perfiles.modelo.TipoUsuario;
@@ -47,7 +47,7 @@ public class UsuarioServiceTest {
     private WebClient estadoWebClient;
 
     @Mock
-    private WebClienteConfig webClienteConfig;
+    private WebClientConfig webClientConfig;
 
     @Mock
     private RequestHeadersUriSpec requestHeadersUriSpec;
@@ -240,7 +240,7 @@ public class UsuarioServiceTest {
         // Arrange
         String mockPhotoUrl = "http://api.mock.com/photos/123";
         MultipartFile mockFile = mock(MultipartFile.class);
-        when(webClienteConfig.uploadFoto(mockFile)).thenReturn(mockPhotoUrl);
+        when(webClientConfig.uploadFoto(mockFile)).thenReturn(mockPhotoUrl);
 
         // El objeto usuario del setUp ya tiene una foto, lo que resuelve el NullPointerException
         when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuario));
@@ -251,7 +251,7 @@ public class UsuarioServiceTest {
 
         // Assert
         assertEquals(mockPhotoUrl, returnedUrl);
-        verify(webClienteConfig, times(1)).uploadFoto(mockFile);
+        verify(webClientConfig, times(1)).uploadFoto(mockFile);
         verify(usuarioRepository, times(1)).findById(id);
         verify(usuarioRepository, times(1)).save(usuario);
     }

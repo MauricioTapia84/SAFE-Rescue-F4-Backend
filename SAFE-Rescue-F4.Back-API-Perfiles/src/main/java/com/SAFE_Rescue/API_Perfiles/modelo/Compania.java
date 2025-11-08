@@ -1,6 +1,5 @@
 package com.SAFE_Rescue.API_Perfiles.modelo;
 
-// Se eliminan los imports de JPA que definen la relación @OneToOne
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -9,10 +8,11 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.LocalDate;
 
 /**
- * Entidad que representa una Compañía de bomberos.
- * Ahora referencia la Dirección solo por ID (clave foránea lógica a la API externa).
+ * Entidad que representa una Compañía de bomberos, nativa del microservicio.
+ * Referencia la Dirección solo por ID (clave foránea lógica a la API externa de Geolocalización).
  */
 @NoArgsConstructor
 @AllArgsConstructor
@@ -38,6 +38,22 @@ public class Compania {
     @NotBlank(message = "El nombre de la compañía es obligatorio")
     @Size(max = 50, message = "El nombre no puede exceder los 50 caracteres")
     private String nombre;
+
+    /**
+     * Código de la compañía (identificador interno o distintivo).
+     */
+    @Column(length = 20, nullable = true)
+    @Schema(description = "Código identificador de la compañía", example = "C-13")
+    private String codigo;
+
+    /**
+     * Fecha de fundación de la compañía.
+     */
+    @Column(name = "fecha_fundacion", nullable = true)
+    @Schema(description = "Fecha de fundación", example = "1980-05-15")
+    private LocalDate fechaFundacion;
+
+    // --- CLAVE FORÁNEA LÓGICA (Microservicio Dirección) ---
 
     /**
      * ID de la Dirección, referenciando la entidad Direccion en API_Geolocalizacion.

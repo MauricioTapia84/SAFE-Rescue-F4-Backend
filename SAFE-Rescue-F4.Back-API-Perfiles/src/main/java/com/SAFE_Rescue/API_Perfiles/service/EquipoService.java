@@ -1,14 +1,11 @@
 package com.SAFE_Rescue.API_Perfiles.service;
 
-import com.SAFE_Rescue.API_Perfiles.modelo.Compania;
-import com.SAFE_Rescue.API_Perfiles.modelo.Equipo;
-import com.SAFE_Rescue.API_Perfiles.modelo.TipoEquipo;
+import com.SAFE_Rescue.API_Perfiles.modelo.*;
 import com.SAFE_Rescue.API_Perfiles.repositoy.EquipoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy; // Importación necesaria
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-// Se eliminan importaciones de WebClient y Mono, ya que Compania es local
-import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -16,18 +13,28 @@ import java.util.NoSuchElementException;
 @Service
 public class EquipoService {
 
-    @Autowired
-    private EquipoRepository equipoRepository;
+    private final EquipoRepository equipoRepository;
+    private final TipoEquipoService tipoEquipoService;
+    private final CompaniaService companiaService;
 
-    @Autowired
-    private TipoEquipoService tipoEquipoService;
+    // CORRECCIÓN CLAVE: Usamos @Lazy para diferir la inicialización de BomberoService
+    // y romper el ciclo de dependencia.
+    private final BomberoService bomberoService;
 
-    // Inyección de servicios locales para validar relaciones
+    // Usando inyección por constructor para todas las dependencias (mejor práctica)
     @Autowired
-    private CompaniaService companiaService;
+    public EquipoService(
+            EquipoRepository equipoRepository,
+            TipoEquipoService tipoEquipoService,
+            CompaniaService companiaService,
+            @Lazy BomberoService bomberoService) { // @Lazy aquí es crucial
 
-    @Autowired
-    private UsuarioService usuarioService; // Necesario para validar la existencia del líder
+        this.equipoRepository = equipoRepository;
+        this.tipoEquipoService = tipoEquipoService;
+        this.companiaService = companiaService;
+        this.bomberoService = bomberoService;
+    }
+
 
     // --- MÉTODOS CRUD ---
 
@@ -37,43 +44,43 @@ public class EquipoService {
 
     public Equipo findById(Integer id) {
         return equipoRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Equipo no encontrado con ID: " + id));
+                .orElseThrow(() -> new NoSuchElementException("Equipo not found with ID: " + id));
     }
 
     public Equipo save(Equipo equipo) {
         if (equipo == null) {
-            throw new IllegalArgumentException("El equipo no puede ser nulo.");
+            throw new IllegalArgumentException("The team cannot be null.");
         }
 
-        // 1. Validar todas las dependencias antes de guardar
+        // 1. Validate all dependencies before saving
         validarTipoEquipo(equipo);
-        validarCompania(equipo); // Validación local
-        validarLider(equipo);     // Validación de la existencia del líder (Usuario)
+        validarCompania(equipo);
+        validarLider(equipo);
 
         try {
             return equipoRepository.save(equipo);
         } catch (DataIntegrityViolationException e) {
-            throw new IllegalArgumentException("Error de integridad de datos. El nombre del equipo ya existe o no cumple con las restricciones.", e);
+            throw new IllegalArgumentException("Data integrity error. The team name already exists or does not meet restrictions.", e);
         }
     }
 
     public Equipo update(Equipo equipo, Integer id) {
         if (equipo == null) {
-            throw new IllegalArgumentException("El equipo a actualizar no puede ser nulo.");
+            throw new IllegalArgumentException("The team to update cannot be null.");
         }
 
-        // 1. Verificar existencia
+        // 1. Check existence
         Equipo equipoExistente = findById(id);
 
-        // 2. Validar dependencias del nuevo objeto (equipo)
+        // 2. Validate dependencies of the new object (equipo)
         validarTipoEquipo(equipo);
         validarCompania(equipo);
         validarLider(equipo);
 
-        // 3. Aplicar cambios
+        // 3. Apply changes
         equipoExistente.setNombre(equipo.getNombre());
 
-        // Se usan los setters si el objeto no es nulo (aunque la validación ya asegura que si viene, existe)
+        // Use setters if the object is not null (although validation already ensures it exists)
         if (equipo.getCompania() != null) equipoExistente.setCompania(equipo.getCompania());
         if (equipo.getTipoEquipo() != null) equipoExistente.setTipoEquipo(equipo.getTipoEquipo());
         if (equipo.getLider() != null) equipoExistente.setLider(equipo.getLider());
@@ -81,77 +88,77 @@ public class EquipoService {
         try {
             return equipoRepository.save(equipoExistente);
         } catch (DataIntegrityViolationException e) {
-            // Manejamos el caso de que el nuevo nombre esté duplicado con otro ID
-            throw new IllegalArgumentException("Error de integridad de datos. No se puede actualizar el equipo, el nombre podría ya existir.", e);
+            // Handle case where the new name is duplicated with another ID
+            throw new IllegalArgumentException("Data integrity error. Cannot update the team, the name might already exist.", e);
         }
     }
 
     /**
-     * Elimina un equipo del sistema, manejando errores de clave foránea.
-     * @param id Identificador del equipo a eliminar
-     * @throws NoSuchElementException Si el equipo no se encuentra
-     * @throws IllegalStateException Si el equipo tiene bomberos asociados (clave foránea en uso)
+     * Deletes a team from the system, handling foreign key errors.
+     * @param id Identifier of the team to delete
+     * @throws NoSuchElementException If the team is not found
+     * @throws IllegalStateException If the team has associated firefighters (foreign key in use)
      */
     public void delete(Integer id) {
-        // Reusamos findById para verificar existencia
+        // Reuse findById to check existence
         Equipo equipo = findById(id);
 
         try {
             equipoRepository.delete(equipo);
         } catch (DataIntegrityViolationException e) {
-            // Manejamos el error si existen claves foráneas (ej: Bomberos asociados a este equipo)
-            throw new IllegalStateException("No se puede eliminar el equipo porque tiene bomberos asociados. Remueva los bomberos del equipo primero.", e);
+            // Handle error if foreign keys exist (e.g., Firefighters associated with this team)
+            throw new IllegalStateException("Cannot delete the team because it has associated firefighters. Remove the firefighters from the team first.", e);
         }
     }
 
-    // --- MÉTODOS DE VALIDACIÓN Y UTILIDADES ---
+    // --- VALIDATION AND UTILITY METHODS ---
 
     private void validarTipoEquipo(Equipo equipo) {
         if (equipo.getTipoEquipo() == null || equipo.getTipoEquipo().getIdTipoEquipo() == null) {
-            throw new IllegalArgumentException("El tipo de equipo es obligatorio.");
+            throw new IllegalArgumentException("The team type is mandatory.");
         }
 
         try {
-            // Verifica la existencia del TipoEquipo (entidad local)
+            // Check existence of the TeamType (local entity)
             TipoEquipo tipo = tipoEquipoService.findById(equipo.getTipoEquipo().getIdTipoEquipo());
-            // Asegura que el objeto sea la instancia gestionada
+            // Ensure the object is the managed instance
             equipo.setTipoEquipo(tipo);
         } catch (NoSuchElementException e) {
-            throw new IllegalArgumentException("El tipo de equipo asociado no existe.", e);
+            throw new IllegalArgumentException("The associated team type does not exist.", e);
         }
     }
 
     /**
-     * Valida la existencia de la compañía en el servicio local CompaniaService.
+     * Validates the existence of the company in the local CompaniaService.
      */
     private void validarCompania(Equipo equipo) {
         if (equipo.getCompania() == null || equipo.getCompania().getIdCompania() == null) {
-            throw new IllegalArgumentException("La compañía es obligatoria.");
+            throw new IllegalArgumentException("The company is mandatory.");
         }
 
         try {
-            // Validar la existencia usando el servicio local CompaniaService
+            // Validate existence using the local CompaniaService
             Compania compania = companiaService.findById(equipo.getCompania().getIdCompania());
-            // Asegura que el objeto sea la instancia gestionada
+            // Ensure the object is the managed instance
             equipo.setCompania(compania);
         } catch (NoSuchElementException e) {
-            throw new IllegalArgumentException("La compañía asociada al equipo no existe.", e);
+            throw new IllegalArgumentException("The company associated with the team does not exist.", e);
         }
     }
 
     /**
-     * Valida que el ID del líder (Usuario) exista en el servicio local UsuarioService.
+     * Validates that the leader ID (User) exists in the local UsuarioService.
      */
     private void validarLider(Equipo equipo) {
-        // El líder puede ser nulo, pero si se proporciona, debe existir.
+        // The leader can be null, but if provided, must exist.
         if (equipo.getLider() != null && equipo.getLider().getIdUsuario() != null) {
             try {
-                // Validar la existencia usando el servicio local UsuarioService
-                Usuario lider = usuarioService.findById(equipo.getLider().getIdUsuario());
-                // Asegura que el objeto sea la instancia gestionada
+                // Validate existence using the local UsuarioService
+                Bombero lider = bomberoService.findById(equipo.getLider().getIdUsuario());
+                // Ensure the object is the managed instance
                 equipo.setLider(lider);
             } catch (NoSuchElementException e) {
-                throw new IllegalArgumentException("El líder asociado (Usuario ID: " + equipo.getLider().getIdUsuario() + ") no existe.", e);
+                throw new IllegalArgumentException("The associated leader (User ID: " + equipo.getLider().getIdUsuario() + ") does not exist.", e);
             }
         }
     }

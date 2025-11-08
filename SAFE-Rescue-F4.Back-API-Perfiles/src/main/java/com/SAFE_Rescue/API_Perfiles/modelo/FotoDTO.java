@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class FotoDTO {
+public class FotoDTO implements IHasId { // Implementa IHasId
 
     @Schema(description = "Identificador único de la foto", example = "1")
     private Integer idFoto;
@@ -28,5 +28,8 @@ public class FotoDTO {
     @Schema(description = "Descripción de la foto", example = "Fotografía de incidente.")
     private String descripcion;
 
-    // Nota: Esta clase no contiene anotaciones JPA (@Entity, @Table, etc.)
+    @Override
+    public Integer getId() {
+        return idFoto; // Usa idFoto como el identificador
+    }
 }

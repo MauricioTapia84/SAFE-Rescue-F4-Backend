@@ -1,12 +1,12 @@
 ❚❙❘ VERSIÓN 0.0.3
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
-├─•
-├─•
-├─•
-├─•
-└─•
+├─• Se solucionan problemas de Web client
+├─• Se separan los clientes consumidos desde otras apis del webclient para mejorar la estructura
+├─• Se corrigen incongruencias en las direcciones de los clientes
+└─• Se agrega un formato para las id de lso dto
 
-->>>
+->>> Corregir problemas de mapeo de direccion en la conexion entre APIs
+->>> Falta corregir las pruebas unitarias
 
 
 ❚❙❘ VERSIÓN 0.0.2

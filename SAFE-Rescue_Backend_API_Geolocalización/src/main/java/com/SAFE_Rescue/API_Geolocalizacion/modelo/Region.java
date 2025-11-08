@@ -1,5 +1,7 @@
 package com.SAFE_Rescue.API_Geolocalizacion.modelo;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
@@ -16,6 +18,7 @@ import lombok.NoArgsConstructor;
 @Data
 @Entity
 @Table(name = "region")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Region {
 
     @Id
@@ -37,6 +40,7 @@ public class Region {
     // --- Relación a Pais (ManyToOne: Muchas Regiones a Un País) ---
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonBackReference
     @JoinColumn(name = "id_pais", nullable = false) // Clave foránea a la entidad Pais
     @Schema(description = "País al que pertenece la región", required = true)
     private Pais pais;
