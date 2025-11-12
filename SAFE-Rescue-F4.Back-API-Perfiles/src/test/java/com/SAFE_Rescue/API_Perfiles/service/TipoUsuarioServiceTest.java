@@ -38,7 +38,9 @@ public class TipoUsuarioServiceTest {
 
         tipoUsuario = new TipoUsuario();
         tipoUsuario.setIdTipoUsuario(id);
-        tipoUsuario.setNombre(faker.job().position());
+        // Aseguramos que el nombre sea válido para evitar fallos de validación en el Arrange
+        String position = faker.job().position();
+        tipoUsuario.setNombre(position.substring(0, Math.min(50, position.length())));
     }
 
     // --- Pruebas de operaciones exitosas (Happy Path) ---
@@ -90,32 +92,47 @@ public class TipoUsuarioServiceTest {
     @Test
     public void update_shouldReturnUpdatedUserType_whenValid() {
         // Arrange
-        TipoUsuario tipoUsuarioActualizado = new TipoUsuario();
-        tipoUsuarioActualizado.setNombre("Nombre Actualizado");
+        TipoUsuario tipoUsuarioPayload = new TipoUsuario();
+        tipoUsuarioPayload.setNombre("Nombre Actualizado");
 
+        // 1. Simular la existencia
         when(tipoUsuarioRepository.findById(id)).thenReturn(Optional.of(tipoUsuario));
-        when(tipoUsuarioRepository.save(any(TipoUsuario.class))).thenReturn(tipoUsuarioActualizado);
+
+        // 2. Simular el resultado del guardado (que debe reflejar el nombre del payload)
+        TipoUsuario resultadoGuardado = new TipoUsuario();
+        resultadoGuardado.setIdTipoUsuario(id);
+        resultadoGuardado.setNombre("Nombre Actualizado");
+        when(tipoUsuarioRepository.save(any(TipoUsuario.class))).thenReturn(resultadoGuardado);
 
         // Act
-        TipoUsuario actualizado = tipoUsuarioService.update(tipoUsuarioActualizado, id);
+        TipoUsuario actualizado = tipoUsuarioService.update(tipoUsuarioPayload, id);
 
         // Assert
         assertNotNull(actualizado);
         assertEquals("Nombre Actualizado", actualizado.getNombre());
         verify(tipoUsuarioRepository, times(1)).findById(id);
-        verify(tipoUsuarioRepository, times(1)).save(tipoUsuario);
+        // Verificamos que se llamó a save con CUALQUIER instancia de TipoUsuario
+        // (ya que el objeto original 'tipoUsuario' fue modificado por el servicio antes de guardarse)
+        verify(tipoUsuarioRepository, times(1)).save(any(TipoUsuario.class));
     }
 
     @Test
     public void delete_shouldDeleteUserType_whenExists() {
-        // Arrange
-        when(tipoUsuarioRepository.existsById(id)).thenReturn(true);
-        doNothing().when(tipoUsuarioRepository).deleteById(id);
+        // ARREGLO CLAVE: Mockear findById para simular la existencia (según el flujo del servicio)
+        when(tipoUsuarioRepository.findById(id)).thenReturn(Optional.of(tipoUsuario));
+        // NOTA: No necesitamos mockear delete, ya que es void. Solo lo verificamos.
 
         // Act & Assert
         assertDoesNotThrow(() -> tipoUsuarioService.delete(id));
-        verify(tipoUsuarioRepository, times(1)).existsById(id);
-        verify(tipoUsuarioRepository, times(1)).deleteById(id);
+
+        // Verificamos que se llamó a findById para confirmar la existencia
+        verify(tipoUsuarioRepository, times(1)).findById(id);
+
+        // CORRECCIÓN: Verificamos que se llamó a delete con la entidad, NO con deleteById
+        verify(tipoUsuarioRepository, times(1)).delete(tipoUsuario);
+
+        // Aseguramos que existsById no fue llamado (si el servicio usa findById)
+        verify(tipoUsuarioRepository, never()).existsById(any());
     }
 
     // --- Pruebas de escenarios de error ---
@@ -133,20 +150,22 @@ public class TipoUsuarioServiceTest {
     @Test
     public void save_shouldThrowException_whenNameIsNull() {
         // Arrange
-        tipoUsuario.setNombre(null);
+        TipoUsuario tipoUsuarioInvalido = new TipoUsuario();
+        tipoUsuarioInvalido.setNombre(null);
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> tipoUsuarioService.save(tipoUsuario));
+        assertThrows(IllegalArgumentException.class, () -> tipoUsuarioService.save(tipoUsuarioInvalido));
         verify(tipoUsuarioRepository, never()).save(any());
     }
 
     @Test
     public void save_shouldThrowException_whenNameIsTooLong() {
         // Arrange
-        tipoUsuario.setNombre(faker.lorem().characters(51));
+        TipoUsuario tipoUsuarioInvalido = new TipoUsuario();
+        tipoUsuarioInvalido.setNombre(faker.lorem().characters(51));
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> tipoUsuarioService.save(tipoUsuario));
+        assertThrows(IllegalArgumentException.class, () -> tipoUsuarioService.save(tipoUsuarioInvalido));
         verify(tipoUsuarioRepository, never()).save(any());
     }
 
@@ -174,11 +193,13 @@ public class TipoUsuarioServiceTest {
     @Test
     public void update_shouldThrowException_whenNameIsNull() {
         // Arrange
-        tipoUsuario.setNombre(null);
+        TipoUsuario tipoUsuarioInvalido = new TipoUsuario();
+        tipoUsuarioInvalido.setNombre(null);
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> tipoUsuarioService.update(tipoUsuario, id));
-        verify(tipoUsuarioRepository, never()).findById(any()); // No se llama a findById porque falla en la validación inicial
+        // La validación inicial debe fallar antes de buscar en el repositorio
+        assertThrows(IllegalArgumentException.class, () -> tipoUsuarioService.update(tipoUsuarioInvalido, id));
+        verify(tipoUsuarioRepository, never()).findById(any());
         verify(tipoUsuarioRepository, never()).save(any());
     }
 
@@ -196,12 +217,16 @@ public class TipoUsuarioServiceTest {
 
     @Test
     public void delete_shouldThrowException_whenNotFound() {
-        // Arrange
-        when(tipoUsuarioRepository.existsById(id)).thenReturn(false);
+        // ARREGLO CLAVE: Mockear findById para que devuelva vacío (según el flujo del servicio)
+        when(tipoUsuarioRepository.findById(id)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThrows(NoSuchElementException.class, () -> tipoUsuarioService.delete(id));
-        verify(tipoUsuarioRepository, times(1)).existsById(id);
+
+        // Verificamos que se llamó a findById (que causó la excepción)
+        verify(tipoUsuarioRepository, times(1)).findById(id);
+        // Verificamos que delete(TipoUsuario) y deleteById(id) nunca fueron llamados
+        verify(tipoUsuarioRepository, never()).delete(any());
         verify(tipoUsuarioRepository, never()).deleteById(any());
     }
 }

@@ -34,7 +34,8 @@ public class TipoIncidenteService {
      * @return El tipo de incidente encontrado
      * @throws NoSuchElementException Si no se encuentra el tipo de incidente
      */
-    public TipoIncidente findByID(long id) {
+    public TipoIncidente findById(
+            Integer id) {
         return tipoIncidenteRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Tipo de incidente no encontrado con ID: " + id));
     }
@@ -64,7 +65,7 @@ public class TipoIncidenteService {
      * @throws NoSuchElementException Si no se encuentra el tipo de incidente
      * @throws IllegalArgumentException Si los datos no pasan las validaciones
      */
-    public TipoIncidente update(TipoIncidente tipoIncidente, long id) {
+    public TipoIncidente update(TipoIncidente tipoIncidente, Integer id) {
         TipoIncidente tipoExistente = tipoIncidenteRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Tipo de incidente no encontrado con ID: " + id));
 
@@ -85,7 +86,7 @@ public class TipoIncidenteService {
      * @param id ID del tipo de incidente a eliminar
      * @throws NoSuchElementException Si no se encuentra el tipo de incidente
      */
-    public void delete(long id) {
+    public void delete(Integer id) {
         if (!tipoIncidenteRepository.existsById(id)) {
             throw new NoSuchElementException("Tipo de incidente no encontrado con ID: " + id);
         }

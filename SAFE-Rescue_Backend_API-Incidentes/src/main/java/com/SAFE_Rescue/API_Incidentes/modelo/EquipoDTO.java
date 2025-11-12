@@ -14,14 +14,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor // Genera constructor sin argumentos
 @AllArgsConstructor // Genera constructor con todos los argumentos
 @Data // Genera getters, setters, toString, equals y hashCode
-public class Equipo {
+public class EquipoDTO implements IHasId {
 
     /**
      * Identificador único del equipo
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) // Auto-incremental
-    private int id;
+    private Integer idEquipo;
 
     /**
      * Nombre del equipo (máximo 50 caracteres)
@@ -40,5 +40,14 @@ public class Equipo {
      */
     @Column(name = "nombre_lider", length = 50, nullable = true)
     private String lider;
+
+    /**
+     * @brief Implementación del método getId() de la interfaz IHasId.
+     * @return El idEquipo.
+     */
+    @Override
+    public Integer getId() {
+        return idEquipo;
+    }
 
 }

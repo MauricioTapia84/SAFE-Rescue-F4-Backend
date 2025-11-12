@@ -25,7 +25,7 @@ public class Comuna {
     @Column(name = "id_comuna")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Schema(description = "Identificador único de la comuna", example = "3")
-    private int idComuna;
+    private Integer idComuna;
 
     @Column(length = 100, nullable = false)
     @Schema(description = "Nombre oficial de la comuna", example = "Providencia", required = true, maxLength = 100)

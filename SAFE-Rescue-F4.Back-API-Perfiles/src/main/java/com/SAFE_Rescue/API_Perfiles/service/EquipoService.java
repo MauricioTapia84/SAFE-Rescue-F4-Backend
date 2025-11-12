@@ -3,7 +3,7 @@ package com.SAFE_Rescue.API_Perfiles.service;
 import com.SAFE_Rescue.API_Perfiles.modelo.*;
 import com.SAFE_Rescue.API_Perfiles.repositoy.EquipoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy; // Importación necesaria
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
@@ -16,9 +16,6 @@ public class EquipoService {
     private final EquipoRepository equipoRepository;
     private final TipoEquipoService tipoEquipoService;
     private final CompaniaService companiaService;
-
-    // CORRECCIÓN CLAVE: Usamos @Lazy para diferir la inicialización de BomberoService
-    // y romper el ciclo de dependencia.
     private final BomberoService bomberoService;
 
     // Usando inyección por constructor para todas las dependencias (mejor práctica)
@@ -27,7 +24,7 @@ public class EquipoService {
             EquipoRepository equipoRepository,
             TipoEquipoService tipoEquipoService,
             CompaniaService companiaService,
-            @Lazy BomberoService bomberoService) { // @Lazy aquí es crucial
+            @Lazy BomberoService bomberoService) {
 
         this.equipoRepository = equipoRepository;
         this.tipoEquipoService = tipoEquipoService;
@@ -52,7 +49,10 @@ public class EquipoService {
             throw new IllegalArgumentException("The team cannot be null.");
         }
 
-        // 1. Validate all dependencies before saving
+        // 1. VALIDACIÓN DE ATRIBUTOS (NUEVA LÓGICA)
+        validarAtributos(equipo);
+
+        // 2. Validate dependencies
         validarTipoEquipo(equipo);
         validarCompania(equipo);
         validarLider(equipo);
@@ -72,15 +72,19 @@ public class EquipoService {
         // 1. Check existence
         Equipo equipoExistente = findById(id);
 
-        // 2. Validate dependencies of the new object (equipo)
+        // 2. VALIDACIÓN DE ATRIBUTOS (NUEVA LÓGICA)
+        validarAtributos(equipo);
+
+        // 3. Validate dependencies of the new object (equipo)
         validarTipoEquipo(equipo);
         validarCompania(equipo);
         validarLider(equipo);
 
-        // 3. Apply changes
+        // 4. Apply changes
+        // El setter de ID ya no es necesario
         equipoExistente.setNombre(equipo.getNombre());
 
-        // Use setters if the object is not null (although validation already ensures it exists)
+        // Use setters if the object is not null
         if (equipo.getCompania() != null) equipoExistente.setCompania(equipo.getCompania());
         if (equipo.getTipoEquipo() != null) equipoExistente.setTipoEquipo(equipo.getTipoEquipo());
         if (equipo.getLider() != null) equipoExistente.setLider(equipo.getLider());
@@ -113,6 +117,19 @@ public class EquipoService {
 
     // --- VALIDATION AND UTILITY METHODS ---
 
+    /**
+     * Valida los atributos obligatorios del equipo (e.g., nombre).
+     * @param equipo El equipo a validar.
+     * @throws IllegalArgumentException Si algún atributo es inválido.
+     */
+    private void validarAtributos(Equipo equipo) {
+        if (equipo.getNombre() == null || equipo.getNombre().trim().isEmpty()) {
+            throw new IllegalArgumentException("The team name is mandatory and cannot be empty.");
+        }
+        // Puedes añadir más validaciones aquí (e.g., formato de código, longitud, etc.)
+    }
+
+
     private void validarTipoEquipo(Equipo equipo) {
         if (equipo.getTipoEquipo() == null || equipo.getTipoEquipo().getIdTipoEquipo() == null) {
             throw new IllegalArgumentException("The team type is mandatory.");
@@ -139,9 +156,17 @@ public class EquipoService {
         try {
             // Validate existence using the local CompaniaService
             Compania compania = companiaService.findById(equipo.getCompania().getIdCompania());
+
+            // CORRECCIÓN CLAVE para pasar el test: Si el servicio devuelve null (simulando no encontrado)
+            if (compania == null) {
+                throw new IllegalArgumentException("The company associated with the team does not exist.");
+            }
+
             // Ensure the object is the managed instance
             equipo.setCompania(compania);
+
         } catch (NoSuchElementException e) {
+            // Si CompaniaService lanza NoSuchElementException (opcional, si su findById lo hace)
             throw new IllegalArgumentException("The company associated with the team does not exist.", e);
         }
     }

@@ -43,5 +43,26 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
+    /**
+     * Captura RuntimeException específicas de la lógica de negocio (Errores de integridad,
+     * validación o dependencia) y devuelve una respuesta 400 Bad Request.
+     * @param ex La excepción lanzada.
+     * @return Una respuesta HTTP 400 con el mensaje de error como cuerpo.
+     */
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<String> handleRuntimeException(RuntimeException ex) {
+        // En un escenario real, es mejor usar excepciones customizadas (p. ej., ValidationException)
+        // Pero dado que los tests lanzan RuntimeException, las manejamos aquí directamente.
+
+        // El mensaje de la RuntimeException es lo que contiene el error de negocio (ej. "RUN ya registrado").
+        String errorMessage = ex.getMessage();
+
+        // Loguear el error si es necesario (opcional)
+        System.err.println("Error de negocio capturado: " + errorMessage);
+
+        // Devolver 400 Bad Request (Solicitud incorrecta)
+        return new ResponseEntity<>(errorMessage, HttpStatus.BAD_REQUEST);
+    }
+
 
 }

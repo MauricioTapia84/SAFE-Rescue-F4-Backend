@@ -1,12 +1,22 @@
 package com.SAFE_Rescue.API_Incidentes.modelo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.util.List;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
+/**
+ * Entidad que registra un Incidente reportado en el sistema, centralizando la información
+ * de ubicación, persona, tipo y estado mediante claves foráneas lógicas (IDs).
+ */
 @Entity
 @Table(name = "incidente") // Nombre de la tabla en la base de datos
 @NoArgsConstructor // Genera constructor sin argumentos
@@ -15,56 +25,70 @@ import java.util.List;
 public class Incidente {
 
     /**
-     * Identificador único del incidente
+     * Identificador único autoincremental del incidente.
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) // Auto-incremental
-    private int id;
+    private Integer idIncidente; // Cambiado a Integer para coincidir con el patrón de Usuario
 
     @Column(length = 50, nullable = false)
+    @NotBlank(message = "El título del incidente es obligatorio.") // Validación de aplicación
+    @Size(max = 50, message = "El título no puede exceder los 50 caracteres.") // Validación de aplicación
     private String titulo;
 
     @Column(length = 400, nullable = true)
+    @Size(max = 400, message = "El detalle no puede exceder los 400 caracteres.") // Validación de aplicación
     private String detalle;
 
     /**
-     * Tipo de incidente
-     * Relación uno-a-muchos
+     * Fecha y hora exacta en que se creó el registro de incidente.
+     */
+    @Column(name = "fecha_incidente", nullable = false)
+    @NotNull(message = "La fecha de registro es obligatoria.") // Validación de aplicación
+    @Schema(description = "Fecha y hora en que se registró el incidente", example = "2025-09-09T10:30:00")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss") // Incluye fecha y hora
+    private LocalDate fechaRegistro;
+
+    // --- CLAVE FORÁNEA JPA (ASUMIDO: Es una entidad local como TipoUsuario en el ejemplo) ---
+
+    /**
+     * Tipo de incidente (Relación JPA si es una entidad local).
      */
     @ManyToOne
-    @JoinColumn(name = "tipo_incidente_id", referencedColumnName = "id")
+    @JoinColumn(name = "tipo_incidente_id", referencedColumnName = "idTipoIncidente", nullable = false)
+    @NotNull(message = "El tipo de incidente es obligatorio.")
     private TipoIncidente tipoIncidente;
 
-    /**
-     * Ubicacion del incidente
-     * Relación uno-a-muchos
-     */
-    @ManyToOne
-    @JoinColumn(name = "ubicacion_id", referencedColumnName = "id")
-    private Ubicacion ubicacion;
+    // --- CLAVES FORÁNEAS LÓGICAS (Microservicios/DTOs) ---
 
     /**
-     * Ciudadano que reporta el incidente
-     * Relación uno-a-muchos
+     * ID de la Dirección/Ubicación del incidente (Referencia lógica).
      */
-    @ManyToOne
-    @JoinColumn(name = "ciudadano_id", referencedColumnName = "id")
-    private Ciudadano ciudadano;
+    @Column(name = "ubicacion_id", nullable = false) // Mapeo al nombre de columna original
+    @NotNull(message = "La ID de la ubicación del incidente es obligatoria.")
+    @Schema(description = "ID de la Ubicación (Clave foránea lógica)", required = true, example = "5")
+    private Integer idDireccion; // Reemplaza DireccionDTO
 
     /**
-     * Estado en el que se encuentra el incidente
-     * Relación uno-a-muchos
+     * ID del Usuario que reporta el incidente (Referencia lógica al ciudadano).
      */
-    @ManyToOne
-    @JoinColumn(name = "estado_incidente_id", referencedColumnName = "id")
-    private EstadoIncidente estadoIncidente;
+    @Column(name = "ciudadano_id", nullable = false) // Mapeo al nombre de columna original
+    @NotNull(message = "La ID del ciudadano que reporta es obligatoria.")
+    @Schema(description = "ID del Ciudadano (Clave foránea lógica)", required = true, example = "10")
+    private Integer idCiudadano; // Reemplaza UsuarioDTO
 
     /**
-     * Equipo asignado al equipo
-     * Relación uno-a-muchos
+     * ID del Estado actual del incidente (Referencia lógica).
      */
-    @ManyToOne
-    @JoinColumn(name = "equipo_id", referencedColumnName = "id")
-    private Equipo equipo;
+    @Column(name = "estado_incidente_id", nullable = false) // Mapeo al nombre de columna original
+    @NotNull(message = "La ID del estado del incidente es obligatoria.")
+    @Schema(description = "ID del Estado del Incidente (Clave foránea lógica)", required = true, example = "1")
+    private Integer idEstadoIncidente; // Reemplaza EstadoDTO
 
+    /**
+     * ID del Equipo asignado al incidente (Referencia lógica).
+     */
+    @Column(name = "equipo_id", nullable = true) // Mapeo al nombre de columna original, puede ser nulo
+    @Schema(description = "ID del Equipo asignado (Clave foránea lógica)")
+    private Integer idEquipo; // Reemplaza EquipoDTO
 }

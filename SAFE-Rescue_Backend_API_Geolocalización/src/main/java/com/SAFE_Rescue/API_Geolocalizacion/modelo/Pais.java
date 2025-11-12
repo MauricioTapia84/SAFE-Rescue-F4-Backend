@@ -23,7 +23,7 @@ public class Pais {
     @Column(name = "id_pais")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Schema(description = "Identificador único del país", example = "1")
-    private int idPais;
+    private Integer idPais;
 
     @Column(length = 50, nullable = false)
     @Schema(description = "Nombre oficial del país", example = "Chile", required = true, maxLength = 50)

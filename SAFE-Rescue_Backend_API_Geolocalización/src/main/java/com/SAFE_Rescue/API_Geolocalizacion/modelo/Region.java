@@ -25,7 +25,7 @@ public class Region {
     @Column(name = "id_region")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Schema(description = "Identificador único de la región", example = "13")
-    private int idRegion;
+    private Integer idRegion;
 
     @Column(length = 100, nullable = false)
     @Schema(description = "Nombre oficial de la región", example = "Metropolitana de Santiago", required = true, maxLength = 100)

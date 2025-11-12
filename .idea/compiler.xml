@@ -9,7 +9,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="API-Comunicacion" />
       </profile>
-      <profile name="Annotation profile for API_Perfiles" enabled="true">
+      <profile name="Annotation profile for API_Incidentes" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -17,10 +17,18 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.38/lombok-1.18.38.jar" />
         </processorPath>
         <module name="API_Perfiles" />
-        <module name="API_Geolocalizacion" />
-        <module name="API_Donaciones" />
         <module name="API_Incidentes" />
         <module name="API_Registros" />
+      </profile>
+      <profile name="Annotation profile for API_Geolocalizacion" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.42/lombok-1.18.42.jar" />
+        </processorPath>
+        <module name="API_Geolocalizacion" />
+        <module name="API_Donaciones" />
       </profile>
     </annotationProcessing>
   </component>

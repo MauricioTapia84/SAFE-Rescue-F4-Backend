@@ -1,3 +1,16 @@
+❚❙❘ VERSIÓN 0.0.4
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Corrección de errores de web client de la api perfiles
+├─• Corrección de test de Api perfiles
+├─• Implementación de test de Api Registros
+├─• Se corrige el dataloader de Api perfiles
+├─• Se implementa la lógica y web client de la api de Incidentes
+└─• Se inician las pruebas unitarias de incidentes
+
+->>> Terminar pruebas unitarias de api de incidentes
+
+
+
 ❚❙❘ VERSIÓN 0.0.3
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Se solucionan problemas de Web client

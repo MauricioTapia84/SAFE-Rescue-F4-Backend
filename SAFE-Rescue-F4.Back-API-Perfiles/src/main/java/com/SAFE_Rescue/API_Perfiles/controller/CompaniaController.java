@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 @RestController
-@RequestMapping("/api/v1/companias")
+@RequestMapping("/api-perfiles/v1/companias")
 @Tag(name = "Compañías", description = "Gestión de las entidades de Compañías de Bomberos")
 public class CompaniaController {
 

@@ -114,8 +114,10 @@ public class CategoriaController {
             categoriaService.save(categoria);
             return ResponseEntity.status(HttpStatus.CREATED).body("Categoría creada con éxito.");
         } catch (RuntimeException e) {
+            // Maneja excepciones de negocio (Runtime) y las mapea a 400 Bad Request
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
+            // Maneja cualquier otra excepción como 500 Internal Server Error
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor.");
         }
     }
@@ -144,8 +146,10 @@ public class CategoriaController {
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Categoría no encontrada.");
         } catch (RuntimeException e) {
+            // Maneja excepciones de negocio (Runtime) y las mapea a 400 Bad Request
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
+            // Maneja cualquier otra excepción como 500 Internal Server Error
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor.");
         }
     }
@@ -170,7 +174,11 @@ public class CategoriaController {
             return ResponseEntity.ok("Categoría eliminada con éxito.");
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Categoría no encontrada.");
+        } catch (RuntimeException e) {
+            // CORRECCIÓN APLICADA: Ahora las excepciones de negocio (RuntimeException) devuelven 400
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
+            // Maneja cualquier otra excepción como 500 Internal Server Error
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor.");
         }
     }

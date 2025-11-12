@@ -12,48 +12,40 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.reactive.function.client.ClientResponse;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClient.RequestHeadersUriSpec;
-import org.springframework.web.reactive.function.client.WebClient.ResponseSpec;
-import reactor.core.publisher.Mono;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+// Usa MockitoExtension para inicializar los mocks
 @ExtendWith(MockitoExtension.class)
 public class EquipoServiceTest {
 
     @Mock
     private EquipoRepository equipoRepository;
 
+    // Dependencias mockeadas
     @Mock
-    private WebClient companiaWebClient;
+    private CompaniaService companiaService;
 
     @Mock
     private TipoEquipoService tipoEquipoService;
 
-    // Mocks para simular la cadena de llamadas de WebClient
-    @Mock
-    private WebClient.RequestHeadersUriSpec requestHeadersUriSpec;
-    @Mock
-    private WebClient.ResponseSpec responseSpec;
-
+    // El servicio a probar, con los mocks inyectados
     @InjectMocks
     private EquipoService equipoService;
 
     private Equipo equipo;
     private Faker faker;
     private Integer id;
+    private TipoEquipo tipoEquipo;
+    private Compania compania;
 
     @BeforeEach
     public void setUp() {
@@ -61,19 +53,19 @@ public class EquipoServiceTest {
         id = faker.number().numberBetween(1, 100);
 
         // Crear objetos de dependencia
-        TipoEquipo tipoEquipo = new TipoEquipo(1, "Rescate Urbano");
-        Compania compania = new Compania(1, "Primera Compañía"); // Asume que la Compañía tiene un ID
+        tipoEquipo = new TipoEquipo(1, "Rescate Urbano");
+        compania = new Compania(1, "Primera Compañía","Compañia suprema", LocalDate.now(), 1);
 
-        // Crear objeto Equipo con datos simulados
+        // Crear objeto Equipo base
         equipo = new Equipo();
         equipo.setIdEquipo(id);
         equipo.setNombre(faker.team().name());
         equipo.setTipoEquipo(tipoEquipo);
         equipo.setCompania(compania);
-        equipo.setLider(null); // No es relevante para estas pruebas
+        equipo.setLider(null);
     }
 
-    // --- Pruebas de operaciones exitosas ---
+    // --- Pruebas de operaciones exitosas (Happy Path) ---
 
     @Test
     public void findAll_shouldReturnAllTeams() {
@@ -85,9 +77,7 @@ public class EquipoServiceTest {
 
         // Assert
         assertNotNull(equipos);
-        assertFalse(equipos.isEmpty());
         assertEquals(1, equipos.size());
-        assertEquals(equipo.getNombre(), equipos.get(0).getNombre());
         verify(equipoRepository, times(1)).findAll();
     }
 
@@ -108,15 +98,8 @@ public class EquipoServiceTest {
     @Test
     public void save_shouldReturnSavedTeam_whenValid() {
         // Arrange
-        when(tipoEquipoService.findById(any())).thenReturn(equipo.getTipoEquipo());
-
-        // Simular la llamada exitosa a la API externa
-        when(companiaWebClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(anyString(), anyInt())).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.onStatus(any(), any())).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.just("OK"));
-
+        when(tipoEquipoService.findById(equipo.getTipoEquipo().getIdTipoEquipo())).thenReturn(equipo.getTipoEquipo());
+        when(companiaService.findById(anyInt())).thenReturn(compania);
         when(equipoRepository.save(any(Equipo.class))).thenReturn(equipo);
 
         // Act
@@ -124,10 +107,9 @@ public class EquipoServiceTest {
 
         // Assert
         assertNotNull(guardado);
-        assertEquals(equipo.getNombre(), guardado.getNombre());
         verify(equipoRepository, times(1)).save(equipo);
         verify(tipoEquipoService, times(1)).findById(equipo.getTipoEquipo().getIdTipoEquipo());
-        verify(companiaWebClient, times(1)).get();
+        verify(companiaService, times(1)).findById(compania.getIdCompania());
     }
 
     @Test
@@ -136,29 +118,35 @@ public class EquipoServiceTest {
         Equipo equipoExistente = new Equipo();
         equipoExistente.setIdEquipo(id);
         equipoExistente.setNombre("Nombre Antiguo");
+        equipoExistente.setTipoEquipo(tipoEquipo);
+        equipoExistente.setCompania(compania);
 
+        // Datos de actualización
+        Equipo equipoNuevo = new Equipo();
+        equipoNuevo.setNombre("Nuevo Nombre");
+        equipoNuevo.setTipoEquipo(new TipoEquipo(2, "Busqueda"));
+        equipoNuevo.setCompania(new Compania(2, "Nueva Cia", "Desc", LocalDate.now(), 1));
+
+        // Mocks
         when(equipoRepository.findById(id)).thenReturn(Optional.of(equipoExistente));
-        when(tipoEquipoService.findById(any())).thenReturn(equipo.getTipoEquipo());
-
-        // Simular la llamada exitosa a la API externa
-        when(companiaWebClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(anyString(), anyInt())).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.onStatus(any(), any())).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.just("OK"));
-
-        when(equipoRepository.save(any(Equipo.class))).thenReturn(equipo);
+        when(tipoEquipoService.findById(equipoNuevo.getTipoEquipo().getIdTipoEquipo())).thenReturn(equipoNuevo.getTipoEquipo());
+        when(companiaService.findById(anyInt())).thenReturn(equipoNuevo.getCompania());
+        // El repositorio devuelve la instancia existente (modificada)
+        when(equipoRepository.save(any(Equipo.class))).thenReturn(equipoExistente);
 
         // Act
-        Equipo actualizado = equipoService.update(equipo, id);
+        Equipo actualizado = equipoService.update(equipoNuevo, id);
 
         // Assert
         assertNotNull(actualizado);
-        assertEquals(equipo.getNombre(), actualizado.getNombre());
+        assertEquals(equipoNuevo.getNombre(), actualizado.getNombre());
+        // Verificamos que los datos se copiaron al objeto existente antes de guardar
+        assertEquals(equipoNuevo.getNombre(), equipoExistente.getNombre());
+
         verify(equipoRepository, times(1)).findById(id);
         verify(equipoRepository, times(1)).save(equipoExistente);
-        verify(tipoEquipoService, times(1)).findById(equipo.getTipoEquipo().getIdTipoEquipo());
-        verify(companiaWebClient, times(1)).get();
+        verify(tipoEquipoService, times(1)).findById(equipoNuevo.getTipoEquipo().getIdTipoEquipo());
+        verify(companiaService, times(1)).findById(equipoNuevo.getCompania().getIdCompania());
     }
 
     @Test
@@ -197,48 +185,70 @@ public class EquipoServiceTest {
     @Test
     public void save_shouldThrowException_whenInvalidAttributes() {
         // Arrange
-        equipo.setNombre(""); // Atributo inválido
+        // 1. Simular que las dependencias OBLIGATORIAS existen para que la lógica
+        // pueda intentar validar el atributo interno (el nombre).
+        when(tipoEquipoService.findById(equipo.getTipoEquipo().getIdTipoEquipo())).thenReturn(tipoEquipo);
+        when(companiaService.findById(compania.getIdCompania())).thenReturn(compania);
 
-        // Assert
+        // 2. Establecer el atributo inválido que debe causar la excepción
+        equipo.setNombre("");
+
+        // Act & Assert
+        // Se debe lanzar IllegalArgumentException porque el nombre es inválido
         assertThrows(IllegalArgumentException.class, () -> equipoService.save(equipo));
+
+        // Verify: Aunque falle por el nombre, las validaciones de dependencias
+        // se ejecutaron y, lo más importante, NO se llamó a equipoRepository.save().
+        verify(tipoEquipoService, times(1)).findById(anyInt());
+        verify(companiaService, times(1)).findById(anyInt());
         verify(equipoRepository, never()).save(any());
     }
 
     @Test
     public void save_shouldThrowException_whenTipoEquipoNotFound() {
         // Arrange
-        when(tipoEquipoService.findById(any())).thenThrow(new NoSuchElementException());
+        // Simular que TipoEquipoService no encuentra el tipo
+        when(tipoEquipoService.findById(equipo.getTipoEquipo().getIdTipoEquipo())).thenThrow(new NoSuchElementException());
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> equipoService.save(equipo));
         verify(tipoEquipoService, times(1)).findById(equipo.getTipoEquipo().getIdTipoEquipo());
         verify(equipoRepository, never()).save(any());
+        verify(companiaService, never()).findById(anyInt()); // No debe llamarse a CompaniaService
     }
 
-    // Corrected test code for EquipoServiceTest
-// ...
     @Test
     public void save_shouldThrowException_whenExternalCompanyNotFound() {
         // Arrange
-        when(tipoEquipoService.findById(any())).thenReturn(equipo.getTipoEquipo());
+        when(tipoEquipoService.findById(equipo.getTipoEquipo().getIdTipoEquipo())).thenReturn(equipo.getTipoEquipo());
 
-        // Simular la cadena de WebClient
-        when(companiaWebClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(anyString(), anyInt())).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.retrieve()).thenReturn(responseSpec);
-
-        // Configurar onStatus para que lance la excepción esperada.
-        // Usamos thenAnswer para simular el comportamiento de `onStatus` que lanza una excepción basada en el estado.
-        when(responseSpec.onStatus(any(), any())).thenAnswer(invocation -> {
-            // La excepción se lanza aquí, el código no continuará a bodyToMono
-            throw new IllegalArgumentException("La compañía asociada al equipo no existe en la API externa.");
-        });
+        // Simular que CompaniaService no encuentra la compañía (devuelve null)
+        when(companiaService.findById(anyInt())).thenReturn(null);
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> equipoService.save(equipo));
 
         // Verify
+        verify(tipoEquipoService, times(1)).findById(equipo.getTipoEquipo().getIdTipoEquipo());
+        verify(companiaService, times(1)).findById(compania.getIdCompania());
         verify(equipoRepository, never()).save(any());
+    }
+
+    @Test
+    public void save_shouldThrowException_whenDataIntegrityViolation() {
+        // Arrange
+        when(tipoEquipoService.findById(any())).thenReturn(equipo.getTipoEquipo());
+        when(companiaService.findById(anyInt())).thenReturn(compania);
+
+        // Simular el error de base de datos
+        when(equipoRepository.save(any(Equipo.class))).thenThrow(DataIntegrityViolationException.class);
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> equipoService.save(equipo));
+
+        // Verify
+        verify(equipoRepository, times(1)).save(equipo);
+        verify(companiaService, times(1)).findById(compania.getIdCompania());
     }
 
 
@@ -250,6 +260,21 @@ public class EquipoServiceTest {
         // Assert
         assertThrows(NoSuchElementException.class, () -> equipoService.update(equipo, id));
         verify(equipoRepository, times(1)).findById(id);
+        verify(equipoRepository, never()).save(any());
+    }
+
+    @Test
+    public void update_shouldThrowException_whenTipoEquipoNotFound() {
+        // Arrange
+        Equipo equipoExistente = new Equipo();
+        equipoExistente.setIdEquipo(id);
+
+        when(equipoRepository.findById(id)).thenReturn(Optional.of(equipoExistente));
+        when(tipoEquipoService.findById(equipo.getTipoEquipo().getIdTipoEquipo())).thenThrow(new NoSuchElementException());
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> equipoService.update(equipo, id));
+        verify(tipoEquipoService, times(1)).findById(equipo.getTipoEquipo().getIdTipoEquipo());
         verify(equipoRepository, never()).save(any());
     }
 

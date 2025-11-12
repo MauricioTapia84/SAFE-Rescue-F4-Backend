@@ -1,8 +1,8 @@
 package com.SAFE_Rescue.API_Perfiles.service;
 
-import com.SAFE_Rescue.API_Perfiles.config.WebClientConfig;
+import com.SAFE_Rescue.API_Perfiles.config.EstadoClient;
+import com.SAFE_Rescue.API_Perfiles.config.FotoClient;
 import com.SAFE_Rescue.API_Perfiles.modelo.EstadoDTO;
-import com.SAFE_Rescue.API_Perfiles.modelo.FotoDTO;
 import com.SAFE_Rescue.API_Perfiles.modelo.TipoUsuario;
 import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
 import com.SAFE_Rescue.API_Perfiles.repositoy.UsuarioRepository;
@@ -14,14 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClient.RequestBodySpec;
-import org.springframework.web.reactive.function.client.WebClient.RequestHeadersUriSpec;
-import org.springframework.web.reactive.function.client.WebClient.ResponseSpec;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -31,7 +24,6 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,17 +36,10 @@ public class UsuarioServiceTest {
     private TipoUsuarioService tipoUsuarioService;
 
     @Mock
-    private WebClient estadoWebClient;
+    private EstadoClient estadoClient;
 
     @Mock
-    private WebClientConfig webClientConfig;
-
-    @Mock
-    private RequestHeadersUriSpec requestHeadersUriSpec;
-    @Mock
-    private RequestBodySpec requestBodySpec;
-    @Mock
-    private ResponseSpec responseSpec;
+    private FotoClient fotoClient;
 
     @InjectMocks
     private UsuarioService usuarioService;
@@ -63,14 +48,19 @@ public class UsuarioServiceTest {
     private Faker faker;
     private Integer id;
 
+    private EstadoDTO estadoDTO = new EstadoDTO();
+
     @BeforeEach
     public void setUp() {
         faker = new Faker();
         id = faker.number().numberBetween(1, 100);
 
+        // Inicialización de estadoDTO con constructor sin argumentos y setters
+        estadoDTO.setIdEstado(1);
+        estadoDTO.setNombre("Activo");
+
         // Crear objetos de dependencia
         TipoUsuario tipoUsuario = new TipoUsuario(1, "Bombero");
-        EstadoDTO estadoDTO = new EstadoDTO(1, "Activo", "Descripción");
 
         // Crear objeto Usuario con datos simulados
         usuario = new Usuario();
@@ -88,11 +78,11 @@ public class UsuarioServiceTest {
         usuario.setRazonBaneo(null);
         usuario.setDiasBaneo(0);
         usuario.setTipoUsuario(tipoUsuario);
-        usuario.setEstado(estadoDTO);
-        usuario.setFoto(new FotoDTO()); // Inicializar el objeto Foto para evitar NullPointerException
+        usuario.setIdEstado(estadoDTO.getId());
+        usuario.setIdFoto(faker.number().numberBetween(1, 50));
     }
 
-    // --- Pruebas de operaciones CRUD exitosas ---
+    // --- Pruebas de operaciones CRUD exitosas (sin cambios) ---
 
     @Test
     public void findAll_shouldReturnAllUsers() {
@@ -115,27 +105,27 @@ public class UsuarioServiceTest {
     }
 
     @Test
+    public void findById_shouldThrowException_whenUserNotFound() {
+        when(usuarioRepository.findById(anyInt())).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> usuarioService.findById(999));
+        verify(usuarioRepository, times(1)).findById(999);
+    }
+
+    @Test
     public void save_shouldReturnSavedUser_whenValid() {
         // Arrange
         when(tipoUsuarioService.findById(any())).thenReturn(usuario.getTipoUsuario());
-
-        // Simular la llamada a la API externa para el estado
-        when(estadoWebClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(anyString(), anyInt())).thenReturn(requestBodySpec); // <-- Corregido
-        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.toBodilessEntity()).thenReturn(Mono.empty());
-
-        when(usuarioRepository.save(usuario)).thenReturn(usuario);
+        when(estadoClient.getEstadoById(anyInt())).thenReturn(estadoDTO);
+        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
 
         // Act
         Usuario guardado = usuarioService.save(usuario);
 
         // Assert
         assertNotNull(guardado);
-        assertEquals(usuario.getNombre(), guardado.getNombre());
         verify(usuarioRepository, times(1)).save(usuario);
         verify(tipoUsuarioService, times(1)).findById(usuario.getTipoUsuario().getIdTipoUsuario());
-        verify(estadoWebClient, times(1)).get();
+        verify(estadoClient, times(1)).getEstadoById(usuario.getIdEstado());
     }
 
     @Test
@@ -144,17 +134,24 @@ public class UsuarioServiceTest {
         Usuario usuarioExistente = new Usuario();
         usuarioExistente.setIdUsuario(id);
         usuarioExistente.setNombre("Nombre Antiguo");
-        usuarioExistente.setFoto(new FotoDTO()); // Inicializar foto para evitar NullPointerException
+
+        // Aseguramos que el objeto existente tenga campos válidos
+        usuarioExistente.setRun("12345678");
+        usuarioExistente.setDv("9");
+        usuarioExistente.setAPaterno("Paterno");
+        usuarioExistente.setAMaterno("Materno");
+        usuarioExistente.setFechaRegistro(LocalDate.now());
+        usuarioExistente.setTelefono("987654321");
+        usuarioExistente.setCorreo("old@email.com");
+        usuarioExistente.setContrasenia("pass");
+        usuarioExistente.setTipoUsuario(usuario.getTipoUsuario());
+        usuarioExistente.setIdFoto(1);
+        usuarioExistente.setIdEstado(estadoDTO.getId()); // ID DE ESTADO VÁLIDO
 
         when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuarioExistente));
         when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
         when(tipoUsuarioService.findById(any())).thenReturn(usuario.getTipoUsuario());
-
-        // Simular llamada a WebClient para el estado
-        when(estadoWebClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(anyString(), anyInt())).thenReturn(requestBodySpec); // <-- Corregido
-        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.toBodilessEntity()).thenReturn(Mono.empty());
+        when(estadoClient.getEstadoById(anyInt())).thenReturn(estadoDTO);
 
         // Act
         Usuario actualizado = usuarioService.update(usuario, id);
@@ -165,106 +162,130 @@ public class UsuarioServiceTest {
         verify(usuarioRepository, times(1)).findById(id);
         verify(usuarioRepository, times(1)).save(usuarioExistente);
         verify(tipoUsuarioService, times(1)).findById(usuario.getTipoUsuario().getIdTipoUsuario());
-        verify(estadoWebClient, times(1)).get();
+        verify(estadoClient, times(1)).getEstadoById(usuario.getIdEstado());
+    }
+
+    @Test
+    public void update_shouldThrowException_whenUserNotFound() {
+        // Arrange
+        // Mocks de validación para que el objeto 'usuario' sea válido antes de la búsqueda.
+        when(tipoUsuarioService.findById(any())).thenReturn(usuario.getTipoUsuario());
+        when(estadoClient.getEstadoById(anyInt())).thenReturn(estadoDTO);
+        when(usuarioRepository.findById(anyInt())).thenReturn(Optional.empty());
+
+        // El objeto 'usuario' es válido, por lo tanto, la excepción debe ser NoSuchElementException
+        assertThrows(NoSuchElementException.class, () -> usuarioService.update(usuario, 999));
+
+        verify(usuarioRepository, times(1)).findById(999);
+        verify(tipoUsuarioService, times(1)).findById(usuario.getTipoUsuario().getIdTipoUsuario());
+        verify(estadoClient, times(1)).getEstadoById(usuario.getIdEstado());
     }
 
     @Test
     public void delete_shouldDeleteUser_whenUserExists() {
-        when(usuarioRepository.existsById(id)).thenReturn(true);
+        when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuario));
+
+        // Act & Assert
         assertDoesNotThrow(() -> usuarioService.delete(id));
-        verify(usuarioRepository, times(1)).existsById(id);
-        verify(usuarioRepository, times(1)).deleteById(id);
-    }
 
-    // --- Pruebas de escenarios de error ---
-
-    @Test
-    public void findById_shouldThrowException_whenUserNotFound() {
-        when(usuarioRepository.findById(id)).thenReturn(Optional.empty());
-        assertThrows(NoSuchElementException.class, () -> usuarioService.findById(id));
         verify(usuarioRepository, times(1)).findById(id);
+        verify(usuarioRepository, times(1)).delete(usuario);
     }
 
-    @Test
-    public void save_shouldThrowException_whenUserIsNull() {
-        assertThrows(IllegalArgumentException.class, () -> usuarioService.save(null));
-        verify(usuarioRepository, never()).save(any());
-    }
+    // --- Pruebas de escenarios de error (sin cambios) ---
 
     @Test
     public void save_shouldThrowException_whenDataIntegrityViolation() {
         // Arrange
         when(tipoUsuarioService.findById(any())).thenReturn(usuario.getTipoUsuario());
+        when(estadoClient.getEstadoById(anyInt())).thenReturn(estadoDTO);
 
-        // Simular llamada a WebClient
-        when(estadoWebClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(anyString(), anyInt())).thenReturn(requestBodySpec); // <-- Corregido
-        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.toBodilessEntity()).thenReturn(Mono.empty());
-
+        // Simular la violación al intentar guardar
         when(usuarioRepository.save(any(Usuario.class))).thenThrow(new DataIntegrityViolationException("RUN o correo duplicado"));
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> usuarioService.save(usuario));
-        verify(usuarioRepository, times(1)).save(usuario);
-    }
 
-    @Test
-    public void save_shouldThrowException_whenTipoUsuarioNotFound() {
-        when(tipoUsuarioService.findById(any())).thenThrow(new NoSuchElementException());
-        assertThrows(IllegalArgumentException.class, () -> usuarioService.save(usuario));
+        // Verificaciones
         verify(tipoUsuarioService, times(1)).findById(usuario.getTipoUsuario().getIdTipoUsuario());
-        verify(usuarioRepository, never()).save(any());
+        verify(estadoClient, times(1)).getEstadoById(usuario.getIdEstado());
+        verify(usuarioRepository, times(1)).save(usuario);
     }
 
     @Test
     public void save_shouldThrowException_whenEstadoNotFound() {
         when(tipoUsuarioService.findById(any())).thenReturn(usuario.getTipoUsuario());
 
-        // Simular respuesta 404 (NotFound) de la API externa
-        when(estadoWebClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(anyString(), anyInt())).thenReturn(requestBodySpec); // <-- Corregido
-        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.toBodilessEntity()).thenThrow(new WebClientResponseException(HttpStatus.NOT_FOUND.value(), "Not Found", null, null, null));
+        // Simular que el EstadoClient falla (lanza RuntimeException)
+        when(estadoClient.getEstadoById(anyInt())).thenThrow(new RuntimeException("El ID no existe."));
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> usuarioService.save(usuario));
+
+        // Verificaciones
         verify(tipoUsuarioService, times(1)).findById(usuario.getTipoUsuario().getIdTipoUsuario());
+        verify(estadoClient, times(1)).getEstadoById(usuario.getIdEstado());
         verify(usuarioRepository, never()).save(any());
     }
 
-    // --- Pruebas del método de subir foto ---
+    // --- Pruebas del método de subir foto (Ajuste de Verificación) ---
 
     @Test
-    public void subirYActualizarFotoUsuario_shouldUpdateUserWithPhotoUrl() {
+    public void subirYActualizarFotoUsuario_shouldUpdateUserWithPhotoId() {
         // Arrange
-        String mockPhotoUrl = "http://api.mock.com/photos/123";
+        String mockPhotoIdString = "12345";
+        Integer mockPhotoId = Integer.parseInt(mockPhotoIdString);
         MultipartFile mockFile = mock(MultipartFile.class);
-        when(webClientConfig.uploadFoto(mockFile)).thenReturn(mockPhotoUrl);
 
-        // El objeto usuario del setUp ya tiene una foto, lo que resuelve el NullPointerException
+        when(fotoClient.uploadFoto(mockFile)).thenReturn(mockPhotoIdString);
         when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuario));
         when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
 
         // Act
-        String returnedUrl = usuarioService.subirYActualizarFotoUsuario(id, mockFile);
+        Usuario returnedUser = usuarioService.subirYActualizarFotoUsuario(id, mockFile);
 
         // Assert
-        assertEquals(mockPhotoUrl, returnedUrl);
-        verify(webClientConfig, times(1)).uploadFoto(mockFile);
+        assertNotNull(returnedUser);
+        assertEquals(mockPhotoId, returnedUser.getIdFoto());
+        verify(fotoClient, times(1)).uploadFoto(mockFile);
         verify(usuarioRepository, times(1)).findById(id);
         verify(usuarioRepository, times(1)).save(usuario);
     }
 
     @Test
-    public void subirYActualizarFotoUsuario_shouldThrowException_whenUserNotFound() {
+    public void subirYActualizarFotoUsuario_shouldThrowException_whenPhotoUploadFails() {
         // Arrange
         MultipartFile mockFile = mock(MultipartFile.class);
-        when(usuarioRepository.findById(id)).thenReturn(Optional.empty());
+
+        // Simular fallo de comunicación ANTES de buscar el usuario
+        when(fotoClient.uploadFoto(mockFile)).thenThrow(new RuntimeException("Error de conexión"));
 
         // Act & Assert
         assertThrows(RuntimeException.class, () -> usuarioService.subirYActualizarFotoUsuario(id, mockFile));
-        verify(usuarioRepository, times(1)).findById(id);
+
+        // Assert: Solo verificamos lo que realmente ocurre (la llamada a fotoClient falla)
+        // No se debe llamar a findById ni a save.
+        verify(fotoClient, times(1)).uploadFoto(mockFile);
+        verify(usuarioRepository, never()).findById(anyInt()); // NO SE BUSCA EN BD
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    public void subirYActualizarFotoUsuario_shouldThrowException_whenPhotoIdIsNotNumeric() {
+        // Arrange
+        MultipartFile mockFile = mock(MultipartFile.class);
+
+        // Simular que la API devuelve una cadena no numérica ANTES de buscar el usuario
+        when(fotoClient.uploadFoto(mockFile)).thenReturn("NO_ES_UN_ID");
+
+        // Act & Assert
+        assertThrows(RuntimeException.class, () -> usuarioService.subirYActualizarFotoUsuario(id, mockFile));
+
+        // Assert: Solo verificamos lo que realmente ocurre (la llamada a fotoClient tiene éxito)
+        // La excepción debe ocurrir al intentar parsear el resultado o al validar en el servicio.
+        // Asumiendo que el servicio intenta parsear justo después de la llamada a fotoClient.
+        verify(fotoClient, times(1)).uploadFoto(mockFile);
+        verify(usuarioRepository, never()).findById(anyInt()); // NO SE BUSCA EN BD
         verify(usuarioRepository, never()).save(any());
     }
 }

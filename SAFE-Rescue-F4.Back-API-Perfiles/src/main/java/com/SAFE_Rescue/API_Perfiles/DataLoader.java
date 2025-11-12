@@ -1,26 +1,25 @@
 package com.SAFE_Rescue.API_Perfiles;
 
+import com.SAFE_Rescue.API_Perfiles.config.GeolocalizacionClient;
+import com.SAFE_Rescue.API_Perfiles.config.FotoClient;
+import com.SAFE_Rescue.API_Perfiles.config.EstadoClient;
 import com.SAFE_Rescue.API_Perfiles.modelo.*;
 import com.SAFE_Rescue.API_Perfiles.repositoy.*;
 import net.datafaker.Faker;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Componente de carga de datos de prueba para el entorno "dev".
- * Simula la persistencia de entidades nativas y la referencia a DTOs de microservicios externos
- * mediante IDs (Claves Foráneas Lógicas).
- * * Corrección aplicada: Se valida que idDireccion no sea nulo al crear Compañías.
+ * Utiliza clientes dedicados para APIs externas (Geolocalización, Fotos, Estado)
+ * con fallbacks robustos para entornos de desarrollo.
  */
 @Profile("dev")
 @Component
@@ -34,14 +33,13 @@ public class DataLoader implements CommandLineRunner {
     @Autowired private EquipoRepository equipoRepository;
     @Autowired private CompaniaRepository companiaRepository;
 
-    // WebClients para APIs externas inyectados (asumidos desde la configuración)
-    @Autowired private WebClient estadoWebClient;
+    // CLIENTES DEDICADOS PARA APIS EXTERNAS
+    // ------------------------------------
+    @Autowired private EstadoClient estadoClient;
+    @Autowired private GeolocalizacionClient geolocalizacionClient;
+    @Autowired private FotoClient fotoClient;
+    // ------------------------------------
 
-    @Autowired
-    @Qualifier("geolocalizacionWebClient")
-    private WebClient direccionWebClient;
-
-    // @Autowired private WebClient fotoWebClient;
 
     private final Faker faker = new Faker(new Locale("es"));
     private final Set<String> uniqueRuns = new HashSet<>();
@@ -61,16 +59,15 @@ public class DataLoader implements CommandLineRunner {
             List<TipoEquipo> tiposEquipo = crearTiposEquipo();
 
             // 2. Obtener DTOs de APIs externas
-            List<EstadoDTO> estadoDTOS = obtenerEntidadesExternas(estadoWebClient, "", EstadoDTO.class);
-            List<DireccionDTO> direccionDTOS = obtenerEntidadesExternas(direccionWebClient, "", DireccionDTO.class);
+            List<EstadoDTO> estadoDTOS = obtenerEstados();
+            List<DireccionDTO> direccionDTOS = geolocalizacionClient.getAllDirecciones();
 
-            // Verificación mínima de pre-requisitos
-            if (tiposUsuario.isEmpty() || tiposEquipo.isEmpty() || estadoDTOS.isEmpty()) {
+            if (tiposUsuario.isEmpty() || tiposEquipo.isEmpty() || estadoDTOS == null || estadoDTOS.isEmpty()) {
                 System.err.println("Error: No se pudieron obtener entidades de catálogo o estados. Deteniendo la carga.");
                 return;
             }
 
-            if (direccionDTOS.isEmpty()) {
+            if (direccionDTOS == null || direccionDTOS.isEmpty()) {
                 System.err.println("Advertencia: No se pudieron obtener Direcciones de la API externa. Se usarán IDs simulados para idDireccion.");
             }
 
@@ -89,11 +86,22 @@ public class DataLoader implements CommandLineRunner {
             crearUsuarios(tiposUsuario, estadoDTOS, equipos);
 
             System.out.println("Carga de datos finalizada.");
+
+        } catch (WebClientResponseException e) {
+            System.err.println("Error de respuesta de API durante la carga: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
+            e.printStackTrace();
         } catch (Exception e) {
             System.err.println("Un error inesperado ocurrió durante la carga de datos: " + e.getMessage());
             e.printStackTrace();
         }
     }
+
+    // --- Métodos de utilidad de APIs Externas ---
+
+    private List<EstadoDTO> obtenerEstados() {
+        return estadoClient.getAllEstados();
+    }
+
 
     // --- Métodos para crear entidades locales ---
 
@@ -126,14 +134,13 @@ public class DataLoader implements CommandLineRunner {
 
     /**
      * Crea entidades nativas Compania, asociándoles el ID de un DireccionDTO.
-     * ** CORRECCIÓN APLICADA AQUÍ **
      */
     private List<Compania> crearCompanias(List<DireccionDTO> direccionDTOS) {
         if (companiaRepository.count() > 0) return companiaRepository.findAll();
 
         List<Compania> companias = new ArrayList<>();
         int numCompanias = 10;
-        int direccionDTOSize = direccionDTOS.size();
+        int direccionDTOSize = (direccionDTOS != null) ? direccionDTOS.size() : 0;
 
         for (int i = 0; i < numCompanias; i++) {
             Compania compania = new Compania();
@@ -141,29 +148,28 @@ public class DataLoader implements CommandLineRunner {
             compania.setNombre(faker.company().name());
             compania.setCodigo(faker.code().asin());
 
-            // Conversión de java.util.Date a java.time.LocalDate
             java.util.Date pastDate = Date.from(faker.timeAndDate().past(20, java.util.concurrent.TimeUnit.DAYS));
             compania.setFechaFundacion(pastDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
 
-            // ASIGNACIÓN DE CLAVE FORÁNEA LÓGICA
+            // ASIGNACIÓN DE CLAVE FORÁNEA LÓGICA (ID de Dirección)
             Integer direccionId;
 
             if (direccionDTOSize > 0) {
-                // 1. Intentar obtener el ID del DTO externo
                 DireccionDTO direccionDTO = direccionDTOS.get(i % direccionDTOSize);
+
+                // AJUSTE: Usar getId() para acceder al ID mapeado (idDireccion)
                 direccionId = direccionDTO.getId();
 
-                // 2. CORRECCIÓN: Si el ID del DTO es nulo, usar un ID de fallback.
+                // Si el ID del DTO es nulo (después de la corrección de DTO, esto no debería pasar)
                 if (direccionId == null) {
-                    direccionId = 0 + i; // Fallback: usar un ID simulado alto.
+                    direccionId = 100 + i;
                     System.err.println("WARN: DireccionDTO del microservicio retornó ID nulo. Usando ID de fallback: " + direccionId);
                 }
             } else {
-                // 3. Si la lista de DTOs está vacía, usar IDs simulados para cumplir la restricción NOT NULL.
-                direccionId = 1000 + i;
+                // Si la lista de DTOs está vacía (API down), usar IDs simulados.
+                direccionId = 100 + i;
             }
 
-            // Asignar el ID (garantizado que no es nulo)
             compania.setIdDireccion(direccionId);
 
             companias.add(companiaRepository.save(compania));
@@ -171,29 +177,25 @@ public class DataLoader implements CommandLineRunner {
         return companias;
     }
 
-    /**
-     * Crea entidades Equipo, utilizando entidades nativas Compania y el ID de Estado.
-     */
     private List<Equipo> crearEquipos(List<TipoEquipo> tiposEquipo, List<Compania> companias, List<EstadoDTO> estadoDTOS) {
         if (equipoRepository.count() > 0) return equipoRepository.findAll();
 
         List<Equipo> equipos = new ArrayList<>();
-        int estadoDTOSize = estadoDTOS.size();
+        int estadoDTOSize = (estadoDTOS != null) ? estadoDTOS.size() : 0;
 
         for (int i = 0; i < 5; i++) {
             Equipo equipo = new Equipo();
             equipo.setNombre(faker.team().name());
             equipo.setTipoEquipo(tiposEquipo.get(faker.random().nextInt(tiposEquipo.size())));
 
-            // RELACIÓN INTERNA: Usa la entidad Compania
             equipo.setCompania(companias.get(faker.random().nextInt(companias.size())));
 
-            // CLAVE FORÁNEA LÓGICA: ID del Estado
             if (estadoDTOSize > 0) {
                 EstadoDTO estadoDTO = estadoDTOS.get(faker.random().nextInt(estadoDTOSize));
-                equipo.setIdEstado(estadoDTO.getId() != null ? estadoDTO.getId() : 1); // Fallback si el ID de estado es nulo
+                // Usamos getId() que es el método de IHasId implementado por EstadoDTO.
+                equipo.setIdEstado(estadoDTO.getId() != null ? estadoDTO.getId() : 1);
             } else {
-                equipo.setIdEstado(1); // Fallback: ID de estado por defecto
+                equipo.setIdEstado(1);
             }
 
             equipos.add(equipoRepository.save(equipo));
@@ -202,15 +204,15 @@ public class DataLoader implements CommandLineRunner {
     }
 
     /**
-     * Método para crear usuarios y bomberos, asignando IDs de Estado y Foto.
+     * Método para crear usuarios y bomberos, asignando IDs de Estado y Foto (usando FotoClient).
      */
     private void crearUsuarios(List<TipoUsuario> tiposUsuario, List<EstadoDTO> estadoDTOS, List<Equipo> equipos) {
         if (usuarioRepository.count() > 0) return;
 
-        int estadoDTOSize = estadoDTOS.size();
+        int estadoDTOSize = (estadoDTOS != null) ? estadoDTOS.size() : 0;
 
         for (TipoUsuario tipo : tiposUsuario) {
-            int cantidad = 2; // Crear 2 usuarios de cada tipo
+            int cantidad = 2;
             for (int i = 0; i < cantidad; i++) {
                 Usuario usuario;
 
@@ -230,8 +232,7 @@ public class DataLoader implements CommandLineRunner {
                 usuario.setAPaterno(faker.name().lastName());
                 usuario.setAMaterno(faker.name().lastName());
 
-                // Conversión de java.util.Date a java.time.LocalDate
-                java.util.Date pastDate = Date.from(faker.timeAndDate().past(5, java.util.concurrent.TimeUnit.DAYS));
+                Date pastDate = Date.from(faker.timeAndDate().past(5, TimeUnit.DAYS));
                 usuario.setFechaRegistro(pastDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
 
                 usuario.setTelefono(crearTelefonoUnico());
@@ -245,17 +246,16 @@ public class DataLoader implements CommandLineRunner {
                 // CLAVE FORÁNEA LÓGICA: ID del Estado
                 if (estadoDTOSize > 0) {
                     EstadoDTO estadoDTO = estadoDTOS.get(faker.random().nextInt(estadoDTOSize));
-                    usuario.setIdEstado(estadoDTO.getId() != null ? estadoDTO.getId() : 1); // Fallback si el ID es nulo
+                    // Usamos getId() que es el método de IHasId implementado por EstadoDTO.
+                    usuario.setIdEstado(estadoDTO.getId() != null ? estadoDTO.getId() : 1);
                 } else {
-                    usuario.setIdEstado(1); // Fallback: ID de estado por defecto
+                    usuario.setIdEstado(1);
                 }
 
-                // CLAVE FORÁNEA LÓGICA: ID de la Foto (simulado con un ID aleatorio)
-                if (faker.bool().bool()) {
-                    usuario.setIdFoto(faker.number().numberBetween(1, 100));
-                } else {
-                    usuario.setIdFoto(null);
-                }
+                String fotoUrl = faker.internet().url();
+                Integer fotoId = fotoClient.getRandomExistingFotoId();
+
+                usuario.setIdFoto(fotoId);
 
                 // Persistir con el repositorio correcto
                 if (usuario instanceof Bombero) {
@@ -268,7 +268,7 @@ public class DataLoader implements CommandLineRunner {
     }
 
 
-    // --- Métodos de utilidad (sin cambios) ---
+    // --- Métodos de utilidad (Mantenidos) ---
 
     private String crearRunUnico() {
         String run;
@@ -292,27 +292,6 @@ public class DataLoader implements CommandLineRunner {
             correo = faker.internet().emailAddress();
         } while (!uniqueCorreos.add(correo));
         return correo;
-    }
-
-    /**
-     * Método genérico para obtener datos de APIs externas.
-     */
-    private <T extends IHasId> List<T> obtenerEntidadesExternas(WebClient client, String uri, Class<T> clazz) {
-        try {
-            return client.get()
-                    .uri(uri)
-                    .retrieve()
-                    .bodyToFlux(clazz)
-                    .collectList()
-                    .toFuture()
-                    .get();
-        } catch (WebClientResponseException e) {
-            System.err.println("Error en la respuesta de la API para " + uri + ": " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
-            return Collections.emptyList();
-        } catch (InterruptedException | ExecutionException e) {
-            System.err.println("Error de conexión o inesperado al obtener datos de la API: " + uri + " - " + e.getMessage());
-            return Collections.emptyList();
-        }
     }
 
     private String calcularDv(String runStr) {

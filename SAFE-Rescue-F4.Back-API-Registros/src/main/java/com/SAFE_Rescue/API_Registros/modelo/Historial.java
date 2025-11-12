@@ -1,5 +1,6 @@
 package com.SAFE_Rescue.API_Registros.modelo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -76,6 +77,7 @@ public class Historial {
      */
     @Column(name = "fecha_historial", nullable = false)
     @Schema(description = "Fecha y hora en que se registró el historial", example = "2025-09-09T10:30:00")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDateTime fechaHistorial;
 
     /**

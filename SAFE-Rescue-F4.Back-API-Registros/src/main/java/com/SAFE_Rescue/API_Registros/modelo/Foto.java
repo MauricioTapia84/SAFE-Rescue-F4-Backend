@@ -1,5 +1,6 @@
 package com.SAFE_Rescue.API_Registros.modelo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -56,6 +57,7 @@ public class Foto {
      * </p>
      */
     @Column(name = "fecha_subida", nullable = false)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Schema(description = "Fecha y hora en que se subió la Foto", example = "2025-09-09T10:30:00")
     private LocalDateTime fechaSubida;
 

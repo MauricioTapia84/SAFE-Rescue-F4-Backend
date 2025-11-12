@@ -40,10 +40,10 @@ public class TipoIncidenteController {
      * @return ResponseEntity con el tipo de incidente encontrado o mensaje de error
      */
     @GetMapping("/{id}")
-    public ResponseEntity<?> buscarTipoIncidente(@PathVariable int id) {
+    public ResponseEntity<?> buscarTipoIncidente(@PathVariable Integer id) {
         TipoIncidente tipoIncidente;
         try {
-            tipoIncidente = tipoIncidenteService.findByID(id);
+            tipoIncidente = tipoIncidenteService.findById(id);
         } catch(NoSuchElementException e) {
             return new ResponseEntity<String>("Tipo Incidente no encontrado", HttpStatus.NOT_FOUND);
         }
@@ -74,7 +74,7 @@ public class TipoIncidenteController {
      * @return ResponseEntity con mensaje de confirmación o error
      */
     @PutMapping("/{id}")
-    public ResponseEntity<String> actualizarTipoIncidente(@PathVariable long id, @RequestBody TipoIncidente tipoIncidente) {
+    public ResponseEntity<String> actualizarTipoIncidente(@PathVariable Integer id, @RequestBody TipoIncidente tipoIncidente) {
         try {
             TipoIncidente nuevoTipoIncidente = tipoIncidenteService.update(tipoIncidente, id);
             return ResponseEntity.ok("Actualizado con éxito");
@@ -96,7 +96,7 @@ public class TipoIncidenteController {
      * @return ResponseEntity con mensaje de confirmación
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> eliminarTipoIncidente(@PathVariable long id) {
+    public ResponseEntity<String> eliminarTipoIncidente(@PathVariable Integer id) {
         try {
             tipoIncidenteService.delete(id);
             return ResponseEntity.ok("Tipo Incidente eliminado con éxito.");

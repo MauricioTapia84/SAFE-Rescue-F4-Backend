@@ -43,11 +43,11 @@ public class IncidenteController {
      * @return ResponseEntity con el incidente encontrado o mensaje de error
      */
     @GetMapping("/{id}")
-    public ResponseEntity<?> buscarIncidente(@PathVariable long id) {
+    public ResponseEntity<?> buscarIncidente(@PathVariable Integer id) {
         Incidente incidente;
 
         try {
-            incidente = incidenteService.findByID(id);
+            incidente = incidenteService.findById(id);
         }catch(NoSuchElementException e){
             return new ResponseEntity<String>("Incidente no encontrado", HttpStatus.NOT_FOUND);
         }
@@ -80,7 +80,7 @@ public class IncidenteController {
      * @return ResponseEntity con mensaje de confirmación o error
      */
     @PutMapping("/{id}")
-    public ResponseEntity<String> actualizarIncidente(@PathVariable long id, @RequestBody Incidente incidente) {
+    public ResponseEntity<String> actualizarIncidente(@PathVariable Integer id, @RequestBody Incidente incidente) {
         try {
             Incidente nuevoIncidente = incidenteService.update(incidente, id);
             return ResponseEntity.ok("Actualizado con éxito");
@@ -102,7 +102,7 @@ public class IncidenteController {
      * @return ResponseEntity con mensaje de confirmación
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> eliminarIncidente(@PathVariable long id) {
+    public ResponseEntity<String> eliminarIncidente(@PathVariable Integer id) {
         try {
             incidenteService.delete(id);
             return ResponseEntity.ok("Incidente eliminado con éxito.");
@@ -128,10 +128,10 @@ public class IncidenteController {
      * @return ResponseEntity con mensaje de confirmación o error
      */
     @PostMapping("/{incidenteId}/asignar-ciudadano/{ciudadanoId}")
-    public ResponseEntity<String> asignacCiudadano(@PathVariable Long incidenteId, @PathVariable int ciudadanoId) {
+    public ResponseEntity<String> asignacCiudadano(@PathVariable Integer incidenteId, @PathVariable Integer ciudadanoId) {
         try {
             incidenteService.asignarCiudadano(incidenteId,ciudadanoId);
-            return ResponseEntity.ok("Ciudadano asignado al Incidente exitosamente");
+            return ResponseEntity.ok("UsuarioDTO asignado al Incidente exitosamente");
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
@@ -144,7 +144,7 @@ public class IncidenteController {
      * @return ResponseEntity con mensaje de confirmación o error
      */
     @PostMapping("/{incidenteId}/asignar-estado-incidente/{estadoIncidenteId}")
-    public ResponseEntity<String> asignarEstadoIncidente(@PathVariable int incidenteId, @PathVariable int estadoIncidenteId) {
+    public ResponseEntity<String> asignarEstadoIncidente(@PathVariable Integer incidenteId, @PathVariable Integer estadoIncidenteId) {
         try {
             incidenteService.asignarEstadoIncidente(incidenteId,estadoIncidenteId);
             return ResponseEntity.ok("Estado Incidente asignado al Incidente exitosamente");
@@ -160,7 +160,7 @@ public class IncidenteController {
      * @return ResponseEntity con mensaje de confirmación o error
      */
     @PostMapping("/{incidenteId}/asignar-tipo-incidente/{tipoIncidenteId}")
-    public ResponseEntity<String> asignarTipoIncidente(@PathVariable int incidenteId, @PathVariable int tipoIncidenteId) {
+    public ResponseEntity<String> asignarTipoIncidente(@PathVariable Integer incidenteId, @PathVariable Integer tipoIncidenteId) {
         try {
             incidenteService.asignarTipoIncidente(incidenteId,tipoIncidenteId);
             return ResponseEntity.ok("Tipo Incidente asignado al Incidente exitosamente");
@@ -176,10 +176,10 @@ public class IncidenteController {
      * @return ResponseEntity con mensaje de confirmación o error
      */
     @PostMapping("/{incidenteId}/asignar-equipo/{equipoId}")
-    public ResponseEntity<String> asignaEquipo(@PathVariable Long incidenteId, @PathVariable int equipoId) {
+    public ResponseEntity<String> asignaEquipo(@PathVariable Integer incidenteId, @PathVariable Integer equipoId) {
         try {
             incidenteService.asignarEquipo(incidenteId,equipoId);
-            return ResponseEntity.ok("Equipo asignado al Incidente exitosamente");
+            return ResponseEntity.ok("EquipoDTO asignado al Incidente exitosamente");
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
@@ -188,14 +188,14 @@ public class IncidenteController {
     /**
      * Asigna una ubicacion a un incidente.
      * @param incidenteId ID del incidente
-     * @param ubicacionId ID de la Ubicacion
+     * @param ubicacionId ID de la DireccionDTO
      * @return ResponseEntity con mensaje de confirmación o error
      */
     @PostMapping("/{incidenteId}/asignar-ubicacion/{ubicacionId}")
-    public ResponseEntity<String> asignarUbicacion(@PathVariable Long incidenteId, @PathVariable Long ubicacionId) {
+    public ResponseEntity<String> asignarUbicacion(@PathVariable Integer incidenteId, @PathVariable Integer ubicacionId) {
         try {
             incidenteService.asignarUbicacion(incidenteId, ubicacionId);
-            return ResponseEntity.ok("Ubicacion asignada al incidente exitosamente");
+            return ResponseEntity.ok("DireccionDTO asignada al incidente exitosamente");
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }

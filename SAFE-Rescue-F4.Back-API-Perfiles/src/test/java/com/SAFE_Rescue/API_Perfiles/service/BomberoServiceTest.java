@@ -1,8 +1,8 @@
 package com.SAFE_Rescue.API_Perfiles.service;
 
+import com.SAFE_Rescue.API_Perfiles.config.EstadoClient;
 import com.SAFE_Rescue.API_Perfiles.modelo.Bombero;
 import com.SAFE_Rescue.API_Perfiles.modelo.Equipo;
-import com.SAFE_Rescue.API_Perfiles.modelo.EstadoDTO;
 import com.SAFE_Rescue.API_Perfiles.modelo.TipoUsuario;
 import com.SAFE_Rescue.API_Perfiles.repositoy.BomberoRepository;
 import net.datafaker.Faker;
@@ -34,6 +34,10 @@ public class BomberoServiceTest {
     @Mock
     private EquipoService equipoService;
 
+    // Se mantiene el mock aunque no se use directamente, por si el servicio lo requiriera
+    @Mock
+    private EstadoClient estadoClient;
+
     @InjectMocks
     private BomberoService bomberoService;
 
@@ -46,9 +50,9 @@ public class BomberoServiceTest {
         faker = new Faker();
         id = faker.number().numberBetween(1, 100);
 
-        // Objetos de dependencia para la prueba
-        EstadoDTO estadoDTO = new EstadoDTO(1, "Activo", "Descripción");
+        // Corregido: Creamos los objetos de dependencia sin llamar al mock de EstadoClient
         TipoUsuario tipoUsuario = new TipoUsuario(1, "Bombero");
+        // Equipo necesita solo su ID para la validación de findById en el servicio
         Equipo equipo = new Equipo(1, "Equipo 1", null, null, null, null);
 
         // Crear el objeto Bombero con datos simulados
@@ -67,7 +71,7 @@ public class BomberoServiceTest {
         bombero.setRazonBaneo(null);
         bombero.setDiasBaneo(0);
         bombero.setTipoUsuario(tipoUsuario);
-        bombero.setEstado(estadoDTO);
+        bombero.setIdEstado(1); // Usamos un ID de estado directo
         bombero.setEquipo(equipo);
     }
 
@@ -95,9 +99,9 @@ public class BomberoServiceTest {
 
     @Test
     public void saveTest() {
-        // Simular dependencias
-        doNothing().when(usuarioService).validarAtributosUsuario(any(Bombero.class));
-        when(equipoService.findById(any())).thenReturn(bombero.getEquipo()); // Simular que encuentra el equipo
+        // Corregido: Simular la dependencia de validación que realmente usa el servicio
+        doNothing().when(usuarioService).validarExistencia(any(Bombero.class));
+        when(equipoService.findById(any())).thenReturn(bombero.getEquipo());
         when(bomberoRepository.save(bombero)).thenReturn(bombero);
 
         // Ejecutar y verificar
@@ -105,7 +109,7 @@ public class BomberoServiceTest {
         assertNotNull(guardado);
         assertEquals(bombero.getNombre(), guardado.getNombre());
         verify(bomberoRepository, times(1)).save(bombero);
-        verify(usuarioService, times(1)).validarAtributosUsuario(bombero);
+        verify(usuarioService, times(1)).validarExistencia(bombero);
         verify(equipoService, times(1)).findById(bombero.getEquipo().getIdEquipo());
     }
 
@@ -118,24 +122,34 @@ public class BomberoServiceTest {
 
         // Simular dependencias
         when(bomberoRepository.findById(id)).thenReturn(Optional.of(bomberoExistente));
-        when(equipoService.findById(any())).thenReturn(bombero.getEquipo()); // Simular que encuentra el equipo
-        doNothing().when(usuarioService).validarAtributosUsuario(any(Bombero.class));
-        when(bomberoRepository.save(any(Bombero.class))).thenReturn(bombero);
+        when(equipoService.findById(any())).thenReturn(bombero.getEquipo());
+        // Corregido: Simular la dependencia de validación que realmente usa el servicio
+        doNothing().when(usuarioService).validarExistencia(any(Bombero.class));
+        when(bomberoRepository.save(any(Bombero.class))).thenReturn(bomberoExistente);
 
         // Ejecutar y verificar
         Bombero actualizado = bomberoService.update(bombero, id);
         assertNotNull(actualizado);
         assertEquals(bombero.getNombre(), actualizado.getNombre());
+
+        // Verificación de los flujos del servicio
         verify(bomberoRepository, times(1)).findById(id);
+        verify(usuarioService, times(1)).validarExistencia(bombero);
         verify(equipoService, times(1)).findById(bombero.getEquipo().getIdEquipo());
         verify(bomberoRepository, times(1)).save(bomberoExistente);
     }
 
     @Test
     public void deleteTest() {
-        when(bomberoRepository.existsById(id)).thenReturn(true);
+        // Corregido: Simular el findById que usa el servicio
+        when(bomberoRepository.findById(id)).thenReturn(Optional.of(bombero));
+
+        // Act & Assert
         assertDoesNotThrow(() -> bomberoService.delete(id));
-        verify(bomberoRepository, times(1)).deleteById(id);
+
+        // Corregido: Verificar que se llamó al método delete(Bombero)
+        verify(bomberoRepository, times(1)).findById(id);
+        verify(bomberoRepository, times(1)).delete(bombero);
     }
 
     // --- Pruebas de escenarios de error ---
@@ -144,52 +158,79 @@ public class BomberoServiceTest {
     public void findByIdTest_BomberoNoEncontrado() {
         when(bomberoRepository.findById(id)).thenReturn(Optional.empty());
         assertThrows(NoSuchElementException.class, () -> bomberoService.findById(id));
+        verify(bomberoRepository, times(1)).findById(id);
     }
 
     @Test
     public void saveTest_ObjetoNulo() {
         assertThrows(IllegalArgumentException.class, () -> bomberoService.save(null));
+        verify(bomberoRepository, never()).save(any());
     }
 
     @Test
     public void saveTest_ErrorIntegridadDatos() {
-        doNothing().when(usuarioService).validarAtributosUsuario(any());
+        doNothing().when(usuarioService).validarExistencia(any());
         when(equipoService.findById(any())).thenReturn(bombero.getEquipo());
         doThrow(new DataIntegrityViolationException("Duplicado")).when(bomberoRepository).save(any());
         assertThrows(IllegalArgumentException.class, () -> bomberoService.save(bombero));
+        verify(bomberoRepository, times(1)).save(any());
     }
 
     @Test
     public void saveTest_EquipoNoExistente() {
-        doNothing().when(usuarioService).validarAtributosUsuario(any(Bombero.class));
+        doNothing().when(usuarioService).validarExistencia(any(Bombero.class));
         when(equipoService.findById(any())).thenThrow(new NoSuchElementException());
         assertThrows(IllegalArgumentException.class, () -> bomberoService.save(bombero));
+        verify(equipoService, times(1)).findById(any());
+        verify(bomberoRepository, never()).save(any());
     }
 
     @Test
     public void updateTest_BomberoNoEncontrado() {
         when(bomberoRepository.findById(id)).thenReturn(Optional.empty());
         assertThrows(NoSuchElementException.class, () -> bomberoService.update(bombero, id));
+        verify(bomberoRepository, times(1)).findById(id);
+        verify(bomberoRepository, never()).save(any());
     }
 
     @Test
     public void updateTest_ErrorIntegridadDatos() {
         when(bomberoRepository.findById(id)).thenReturn(Optional.of(new Bombero()));
-        doNothing().when(usuarioService).validarAtributosUsuario(any());
+        doNothing().when(usuarioService).validarExistencia(any());
         when(equipoService.findById(any())).thenReturn(bombero.getEquipo());
         doThrow(new DataIntegrityViolationException("Duplicado")).when(bomberoRepository).save(any());
         assertThrows(IllegalArgumentException.class, () -> bomberoService.update(bombero, id));
+        verify(bomberoRepository, times(1)).findById(id);
+        verify(bomberoRepository, times(1)).save(any());
     }
 
     @Test
     public void updateTest_ObjetoNulo() {
         assertThrows(IllegalArgumentException.class, () -> bomberoService.update(null, id));
+        verify(bomberoRepository, never()).findById(any());
     }
 
     @Test
     public void deleteTest_BomberoNoExistente() {
-        when(bomberoRepository.existsById(id)).thenReturn(false);
+        // Corregido: Simular el findById que usa el servicio y que arrojará la excepción
+        when(bomberoRepository.findById(id)).thenReturn(Optional.empty());
         assertThrows(NoSuchElementException.class, () -> bomberoService.delete(id));
-        verify(bomberoRepository, never()).deleteById(any());
+        verify(bomberoRepository, times(1)).findById(id);
+        verify(bomberoRepository, never()).delete(any());
+    }
+
+    @Test
+    public void deleteTest_ErrorRestriccionForeignKey() {
+        // Arrange
+        when(bomberoRepository.findById(id)).thenReturn(Optional.of(bombero));
+        // Simular que la eliminación falla debido a una restricción de clave foránea (ej. es líder de un equipo)
+        doThrow(new DataIntegrityViolationException("FK constraint")).when(bomberoRepository).delete(bombero);
+
+        // Act & Assert
+        // Debe lanzar IllegalStateException según la lógica del servicio
+        assertThrows(IllegalStateException.class, () -> bomberoService.delete(id));
+
+        verify(bomberoRepository, times(1)).findById(id);
+        verify(bomberoRepository, times(1)).delete(bombero);
     }
 }

@@ -2,36 +2,37 @@ package com.SAFE_Rescue.API_Incidentes.service;
 
 import com.SAFE_Rescue.API_Incidentes.modelo.*;
 import com.SAFE_Rescue.API_Incidentes.repository.*;
+import com.SAFE_Rescue.API_Incidentes.config.*;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
- * Servicio para la gestión integral de Incidente de emergencia.
- * Maneja operaciones CRUD, asignación de recursos y personal,
- * y validación de datos para Incidente de rescate.
+ * @class IncidenteService
+ * @brief Servicio para la gestión integral de Incidentes.
+ * Maneja operaciones CRUD y validación de datos para Incidentes.
+ * Se utiliza el patrón de Claves Foráneas Lógicas (Integer IDs) para referenciar
+ * entidades externas (Estado, Usuario, Dirección, Equipo).
  */
 @Service
 @Transactional
 public class IncidenteService {
 
-    // REPOSITORIOS INYECTADOS
+    // REPOSITORIOS LOCALES (JPA) INYECTADOS
     @Autowired private IncidenteRepository incidenteRepository;
-    @Autowired private UbicacionRepository UbicacionRepository;
-    @Autowired private CiudadanoRepository ciudadanoRepository;
     @Autowired private TipoIncidenteRepository tipoIncidenteRepository;
-    @Autowired private EquipoRepository equipoRepository;
-    @Autowired private EstadoIncidenteRepository estadoIncidenteRepository;
 
-    // SERVICIOS INYECTADOS
-    @Autowired private EstadoIncidenteService estadoIncidenteService;
-    @Autowired private UbicacionService ubicacionService;
+    // CLIENTES/SERVICIOS INYECTADOS (APIs externas)
+    // Se asume que estos clientes retornan un DTO de la entidad externa o null si no existe.
+    @Autowired private EstadoClient estadoClient;
+    @Autowired private GeolocalizacionClient geolocalizacionClient;
+    @Autowired private UsuarioClient usuarioClient;
+    @Autowired private EquipoClient equipoClient;
+
+    // SERVICIO LOCAL
     @Autowired private TipoIncidenteService tipoIncidenteService;
 
     // MÉTODOS CRUD PRINCIPALES
@@ -46,110 +47,105 @@ public class IncidenteService {
 
     /**
      * Busca un Incidente por su ID único.
-     * @param id Identificador del Incidente
+     * @param id Identificador del Incidente (Integer, según la entidad)
      * @return Incidente encontrado
-     * @throws NoSuchElementException Si no se encuentra el equipo
+     * @throws NoSuchElementException Si no se encuentra el incidente
      */
-    public Incidente findByID(long id) {
+    public Incidente findById(Integer id) { // Cambiado a Integer para coincidir con la entidad
         return incidenteRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("No se encontró Incidente con ID: " + id));
     }
 
     /**
      * Guarda un nuevo incidente en el sistema.
-     * Realiza validaciones y guarda relaciones con otros componentes.
+     * Realiza validaciones y verifica la existencia de todas las referencias por ID.
      * @param incidente Datos del incidente a guardar
      * @return Incidente guardado con ID generado
-     * @throws RuntimeException Si ocurre algún error durante el proceso
+     * @throws IllegalArgumentException Si una entidad relacionada no existe o si faltan datos.
+     * @throws RuntimeException Si ocurre algún error durante el proceso.
      */
     public Incidente save(Incidente incidente) {
         try {
-            // Validación y persistencia de relaciones principales
-            Ciudadano ciudadanoGuardado = ciudadanoRepository.save(incidente.getCiudadano());
-            Equipo equipoGuardado = equipoRepository.save(incidente.getEquipo());
-            EstadoIncidente estadoIncidenteGuardado = estadoIncidenteService.save(incidente.getEstadoIncidente());
-            Ubicacion ubicacionGuardada = ubicacionService.save(incidente.getUbicacion());
-            TipoIncidente tipoIncidenteGuardado = tipoIncidenteService.save(incidente.getTipoIncidente());
-
-            incidente.setEquipo(equipoGuardado);
-            incidente.setUbicacion(ubicacionGuardada);
-            incidente.setTipoIncidente(tipoIncidenteGuardado);
-            incidente.setCiudadano(ciudadanoGuardado);
-            incidente.setEstadoIncidente(estadoIncidenteGuardado);
-
+            // 1. Validar campos obligatorios del incidente (título, detalle, etc.)
             validarIncidente(incidente);
 
+            // 2. Validar existencia de todas las referencias por ID (Locales y Externas).
+            // Esto lanzará IllegalArgumentException si alguna relación no existe.
+            validarExistenciaReferencias(incidente);
+
+            // 3. Ya que el incidente solo almacena IDs lógicos, no necesitamos reasignar DTOs completos.
+            // La entidad Incidente ya viene con los IDs correctos para guardar.
+
+            // 4. Guardar el Incidente en la base de datos local
             return incidenteRepository.save(incidente);
+        } catch (NoSuchElementException e) {
+            // Captura si una de las validaciones de existencia falló
+            throw new IllegalArgumentException("Error de asignación: " + e.getMessage(), e);
         } catch (Exception e) {
+            // Captura errores genéricos o de validación de atributos
             throw new RuntimeException("Error al guardar el incidente: " + e.getMessage(), e);
         }
     }
 
     /**
      * Actualiza los datos de un incidente existente.
-     * @param incidente Datos actualizados del incidente
+     *
+     * @param incidente Datos actualizados del incidente (contiene los IDs de las referencias)
      * @param id Identificador del incidente a actualizar
      * @return Incidente actualizado
-     * @throws IllegalArgumentException Si el incidente proporcionado es nulo
+     * @throws IllegalArgumentException Si el incidente proporcionado es nulo, o si una referencia ID no existe.
      * @throws NoSuchElementException Si no se encuentra el incidente a actualizar
      * @throws RuntimeException Si ocurre algún error durante la actualización
      */
-    public Incidente update(Incidente incidente, long id) {
+    public Incidente update(Incidente incidente, Integer id) { // Cambiado a Integer
         if (incidente == null) {
             throw new IllegalArgumentException("El incidente no puede ser nulo");
         }
 
-        Incidente incidenteExistente = incidenteRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Incidente no encontrado con ID: " + id));
+        Incidente incidenteExistente = findById(id);
 
         try {
-            actualizarRelaciones(incidente, incidenteExistente);
+            // 1. Validar campos de actualización
+            validarActualizacion(incidente);
 
+            // 2. Actualizar campos locales y IDs de referencia si son proporcionados.
             if (incidente.getTitulo() != null) {
-                if (incidente.getTitulo().length() > 50) {
-                    throw new RuntimeException("El Titulo no puede exceder 50 caracteres");
-                }else{
-                    incidenteExistente.setTitulo(incidente.getTitulo());
-                }
+                incidenteExistente.setTitulo(incidente.getTitulo());
             }
-
             if (incidente.getDetalle() != null) {
-                if (incidente.getDetalle().length() > 400) {
-                    throw new RuntimeException("El detalle no puede exceder 400 caracteres");
-                }else{
-                    incidenteExistente.setDetalle(incidente.getDetalle());
-                }
+                incidenteExistente.setDetalle(incidente.getDetalle());
+            }
+            // Actualización de IDs de referencia (solo si vienen en la fuente)
+            if (incidente.getIdDireccion() != null) {
+                validarExistenciaReferencia(geolocalizacionClient, incidente.getIdDireccion(), "Direccion");
+                incidenteExistente.setIdDireccion(incidente.getIdDireccion());
+            }
+            if (incidente.getIdCiudadano() != null) {
+                validarExistenciaReferencia(usuarioClient, incidente.getIdCiudadano(), "Ciudadano");
+                incidenteExistente.setIdCiudadano(incidente.getIdCiudadano());
+            }
+            if (incidente.getIdEstadoIncidente() != null) {
+                validarExistenciaReferencia(estadoClient, incidente.getIdEstadoIncidente(), "Estado");
+                incidenteExistente.setIdEstadoIncidente(incidente.getIdEstadoIncidente());
+            }
+            if (incidente.getIdEquipo() != null) {
+                validarExistenciaReferencia(equipoClient, incidente.getIdEquipo(), "Equipo");
+                incidenteExistente.setIdEquipo(incidente.getIdEquipo());
+            }
+            // TipoIncidente (local - se debe buscar la entidad completa para la relación JPA)
+            if (incidente.getTipoIncidente() != null && incidente.getTipoIncidente().getIdTipoIncidente() != null) {
+                TipoIncidente tipoEncontrado = tipoIncidenteRepository.findById(incidente.getTipoIncidente().getIdTipoIncidente())
+                        .orElseThrow(() -> new NoSuchElementException("Tipo Incidente no encontrado con ID: " + incidente.getTipoIncidente().getIdTipoIncidente()));
+                incidenteExistente.setTipoIncidente(tipoEncontrado);
             }
 
-            // Actualizar recursos asociados
-            if (incidente.getEstadoIncidente() != null) {
-                asignarEstadoIncidente(Long.valueOf(incidente.getId()),Long.valueOf(incidente.getEstadoIncidente().getId()));
-                incidenteExistente.setEstadoIncidente(incidente.getEstadoIncidente());
-            }
-
-            if (incidente.getEquipo() != null) {
-                asignarEquipo(Long.valueOf(incidente.getId()),Long.valueOf(incidente.getEquipo().getId()));
-                incidenteExistente.setEquipo(incidente.getEquipo());
-            }
-
-            if (incidente.getCiudadano() != null) {
-                asignarCiudadano(Long.valueOf(incidente.getId()),Long.valueOf(incidente.getCiudadano().getId()));
-                incidenteExistente.setCiudadano(incidente.getCiudadano());
-            }
-
-            if (incidente.getTipoIncidente() != null) {
-                asignarTipoIncidente(Long.valueOf(incidente.getId()),Long.valueOf(incidente.getTipoIncidente().getId()));
-                incidenteExistente.setTipoIncidente(incidente.getTipoIncidente());
-            }
-
-            if (incidente.getUbicacion() != null) {
-                asignarUbicacion(Long.valueOf(incidente.getId()),Long.valueOf(incidente.getUbicacion().getId()));
-                incidenteExistente.setUbicacion(incidente.getUbicacion());
-            }
-
+            // 3. Guardar el incidente actualizado
             return incidenteRepository.save(incidenteExistente);
+        } catch (NoSuchElementException e) {
+            // Captura si una de las validaciones de existencia falló
+            throw new IllegalArgumentException("Error de asignación en la actualización: " + e.getMessage(), e);
         } catch (Exception e) {
-            throw new RuntimeException("Error al actualizar incidente: " + e.getMessage(), e);
+            throw new RuntimeException("Error al actualizar incidente con ID " + id + ": " + e.getMessage(), e);
         }
     }
 
@@ -158,117 +154,184 @@ public class IncidenteService {
      * @param id Identificador del incidente a eliminar
      * @throws NoSuchElementException Si no se encuentra el incidente
      */
-    public void delete(long id) {
-        if (!incidenteRepository.existsById(id)) {
-            throw new NoSuchElementException("No se encontró incidente con ID: " + id);
+    public void delete(Integer id) { // Cambiado a Integer
+        Incidente incidente = findById(id);
+        incidenteRepository.delete(incidente);
+    }
+
+    // MÉTODOS PRIVADOS DE VALIDACIÓN
+
+    /**
+     * Método genérico para validar la existencia de una referencia externa (DTO/Entidad) por ID.
+     * Se espera que el client.findById() retorne la entidad o DTO, o null si no existe.
+     * @param client El cliente Feign para la entidad externa.
+     * @param id El ID a buscar.
+     * @param entityName Nombre de la entidad para el mensaje de error.
+     * @throws NoSuchElementException Si el objeto no es encontrado (retorna null).
+     */
+    private void validarExistenciaReferencia(Object client, Integer id, String entityName) {
+        Object found = null;
+        if (client instanceof EstadoClient) {
+            found = ((EstadoClient) client).findById(id);
+        } else if (client instanceof GeolocalizacionClient) {
+            found = ((GeolocalizacionClient) client).findById(id);
+        } else if (client instanceof UsuarioClient) {
+            found = ((UsuarioClient) client).findById(id);
+        } else if (client instanceof EquipoClient) {
+            found = ((EquipoClient) client).findById(id);
         }
-        incidenteRepository.deleteById(id);
+
+        if (found == null) {
+            throw new NoSuchElementException(entityName + " no encontrado con ID: " + id);
+        }
     }
 
-    // MÉTODOS DE ASIGNACIÓN DE RELACIONES
+    /**
+     * Valida la existencia de todos los IDs de referencia requeridos
+     * para la creación de un nuevo incidente.
+     * @param incidente El incidente a validar.
+     * @throws IllegalArgumentException Si falta un ID obligatorio.
+     * @throws NoSuchElementException Si una entidad relacionada no existe.
+     */
+    private void validarExistenciaReferencias(Incidente incidente) {
+        // Validación local: TipoIncidente (requiere la Entidad completa)
+        if (incidente.getTipoIncidente() == null || incidente.getTipoIncidente().getIdTipoIncidente() == null) {
+            throw new IllegalArgumentException("El Tipo de Incidente es obligatorio.");
+        }
+        tipoIncidenteService.findById(incidente.getTipoIncidente().getIdTipoIncidente()); // Lanza NoSuchElementException si no existe
+
+        // Validaciones externas (uso de IDs lógicos):
+        if (incidente.getIdEstadoIncidente() == null) {
+            throw new IllegalArgumentException("El ID del Estado es obligatorio.");
+        }
+        validarExistenciaReferencia(estadoClient, incidente.getIdEstadoIncidente(), "Estado");
+
+        if (incidente.getIdCiudadano() == null) {
+            throw new IllegalArgumentException("El ID del Ciudadano es obligatorio.");
+        }
+        validarExistenciaReferencia(usuarioClient, incidente.getIdCiudadano(), "Ciudadano");
+
+        if (incidente.getIdDireccion() == null) {
+            throw new IllegalArgumentException("El ID de la Dirección es obligatorio.");
+        }
+        validarExistenciaReferencia(geolocalizacionClient, incidente.getIdDireccion(), "Direccion");
+
+        // EquipoID es opcional al crear
+        if (incidente.getIdEquipo() != null) {
+            validarExistenciaReferencia(equipoClient, incidente.getIdEquipo(), "Equipo");
+        }
+    }
 
     /**
-     * Asigna una Ciudadano a un incidente.
-     * @param incidenteId ID del incidente
-     * @param ciudadanoId ID de la incidente
+     * Realiza la validación de un Incidente antes de ser guardado por primera vez.
+     * @param incidente El incidente a validar.
      */
-    public void asignarCiudadano(long incidenteId, long ciudadanoId) {
-        Incidente incidente = incidenteRepository.findById(incidenteId)
-            .orElseThrow(() -> new RuntimeException("Incidente no encontrado"));
-        Ciudadano ciudadano = ciudadanoRepository.findById(ciudadanoId)
-            .orElseThrow(() -> new RuntimeException("Ciudadano no encontrado"));
-        incidente.setCiudadano(ciudadano);
+    private void validarIncidente(Incidente incidente) {
+        if (incidente.getTitulo() == null || incidente.getTitulo().isBlank()) {
+            throw new IllegalArgumentException("El Título no puede estar vacío.");
+        }
+        if (incidente.getDetalle() == null || incidente.getDetalle().isBlank()) {
+            throw new IllegalArgumentException("El Detalle no puede estar vacío.");
+        }
+        // Validar Longitudes
+        if (incidente.getTitulo().length() > 50) {
+            throw new IllegalArgumentException("El Título no puede exceder 50 caracteres.");
+        }
+        if (incidente.getDetalle().length() > 400) {
+            throw new IllegalArgumentException("El Detalle no puede exceder 400 caracteres.");
+        }
+        // Validar fecha de registro (aunque se espera que se setee en la capa de controlador o DTO)
+        if (incidente.getFechaRegistro() == null) {
+            throw new IllegalArgumentException("La fecha de registro es obligatoria.");
+        }
+    }
+
+    /**
+     * Realiza la validación de un Incidente durante una actualización.
+     * Solo valida si los campos no son nulos.
+     * @param incidente El incidente con datos de actualización.
+     */
+    private void validarActualizacion(Incidente incidente) {
+        if (incidente.getTitulo() != null && incidente.getTitulo().length() > 50) {
+            throw new IllegalArgumentException("El Título no puede exceder 50 caracteres.");
+        }
+        if (incidente.getDetalle() != null && incidente.getDetalle().length() > 400) {
+            throw new IllegalArgumentException("El Detalle no puede exceder 400 caracteres.");
+        }
+    }
+
+
+    // MÉTODOS DE ASIGNACIÓN DE RELACIONES POR ID (Para endpoints dedicados)
+
+    /**
+     * Asigna un Ciudadano a un incidente existente mediante IDs.
+     * @param incidenteId ID del incidente
+     * @param idCiudadano ID del Ciudadano a asignar
+     */
+    public void asignarCiudadano(
+            Integer incidenteId,
+            Integer idCiudadano) {
+        Incidente incidente = findById(incidenteId);
+        validarExistenciaReferencia(usuarioClient, idCiudadano, "Ciudadano");
+        incidente.setIdCiudadano(idCiudadano);
         incidenteRepository.save(incidente);
-
     }
 
     /**
-     * Asigna un tipo de incidente a un incidente.
+     * Asigna un Tipo de Incidente a un incidente existente mediante IDs.
      * @param incidenteId ID del incidente
-     * @param tipoIncidenteId ID del tipo de incidente
+     * @param tipoIncidenteId ID del tipo de incidente a asignar
      */
-    public void asignarTipoIncidente(long incidenteId, long tipoIncidenteId) {
-        Incidente incidente = incidenteRepository.findById(incidenteId)
-                .orElseThrow(() -> new RuntimeException("Incidente no encontrado"));
+    public void asignarTipoIncidente(
+            Integer incidenteId,
+            Integer tipoIncidenteId) {
+        Incidente incidente = findById(incidenteId);
+        // Repositorio JPA, usa Optional y orElseThrow
         TipoIncidente tipoIncidente = tipoIncidenteRepository.findById(tipoIncidenteId)
-                .orElseThrow(() -> new RuntimeException("Tipo Incidente no encontrado"));
+                .orElseThrow(() -> new NoSuchElementException("Tipo Incidente no encontrado con ID: " + tipoIncidenteId));
         incidente.setTipoIncidente(tipoIncidente);
         incidenteRepository.save(incidente);
     }
 
     /**
-     * Asigna un Estado de incidente a un incidente.
+     * Asigna un Estado de incidente a un incidente existente mediante IDs.
      * @param incidenteId ID del incidente
-     * @param estadoIncidenteId ID del Estado Incidente
+     * @param idEstadoIncidente ID del Estado a asignar
      */
-    public void asignarEstadoIncidente(long incidenteId, long estadoIncidenteId) {
-        Incidente incidente = incidenteRepository.findById(incidenteId)
-                .orElseThrow(() -> new RuntimeException("Incidente no encontrado"));
-        EstadoIncidente estadoIncidente = estadoIncidenteRepository.findById(estadoIncidenteId)
-                .orElseThrow(() -> new RuntimeException("Estado Incidente no encontrado"));
-        incidente.setEstadoIncidente(estadoIncidente);
+    public void asignarEstadoIncidente(
+            Integer incidenteId,
+            Integer idEstadoIncidente) {
+        Incidente incidente = findById(incidenteId);
+        validarExistenciaReferencia(estadoClient, idEstadoIncidente, "Estado");
+        incidente.setIdEstadoIncidente(idEstadoIncidente);
         incidenteRepository.save(incidente);
     }
 
     /**
-     * Asigna un Equipo a un incidente.
+     * Asigna un Equipo a un incidente existente mediante IDs.
      * @param incidenteId ID del incidente
-     * @param equipoId ID del Equipo
+     * @param idEquipo ID del Equipo a asignar
      */
-    public void asignarEquipo(long incidenteId, long equipoId) {
-        Incidente incidente = incidenteRepository.findById(incidenteId)
-                .orElseThrow(() -> new RuntimeException("Incidente no encontrado"));
-        Equipo equipo = equipoRepository.findById(equipoId)
-                .orElseThrow(() -> new RuntimeException("Equipo no encontrado"));
-        incidente.setEquipo(equipo);
+    public void asignarEquipo(
+            Integer incidenteId,
+            Integer idEquipo) {
+        Incidente incidente = findById(incidenteId);
+        validarExistenciaReferencia(equipoClient, idEquipo, "Equipo");
+        incidente.setIdEquipo(idEquipo);
         incidenteRepository.save(incidente);
     }
 
     /**
-     * Asigna un Ubicacion a un incidente.
+     * Asigna una Dirección (Ubicación) a un incidente existente mediante IDs.
      * @param incidenteId ID del incidente
-     * @param ubicacionId ID del Ubicacion
+     * @param idDireccion ID de la Dirección a asignar
      */
-    public void asignarUbicacion(long incidenteId, long ubicacionId) {
-        Incidente incidente = incidenteRepository.findById(incidenteId)
-                .orElseThrow(() -> new RuntimeException("Incidente no encontrado"));
-        Ubicacion ubicacion = UbicacionRepository.findById(ubicacionId)
-                .orElseThrow(() -> new RuntimeException("Ubicacion no encontrado"));
-        incidente.setUbicacion(ubicacion);
+    public void asignarUbicacion(
+            Integer incidenteId,
+            Integer idDireccion) {
+        Incidente incidente = findById(incidenteId);
+        validarExistenciaReferencia(geolocalizacionClient, idDireccion, "Direccion");
+        incidente.setIdDireccion(idDireccion);
         incidenteRepository.save(incidente);
     }
-
-
-    // MÉTODOS PRIVADOS DE VALIDACIÓN Y UTILIDADES
-
-    private void validarIncidente(Incidente incidente) {
-
-        if (incidente.getTitulo() != null) {
-            if (incidente.getTitulo().length() > 50) {
-                throw new RuntimeException("El Titulo no puede exceder 50 caracteres");
-            }
-        }
-
-        if (incidente.getDetalle() != null) {
-            if (incidente.getDetalle().length() > 400) {
-                throw new RuntimeException("El detalle no puede exceder 400 caracteres");
-            }
-        }
-
-    }
-
-    private void actualizarRelaciones(Incidente fuente, Incidente destino) {
-        if (fuente.getEstadoIncidente() != null) {
-            destino.setEstadoIncidente(estadoIncidenteService.save(fuente.getEstadoIncidente()));
-        }
-        if (fuente.getUbicacion() != null) {
-            destino.setUbicacion(ubicacionService.save(fuente.getUbicacion()));
-        }
-        if (fuente.getTipoIncidente() != null) {
-            destino.setTipoIncidente(tipoIncidenteService.save(fuente.getTipoIncidente()));
-        }
-    }
-
 }
-
-

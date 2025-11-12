@@ -22,7 +22,7 @@ public class Direccion {
     @Column(name = "id_direccion")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Schema(description = "Identificador único de la dirección", example = "1")
-    private int idDireccion;
+    private Integer idDireccion;
 
     @Column(length = 150, nullable = false)
     @Schema(description = "Nombre de la calle, avenida o pasaje", example = "Avenida Apoquindo", required = true, maxLength = 150)

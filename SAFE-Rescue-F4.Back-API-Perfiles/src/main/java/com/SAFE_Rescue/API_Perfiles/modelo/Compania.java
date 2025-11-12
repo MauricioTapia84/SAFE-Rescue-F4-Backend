@@ -1,5 +1,6 @@
 package com.SAFE_Rescue.API_Perfiles.modelo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -51,6 +52,7 @@ public class Compania {
      */
     @Column(name = "fecha_fundacion", nullable = true)
     @Schema(description = "Fecha de fundación", example = "1980-05-15")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate fechaFundacion;
 
     // --- CLAVE FORÁNEA LÓGICA (Microservicio Dirección) ---

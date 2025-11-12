@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface IncidenteRepository extends JpaRepository<Incidente, Long> {
+public interface IncidenteRepository extends JpaRepository<Incidente, Integer> {
 
 
 }

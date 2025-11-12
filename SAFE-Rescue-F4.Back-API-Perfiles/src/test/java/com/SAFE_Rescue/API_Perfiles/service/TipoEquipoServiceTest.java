@@ -38,7 +38,9 @@ public class TipoEquipoServiceTest {
 
         tipoEquipo = new TipoEquipo();
         tipoEquipo.setIdTipoEquipo(id);
-        tipoEquipo.setNombre(faker.job().field());
+        // Aseguramos que el nombre sea válido y no exceda un límite común (ej: 50 caracteres)
+        String field = faker.job().field();
+        tipoEquipo.setNombre(field.substring(0, Math.min(50, field.length())));
     }
 
     // --- Pruebas de operaciones exitosas (Happy Path) ---
@@ -90,34 +92,48 @@ public class TipoEquipoServiceTest {
     @Test
     public void update_shouldReturnUpdatedTeamType_whenValid() {
         // Arrange
-        TipoEquipo tipoEquipoActualizado = new TipoEquipo();
-        tipoEquipoActualizado.setNombre("Nombre Actualizado");
+        TipoEquipo tipoEquipoPayload = new TipoEquipo();
+        tipoEquipoPayload.setNombre("Nombre Actualizado");
 
+        // 1. Simular la existencia del original
         when(tipoEquipoRepository.findById(id)).thenReturn(Optional.of(tipoEquipo));
-        when(tipoEquipoRepository.save(any(TipoEquipo.class))).thenReturn(tipoEquipoActualizado);
+
+        // 2. Simular el resultado del guardado (con el ID original)
+        TipoEquipo resultadoGuardado = new TipoEquipo();
+        resultadoGuardado.setIdTipoEquipo(id);
+        resultadoGuardado.setNombre("Nombre Actualizado");
+        when(tipoEquipoRepository.save(any(TipoEquipo.class))).thenReturn(resultadoGuardado);
 
         // Act
-        TipoEquipo actualizado = tipoEquipoService.update(tipoEquipoActualizado, id);
+        TipoEquipo actualizado = tipoEquipoService.update(tipoEquipoPayload, id);
 
         // Assert
         assertNotNull(actualizado);
         assertEquals("Nombre Actualizado", actualizado.getNombre());
         verify(tipoEquipoRepository, times(1)).findById(id);
+        // Verificamos que se llamó a save con el objeto actualizado
         verify(tipoEquipoRepository, times(1)).save(argThat(
-                t -> t.getNombre().equals("Nombre Actualizado") // Asegura que el objeto que se guardó tiene el nuevo nombre
+                t -> t.getNombre().equals("Nombre Actualizado")
         ));
     }
 
     @Test
     public void delete_shouldDeleteTeamType_whenExists() {
-        // Arrange
-        when(tipoEquipoRepository.existsById(id)).thenReturn(true);
-        doNothing().when(tipoEquipoRepository).deleteById(id);
+        // CORRECCIÓN: Usamos findById para verificar la existencia
+        when(tipoEquipoRepository.findById(id)).thenReturn(Optional.of(tipoEquipo));
+        // No necesitamos mockear delete, solo verificar la llamada
 
         // Act & Assert
         assertDoesNotThrow(() -> tipoEquipoService.delete(id));
-        verify(tipoEquipoRepository, times(1)).existsById(id);
-        verify(tipoEquipoRepository, times(1)).deleteById(id);
+
+        // Verificamos que se llamó a findById para confirmar la existencia
+        verify(tipoEquipoRepository, times(1)).findById(id);
+
+        // CORRECCIÓN: Verificamos que se llamó a delete con la entidad, NO con deleteById
+        verify(tipoEquipoRepository, times(1)).delete(tipoEquipo);
+
+        // Aseguramos que existsById no fue llamado
+        verify(tipoEquipoRepository, never()).existsById(any());
     }
 
     // --- Pruebas de escenarios de error ---
@@ -135,20 +151,22 @@ public class TipoEquipoServiceTest {
     @Test
     public void save_shouldThrowException_whenNameIsNull() {
         // Arrange
-        tipoEquipo.setNombre(null);
+        TipoEquipo tipoEquipoInvalido = new TipoEquipo(); // Usar una instancia nueva para evitar modificar el objeto global
+        tipoEquipoInvalido.setNombre(null);
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> tipoEquipoService.save(tipoEquipo));
+        assertThrows(IllegalArgumentException.class, () -> tipoEquipoService.save(tipoEquipoInvalido));
         verify(tipoEquipoRepository, never()).save(any());
     }
 
     @Test
     public void save_shouldThrowException_whenNameIsTooLong() {
         // Arrange
-        tipoEquipo.setNombre(faker.lorem().characters(51));
+        TipoEquipo tipoEquipoInvalido = new TipoEquipo(); // Usar una instancia nueva
+        tipoEquipoInvalido.setNombre(faker.lorem().characters(51));
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> tipoEquipoService.save(tipoEquipo));
+        assertThrows(IllegalArgumentException.class, () -> tipoEquipoService.save(tipoEquipoInvalido));
         verify(tipoEquipoRepository, never()).save(any());
     }
 
@@ -176,10 +194,12 @@ public class TipoEquipoServiceTest {
     @Test
     public void update_shouldThrowException_whenNameIsNull() {
         // Arrange
-        tipoEquipo.setNombre(null);
+        TipoEquipo tipoEquipoInvalido = new TipoEquipo();
+        tipoEquipoInvalido.setNombre(null);
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> tipoEquipoService.update(tipoEquipo, id));
+        // La validación inicial debe fallar antes de la búsqueda en el repositorio
+        assertThrows(IllegalArgumentException.class, () -> tipoEquipoService.update(tipoEquipoInvalido, id));
         verify(tipoEquipoRepository, never()).findById(any());
         verify(tipoEquipoRepository, never()).save(any());
     }
@@ -198,12 +218,17 @@ public class TipoEquipoServiceTest {
 
     @Test
     public void delete_shouldThrowException_whenNotFound() {
-        // Arrange
-        when(tipoEquipoRepository.existsById(id)).thenReturn(false);
+        // CORRECCIÓN: Usamos findById para simular el fallo de existencia
+        when(tipoEquipoRepository.findById(id)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThrows(NoSuchElementException.class, () -> tipoEquipoService.delete(id));
-        verify(tipoEquipoRepository, times(1)).existsById(id);
+
+        // Verificamos que se llamó a findById (que causó la excepción)
+        verify(tipoEquipoRepository, times(1)).findById(id);
+
+        // Verificamos que la eliminación nunca fue llamada
+        verify(tipoEquipoRepository, never()).delete(any());
         verify(tipoEquipoRepository, never()).deleteById(any());
     }
 }

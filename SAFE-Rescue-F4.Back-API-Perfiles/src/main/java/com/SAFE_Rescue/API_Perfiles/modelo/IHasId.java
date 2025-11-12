@@ -1,9 +1,13 @@
 package com.SAFE_Rescue.API_Perfiles.modelo;
 
 /**
- * Interfaz de marcador para asegurar que todos los DTOs externos
- * utilizados en el DataLoader tienen un método getId() para su uso como FK Lógica.
+ * Interfaz genérica que define un contrato para los DTOs que poseen un identificador Integer.
+ * Útil para operaciones genéricas en la capa de servicio o controladores.
  */
 public interface IHasId {
+    /**
+     * Retorna el identificador principal del objeto.
+     * @return El ID como Integer.
+     */
     Integer getId();
 }

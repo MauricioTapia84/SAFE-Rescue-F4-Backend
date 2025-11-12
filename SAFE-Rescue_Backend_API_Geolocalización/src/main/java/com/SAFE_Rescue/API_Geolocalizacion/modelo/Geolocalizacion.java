@@ -23,7 +23,7 @@ public class Geolocalizacion {
     @Column(name = "id_geolocalizacion")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Schema(description = "Identificador único de la geolocalización", example = "1")
-    private int idGeolocalizacion;
+    private Integer idGeolocalizacion;
 
     // Latitud: Rango de -90 a 90
     @Column(nullable = false) //

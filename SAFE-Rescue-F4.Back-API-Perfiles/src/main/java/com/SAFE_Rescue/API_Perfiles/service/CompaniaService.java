@@ -1,5 +1,6 @@
 package com.SAFE_Rescue.API_Perfiles.service;
 
+import com.SAFE_Rescue.API_Perfiles.config.GeolocalizacionClient;
 import com.SAFE_Rescue.API_Perfiles.modelo.Compania;
 import com.SAFE_Rescue.API_Perfiles.repositoy.CompaniaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +21,7 @@ public class CompaniaService {
 
     // Se inyecta DireccionService para validar que la dirección referenciada exista en la API externa.
     @Autowired
-    private DireccionService direccionService;
+    private GeolocalizacionClient geolocalizacionClient;
 
     // Límite de caracteres definido en la entidad para el nombre
     private static final int NOMBRE_MAX_LENGTH = 50;
@@ -132,7 +133,7 @@ public class CompaniaService {
         // Validamos la existencia del ID de Dirección usando el servicio.
         try {
             // Se asume que DireccionService utiliza WebClientConfig para verificar la existencia en la API externa.
-            direccionService.findById(compania.getIdDireccion());
+            geolocalizacionClient.getDireccionById(Long.valueOf(compania.getIdDireccion()));
         } catch (NoSuchElementException e) {
             throw new IllegalArgumentException("El ID de dirección asociado (" + compania.getIdDireccion() + ") no existe en la API externa de Geolocalización.", e);
         }
