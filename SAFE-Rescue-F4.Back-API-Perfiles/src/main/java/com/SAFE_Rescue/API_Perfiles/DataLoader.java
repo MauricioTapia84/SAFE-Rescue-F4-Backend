@@ -158,7 +158,7 @@ public class DataLoader implements CommandLineRunner {
                 DireccionDTO direccionDTO = direccionDTOS.get(i % direccionDTOSize);
 
                 // AJUSTE: Usar getId() para acceder al ID mapeado (idDireccion)
-                direccionId = direccionDTO.getId();
+                direccionId = direccionDTO.getIdDireccion();
 
                 // Si el ID del DTO es nulo (después de la corrección de DTO, esto no debería pasar)
                 if (direccionId == null) {
@@ -193,7 +193,7 @@ public class DataLoader implements CommandLineRunner {
             if (estadoDTOSize > 0) {
                 EstadoDTO estadoDTO = estadoDTOS.get(faker.random().nextInt(estadoDTOSize));
                 // Usamos getId() que es el método de IHasId implementado por EstadoDTO.
-                equipo.setIdEstado(estadoDTO.getId() != null ? estadoDTO.getId() : 1);
+                equipo.setIdEstado(estadoDTO.getIdEstado() != null ? estadoDTO.getIdEstado() : 1);
             } else {
                 equipo.setIdEstado(1);
             }
@@ -233,7 +233,7 @@ public class DataLoader implements CommandLineRunner {
                 usuario.setAMaterno(faker.name().lastName());
 
                 Date pastDate = Date.from(faker.timeAndDate().past(5, TimeUnit.DAYS));
-                usuario.setFechaRegistro(pastDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+                usuario.setFechaRegistro(pastDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate().atStartOfDay());
 
                 usuario.setTelefono(crearTelefonoUnico());
                 usuario.setCorreo(crearCorreoUnico());
@@ -247,7 +247,7 @@ public class DataLoader implements CommandLineRunner {
                 if (estadoDTOSize > 0) {
                     EstadoDTO estadoDTO = estadoDTOS.get(faker.random().nextInt(estadoDTOSize));
                     // Usamos getId() que es el método de IHasId implementado por EstadoDTO.
-                    usuario.setIdEstado(estadoDTO.getId() != null ? estadoDTO.getId() : 1);
+                    usuario.setIdEstado(estadoDTO.getIdEstado() != null ? estadoDTO.getIdEstado() : 1);
                 } else {
                     usuario.setIdEstado(1);
                 }

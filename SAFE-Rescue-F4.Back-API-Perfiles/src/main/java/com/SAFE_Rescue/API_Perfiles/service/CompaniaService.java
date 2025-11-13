@@ -133,7 +133,7 @@ public class CompaniaService {
         // Validamos la existencia del ID de Dirección usando el servicio.
         try {
             // Se asume que DireccionService utiliza WebClientConfig para verificar la existencia en la API externa.
-            geolocalizacionClient.getDireccionById(Long.valueOf(compania.getIdDireccion()));
+            geolocalizacionClient.getDireccionById(compania.getIdDireccion());
         } catch (NoSuchElementException e) {
             throw new IllegalArgumentException("El ID de dirección asociado (" + compania.getIdDireccion() + ") no existe en la API externa de Geolocalización.", e);
         }

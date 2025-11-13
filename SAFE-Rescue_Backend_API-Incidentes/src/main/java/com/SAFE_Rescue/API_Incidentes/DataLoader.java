@@ -166,7 +166,7 @@ public class DataLoader implements CommandLineRunner {
             Incidente inc = new Incidente();
             inc.setTitulo(faker.company().buzzword());
             inc.setDetalle(faker.lorem().paragraph());
-            inc.setFechaRegistro(LocalDate.from(LocalDateTime.now().minusHours(random.nextInt(100)))); // Fecha de registro reciente
+            inc.setFechaRegistro(LocalDateTime.from(LocalDateTime.now().minusHours(random.nextInt(100)))); // Fecha de registro reciente
 
             // --- ASIGNACIONES DE RELACIONES ---
 

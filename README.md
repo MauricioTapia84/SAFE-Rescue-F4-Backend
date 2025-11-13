@@ -12,15 +12,15 @@ SAFE Rescue es una aplicación diseñada para la gestión eficiente y rápida de
 
 ## Últimos cambios
 
-### ❚❙❘ VERSIÓN 0.0.4
+### ❚❙❘ VERSIÓN 0.0.5
 
-> <br>• Corrección de errores de web client de la api perfiles
-> <br>• Corrección de test de Api perfiles
-> <br>• Implementación de test de Api Registros
-> <br>• Se corrige el dataloader de Api perfiles
-> <br>• Se implementa la lógica y web client de la api de Incidentes
-> <br>• Se inician las pruebas unitarias de incidentes
-> <br> > > > Terminar pruebas unitarias de api de incidentes
+> <br>• Se terminar pruebas unitarias de api incidentes
+> <br>• Se añaden historialUsuario y ciudadano a api perfiles, con sus repositorios, service y controlladores
+> <br>• Se implementan test de compania, ciudadano, historialUsuario
+> <br>• Se corrigen problemas de fechas
+> <br>• Se prueba dataloader que se ejecute correctamente
+> <br> > > > Añadir historial para incidentes
+> <br> > > > Eliminar historial y categorias para registros
 > <br>
 
 ---

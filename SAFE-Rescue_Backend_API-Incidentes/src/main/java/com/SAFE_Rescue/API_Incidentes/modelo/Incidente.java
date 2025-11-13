@@ -47,7 +47,7 @@ public class Incidente {
     @NotNull(message = "La fecha de registro es obligatoria.") // Validación de aplicación
     @Schema(description = "Fecha y hora en que se registró el incidente", example = "2025-09-09T10:30:00")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss") // Incluye fecha y hora
-    private LocalDate fechaRegistro;
+    private LocalDateTime fechaRegistro;
 
     // --- CLAVE FORÁNEA JPA (ASUMIDO: Es una entidad local como TipoUsuario en el ejemplo) ---
 

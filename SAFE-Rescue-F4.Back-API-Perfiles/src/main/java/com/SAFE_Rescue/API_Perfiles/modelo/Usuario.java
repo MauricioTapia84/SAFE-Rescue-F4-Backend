@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * Entidad que representa un usuario en el sistema.
@@ -84,7 +85,7 @@ public class Usuario {
     @Schema(description = "Fecha de registro del usuario", example = "2022-01-01", required = true)
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @NotNull(message = "La fecha de registro es obligatoria")
-    private LocalDate fechaRegistro;
+    private LocalDateTime fechaRegistro;
 
     /**
      * Teléfono disponible del usuario.
@@ -153,8 +154,6 @@ public class Usuario {
     @Column(name = "id_foto", nullable = true)
     @Schema(description = "ID de la Foto de perfil (clave foránea lógica a la API externa de Fotos)")
     private Integer idFoto;
-
-    // --- CLAVE FORÁNEA JPA (Asumimos que TipoUsuario es interno) ---
 
     /**
      * Tipo usuario.

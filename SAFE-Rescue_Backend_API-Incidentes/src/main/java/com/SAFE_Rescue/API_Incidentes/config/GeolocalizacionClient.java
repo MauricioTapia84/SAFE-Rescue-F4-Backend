@@ -45,6 +45,27 @@ public class GeolocalizacionClient {
     }
 
     /**
+     * Sube una nueva dirección (en formato JSON) al microservicio de geolocalización
+     * y retorna el DTO de la Dirección creada, incluyendo su ID.
+     * Este método es el que usa IncidenteService para registrar una nueva dirección.
+     * @param ubicacionJson JSON que contiene los datos de la nueva dirección.
+     * @return DireccionDTO con el ID asignado.
+     */
+    public DireccionDTO subirUbicacion(String ubicacionJson) {
+        return this.webClient.post()
+                .uri("") // POST al endpoint base para crear un recurso
+                .bodyValue(ubicacionJson)
+                .retrieve()
+                .onStatus(
+                        status -> status.isError(),
+                        response -> response.bodyToMono(String.class)
+                                .map(body -> new RuntimeException("Error al guardar la nueva dirección en el microservicio de Geolocalización. Código: " + response.statusCode().value() + ", Body: " + body))
+                )
+                .bodyToMono(DireccionDTO.class)
+                .block();
+    }
+
+    /**
      * Obtiene todas las direcciones para el proceso de carga de datos (seeding).
      * @return Lista de DireccionDTOs. Retorna lista vacía en caso de error o conexión fallida.
      */

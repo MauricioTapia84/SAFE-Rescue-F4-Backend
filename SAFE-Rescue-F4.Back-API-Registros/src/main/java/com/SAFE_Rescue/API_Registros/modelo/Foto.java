@@ -57,7 +57,7 @@ public class Foto {
      * </p>
      */
     @Column(name = "fecha_subida", nullable = false)
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @Schema(description = "Fecha y hora en que se subió la Foto", example = "2025-09-09T10:30:00")
     private LocalDateTime fechaSubida;
 

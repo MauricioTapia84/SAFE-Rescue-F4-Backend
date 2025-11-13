@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class DireccionDTO implements IHasId {
+public class DireccionDTO  {
 
     /**
      * Identificador único de la dirección.
@@ -60,12 +60,4 @@ public class DireccionDTO implements IHasId {
     @Schema(description = "Coordenadas de Latitud y Longitud de la dirección.")
     private GeolocalizacionDTO geolocalizacion;
 
-    /**
-     * @brief Implementación del método getId() de la interfaz IHasId.
-     * @return El idDireccion.
-     */
-    @Override
-    public Integer getId() {
-        return idDireccion;
-    }
 }

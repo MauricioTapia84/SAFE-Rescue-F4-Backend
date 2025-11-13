@@ -1,3 +1,15 @@
+❚❙❘ VERSIÓN 0.0.5
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se terminar pruebas unitarias de api incidentes
+├─• Se añaden historialUsuario y ciudadano a api perfiles, con sus repositorios, service y controlladores
+├─• Se implementan test de compania, ciudadano, historialUsuario
+├─• Se corrigen problemas de fechas
+└─• Se prueba dataloader que se ejecute correctamente
+
+->>> Añadir historial para incidentes
+->>> Eliminar historial y categorias para registros
+
+
 ❚❙❘ VERSIÓN 0.0.4
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Corrección de errores de web client de la api perfiles
@@ -8,7 +20,6 @@
 └─• Se inician las pruebas unitarias de incidentes
 
 ->>> Terminar pruebas unitarias de api de incidentes
-
 
 
 ❚❙❘ VERSIÓN 0.0.3

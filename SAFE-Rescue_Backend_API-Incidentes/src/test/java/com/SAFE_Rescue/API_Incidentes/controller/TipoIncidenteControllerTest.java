@@ -1,8 +1,7 @@
 package com.SAFE_Rescue.API_Incidentes.controller;
 
-import com.SAFE_Rescue.API_Geolocalizacion.modelo.Comuna;
-import com.SAFE_Rescue.API_Geolocalizacion.modelo.Region;
-import com.SAFE_Rescue.API_Geolocalizacion.service.ComunaService;
+import com.SAFE_Rescue.API_Incidentes.modelo.TipoIncidente;
+import com.SAFE_Rescue.API_Incidentes.service.TipoIncidenteService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.datafaker.Faker;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,209 +12,220 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(ComunaController.class)
+
+@WebMvcTest(TipoIncidenteController.class)
 public class TipoIncidenteControllerTest {
 
-    // Ruta base definida en el controlador
-    private final String BASE_URL = "/api-geolocalizacion/v1/comunas";
+    private final String BASE_URL = "/api-incidentes/v1/tipos-incidentes";
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
-    private ComunaService comunaService;
-
     @Autowired
     private ObjectMapper objectMapper;
 
-    private Faker faker;
-    private Comuna comuna;
-    private Integer id;
+    @MockitoBean
+    private TipoIncidenteService tipoIncidenteService;
+
+    private TipoIncidente tipoIncidenteValido;
+    private Integer idExistente;
+    private Integer idNoExistente;
 
     @BeforeEach
     public void setUp() {
-        faker = new Faker();
-        id = 1;
-
-        // Crear dependencias (Region)
-        Region region = new Region();
-        region.setIdRegion(1);
-        region.setNombre("Región Metropolitana");
-
-        // Crear el objeto Comuna.
-        comuna = new Comuna();
-        comuna.setIdComuna(id);
-        comuna.setNombre(faker.address().city());
-        comuna.setCodigoPostal(String.valueOf(faker.number().numberBetween(1000000, 9000000)));
-        comuna.setRegion(region);
+        Faker faker = new Faker();
+        idExistente = faker.number().numberBetween(1, 100);
+        idNoExistente = 999;
+        tipoIncidenteValido = new TipoIncidente(idExistente, "Incendio Forestal");
     }
 
-    // --- Pruebas de operaciones exitosas (Happy Path) ---
+    // --- 1. GET /tipos-incidentes (Listar todos) ---
 
     @Test
-    public void listarComunasTest_shouldReturnOkAndContent() throws Exception {
+    void listarTiposIncidente_shouldReturnOk_whenListIsNotEmpty() throws Exception {
         // Arrange
-        when(comunaService.findAll()).thenReturn(List.of(comuna));
+        List<TipoIncidente> lista = Arrays.asList(tipoIncidenteValido, new TipoIncidente(2, "Accidente"));
+        when(tipoIncidenteService.findAll()).thenReturn(lista);
 
         // Act & Assert
-        mockMvc.perform(get(BASE_URL))
-                .andExpect(status().isOk()) // Coincide con ResponseEntity.ok(comunas)
-                .andExpect(jsonPath("$[0].idComuna").value(comuna.getIdComuna()));
-    }
-
-    @Test
-    public void buscarComunaTest_shouldReturnOkAndComuna() throws Exception {
-        // Arrange
-        when(comunaService.findById(id)).thenReturn(comuna);
-
-        // Act & Assert
-        mockMvc.perform(get(BASE_URL + "/{id}", id))
+        mockMvc.perform(get(BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nombre").value(comuna.getNombre()));
+                .andExpect(jsonPath("$.size()").value(2))
+                .andExpect(jsonPath("$[0].nombre").value("Incendio Forestal"));
+
+        verify(tipoIncidenteService, times(1)).findAll();
     }
 
     @Test
-    public void agregarComunaTest_shouldReturnCreatedAndMessage() throws Exception {
+    void listarTiposIncidente_shouldReturnNoContent_whenListIsEmpty() throws Exception {
         // Arrange
-        // CORRECCIÓN: Usar when().thenReturn() ya que comunaService.save() devuelve una entidad.
-        when(comunaService.save(any(Comuna.class))).thenReturn(comuna);
+        when(tipoIncidenteService.findAll()).thenReturn(Collections.emptyList());
+
+        // Act & Assert
+        mockMvc.perform(get(BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+
+        verify(tipoIncidenteService, times(1)).findAll();
+    }
+
+    // --- 2. GET /tipos-incidentes/{id} (Buscar por ID) ---
+
+    @Test
+    void buscarTipoIncidente_shouldReturnOk_whenIdExists() throws Exception {
+        // Arrange
+        when(tipoIncidenteService.findById(idExistente)).thenReturn(tipoIncidenteValido);
+
+        // Act & Assert
+        mockMvc.perform(get(BASE_URL + "/{id}", idExistente)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombre").value("Incendio Forestal"));
+
+        verify(tipoIncidenteService, times(1)).findById(idExistente);
+    }
+
+    @Test
+    void buscarTipoIncidente_shouldReturnNotFound_whenIdDoesNotExist() throws Exception {
+        // Arrange
+        when(tipoIncidenteService.findById(idNoExistente)).thenThrow(new NoSuchElementException());
+
+        // Act & Assert
+        mockMvc.perform(get(BASE_URL + "/{id}", idNoExistente)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(content().string("Tipo Incidente no encontrado"));
+
+        verify(tipoIncidenteService, times(1)).findById(idNoExistente);
+    }
+
+    // --- 3. POST /tipos-incidentes (Crear) ---
+
+    @Test
+    void agregarTipoIncidente_shouldReturnCreated_whenValid() throws Exception {
+        // Arrange
+        TipoIncidente nuevoTipo = new TipoIncidente(1,"Terremoto");
+        // CORRECCIÓN: Usar when().thenReturn() porque TipoIncidenteService.save() devuelve un objeto, no es void.
+        when(tipoIncidenteService.save(any(TipoIncidente.class))).thenReturn(tipoIncidenteValido);
 
         // Act & Assert
         mockMvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(comuna)))
-                .andExpect(status().isCreated()) // 201 CREATED (Coincide con el controlador)
-                .andExpect(content().string("Comuna creada con éxito.")); // Coincide con el controlador
+                        .content(objectMapper.writeValueAsString(nuevoTipo)))
+                .andExpect(status().isCreated())
+                .andExpect(content().string("Tipo Incidente creado con éxito."));
+
+        verify(tipoIncidenteService, times(1)).save(any(TipoIncidente.class));
     }
 
     @Test
-    public void actualizarComunaTest_shouldReturnOkAndMessage() throws Exception {
+    void agregarTipoIncidente_shouldReturnBadRequest_whenServiceThrowsRuntimeException() throws Exception {
         // Arrange
-        Comuna updatedComuna = new Comuna();
-        updatedComuna.setIdComuna(id);
-        updatedComuna.setNombre("Comuna Actualizada");
-        updatedComuna.setCodigoPostal(comuna.getCodigoPostal());
-        updatedComuna.setRegion(comuna.getRegion());
-
-        // CORRECCIÓN: Usar when().thenReturn() ya que comunaService.update() devuelve una entidad.
-        when(comunaService.update(any(Comuna.class), eq(id))).thenReturn(updatedComuna);
-
-        // Act & Assert
-        mockMvc.perform(put(BASE_URL + "/{id}", id)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updatedComuna)))
-                .andExpect(status().isOk()) // 200 OK (Coincide con el controlador)
-                .andExpect(content().string("Comuna actualizada con éxito")); // Coincide con el controlador
-    }
-
-    @Test
-    public void eliminarComunaTest_shouldReturnOkAndMessage() throws Exception {
-        // Arrange
-        // Correcto: doNothing() porque comunaService.delete() debe ser void.
-        doNothing().when(comunaService).delete(id);
-
-        // Act & Assert
-        mockMvc.perform(delete(BASE_URL + "/{id}", id))
-                .andExpect(status().isOk()) // 200 OK (Ajustado para coincidir con el controlador)
-                .andExpect(content().string("Comuna eliminada con éxito.")); // Coincide con el controlador
-    }
-
-    // --- Pruebas de escenarios de error ---
-
-    @Test
-    public void listarComunasTest_NoContent() throws Exception {
-        // Arrange
-        when(comunaService.findAll()).thenReturn(Collections.emptyList());
-
-        // Act & Assert
-        mockMvc.perform(get(BASE_URL))
-                .andExpect(status().isNoContent()); // 204 NO CONTENT (Coincide con el controlador)
-    }
-
-    @Test
-    public void buscarComunaTest_NotFound() throws Exception {
-        // Arrange
-        when(comunaService.findById(id)).thenThrow(new NoSuchElementException("Comuna no encontrada"));
-
-        // Act & Assert
-        mockMvc.perform(get(BASE_URL + "/{id}", id))
-                .andExpect(status().isNotFound()) // 404 NOT FOUND
-                .andExpect(content().string("Comuna no encontrada")); // Coincide con el mensaje del controlador
-    }
-
-    @Test
-    public void agregarComunaTest_BadRequest_RuntimeError() throws Exception {
-        // Arrange
-        final String errorMessage = "Error: La Región asociada no existe.";
-        when(comunaService.save(any(Comuna.class))).thenThrow(new IllegalArgumentException(errorMessage)); // RuntimeException
+        TipoIncidente tipoInvalido = new TipoIncidente(1,"");
+        String errorMsg = "El nombre es requerido";
+        when(tipoIncidenteService.save(any(TipoIncidente.class))).thenThrow(new RuntimeException(errorMsg));
 
         // Act & Assert
         mockMvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(comuna)))
-                .andExpect(status().isBadRequest()) // 400 BAD REQUEST (Capturado por el catch (RuntimeException e))
-                .andExpect(content().string(errorMessage)); // El mensaje de error del servicio
+                        .content(objectMapper.writeValueAsString(tipoInvalido)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(errorMsg));
+
+        verify(tipoIncidenteService, times(1)).save(any(TipoIncidente.class));
     }
 
+    // --- 4. PUT /tipos-incidentes/{id} (Actualizar) ---
+
     @Test
-    public void actualizarComunaTest_NotFound() throws Exception {
+    void actualizarTipoIncidente_shouldReturnOk_whenValidUpdate() throws Exception {
         // Arrange
-        // Si update lanza una excepción (porque no es void), debemos usar when()
-        when(comunaService.update(any(Comuna.class), eq(id))).thenThrow(new NoSuchElementException("Comuna no encontrada"));
+        TipoIncidente datosActualizados = new TipoIncidente(1,"Tsunami");
+        when(tipoIncidenteService.update(any(TipoIncidente.class), eq(idExistente))).thenReturn(tipoIncidenteValido);
 
         // Act & Assert
-        mockMvc.perform(put(BASE_URL + "/{id}", id)
+        mockMvc.perform(put(BASE_URL + "/{id}", idExistente)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(comuna)))
-                .andExpect(status().isNotFound()) // 404 NOT FOUND
-                .andExpect(content().string("Comuna no encontrada")); // Coincide con el mensaje del controlador
+                        .content(objectMapper.writeValueAsString(datosActualizados)))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Actualizado con éxito"));
+
+        verify(tipoIncidenteService, times(1)).update(any(TipoIncidente.class), eq(idExistente));
     }
 
     @Test
-    public void actualizarComunaTest_BadRequest_RuntimeError() throws Exception {
+    void actualizarTipoIncidente_shouldReturnNotFound_whenIdDoesNotExist() throws Exception {
         // Arrange
-        final String errorMessage = "El nombre de la comuna es requerido.";
-        // Si update lanza una excepción (porque no es void), debemos usar when()
-        when(comunaService.update(any(Comuna.class), eq(id))).thenThrow(new IllegalArgumentException(errorMessage));
+        TipoIncidente datosActualizados = new TipoIncidente(1,"Tsunami");
+        when(tipoIncidenteService.update(any(TipoIncidente.class), eq(idNoExistente))).thenThrow(new NoSuchElementException());
 
         // Act & Assert
-        mockMvc.perform(put(BASE_URL + "/{id}", id)
+        mockMvc.perform(put(BASE_URL + "/{id}", idNoExistente)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(comuna)))
-                .andExpect(status().isBadRequest()) // 400 BAD REQUEST
-                .andExpect(content().string(errorMessage)); // Coincide con el mensaje del controlador
+                        .content(objectMapper.writeValueAsString(datosActualizados)))
+                .andExpect(status().isNotFound())
+                .andExpect(content().string("Tipo Incidente no encontrado"));
+
+        verify(tipoIncidenteService, times(1)).update(any(TipoIncidente.class), eq(idNoExistente));
     }
 
     @Test
-    public void eliminarComunaTest_NotFound() throws Exception {
+    void actualizarTipoIncidente_shouldReturnBadRequest_whenValidationFails() throws Exception {
         // Arrange
-        doThrow(new NoSuchElementException("Comuna no encontrada")).when(comunaService).delete(id);
+        TipoIncidente datosActualizados = new TipoIncidente(1,"Nombre demasiado largo...");
+        String errorMsg = "El nombre no puede exceder 50 caracteres";
+        when(tipoIncidenteService.update(any(TipoIncidente.class), eq(idExistente))).thenThrow(new RuntimeException(errorMsg));
 
         // Act & Assert
-        mockMvc.perform(delete(BASE_URL + "/{id}", id))
-                .andExpect(status().isNotFound()) // 404 NOT FOUND
-                .andExpect(content().string("Comuna no encontrada")); // Coincide con el mensaje del controlador
+        mockMvc.perform(put(BASE_URL + "/{id}", idExistente)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(datosActualizados)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(errorMsg));
+
+        verify(tipoIncidenteService, times(1)).update(any(TipoIncidente.class), eq(idExistente));
+    }
+
+
+    // --- 5. DELETE /tipos-incidentes/{id} (Eliminar) ---
+
+    @Test
+    void eliminarTipoIncidente_shouldReturnOk_whenIdExists() throws Exception {
+        // Arrange
+        // doNothing() es correcto aquí porque TipoIncidenteService.delete() es void
+        doNothing().when(tipoIncidenteService).delete(idExistente);
+
+        // Act & Assert
+        mockMvc.perform(delete(BASE_URL + "/{id}", idExistente)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Tipo Incidente eliminado con éxito."));
+
+        verify(tipoIncidenteService, times(1)).delete(idExistente);
     }
 
     @Test
-    public void eliminarComunaTest_BadRequest_RuntimeError() throws Exception {
+    void eliminarTipoIncidente_shouldReturnNotFound_whenIdDoesNotExist() throws Exception {
         // Arrange
-        final String errorMessage = "No se puede eliminar la comuna porque tiene direcciones asociadas.";
-        doThrow(new IllegalStateException(errorMessage)).when(comunaService).delete(id); // Simula el error del service (RuntimeException)
+        doThrow(new NoSuchElementException()).when(tipoIncidenteService).delete(idNoExistente);
 
         // Act & Assert
-        mockMvc.perform(delete(BASE_URL + "/{id}", id))
-                .andExpect(status().isBadRequest()) // 400 BAD REQUEST
-                .andExpect(content().string(errorMessage)); // Coincide con el mensaje del controlador
+        mockMvc.perform(delete(BASE_URL + "/{id}", idNoExistente)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(content().string("Tipo Incidente no encontrado"));
+
+        verify(tipoIncidenteService, times(1)).delete(idNoExistente);
     }
 }

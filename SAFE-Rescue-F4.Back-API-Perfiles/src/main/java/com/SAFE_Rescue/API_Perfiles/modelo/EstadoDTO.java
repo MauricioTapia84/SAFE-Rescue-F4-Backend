@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class EstadoDTO implements IHasId {
+public class EstadoDTO{
 
     /**
      * Identificador único del estado.
@@ -34,12 +34,4 @@ public class EstadoDTO implements IHasId {
     @Schema(description = "Descripción detallada del estado", example = "El incidente acaba de ser registrado.")
     private String descripcion;
 
-    /**
-     * @brief Implementación del método getId() de la interfaz IHasId.
-     * @return El idEstado.
-     */
-    @Override
-    public Integer getId() {
-        return idEstado;
-    }
 }

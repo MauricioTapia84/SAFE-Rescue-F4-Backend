@@ -2,6 +2,12 @@ package com.SAFE_Rescue.API_Incidentes.controller;
 
 import com.SAFE_Rescue.API_Incidentes.modelo.Incidente;
 import com.SAFE_Rescue.API_Incidentes.service.IncidenteService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +22,7 @@ import java.util.NoSuchElementException;
  */
 @RestController
 @RequestMapping("/api-incidentes/v1/incidentes")
+@Tag(name = "Incidentes", description = "Gestión de la entidad Incidente y sus relaciones")
 public class IncidenteController {
 
     @Autowired
@@ -27,6 +34,9 @@ public class IncidenteController {
      * Obtiene todos los incidentes registrados en el sistema.
      * @return ResponseEntity con lista de incidentes o estado NO_CONTENT si no hay registros
      */
+    @Operation(summary = "Obtener todos los incidentes", description = "Recupera una lista de todos los incidentes registrados.")
+    @ApiResponse(responseCode = "200", description = "Lista de incidentes recuperada con éxito.")
+    @ApiResponse(responseCode = "204", description = "No hay incidentes registrados.", content = @Content)
     @GetMapping
     public ResponseEntity<List<Incidente>> listar(){
 
@@ -42,8 +52,13 @@ public class IncidenteController {
      * @param id ID del incidente a buscar
      * @return ResponseEntity con el incidente encontrado o mensaje de error
      */
+    @Operation(summary = "Buscar incidente por ID", description = "Busca y recupera un incidente específico usando su identificador.")
+    @ApiResponse(responseCode = "200", description = "Incidente encontrado con éxito.")
+    @ApiResponse(responseCode = "404", description = "Incidente no encontrado.", content = @Content)
     @GetMapping("/{id}")
-    public ResponseEntity<?> buscarIncidente(@PathVariable Integer id) {
+    public ResponseEntity<?> buscarIncidente(
+            @Parameter(description = "ID del incidente a buscar", required = true)
+            @PathVariable Integer id) {
         Incidente incidente;
 
         try {
@@ -61,6 +76,10 @@ public class IncidenteController {
      * @param incidente Datos del incidente a crear
      * @return ResponseEntity con mensaje de confirmación o error
      */
+    @Operation(summary = "Crear nuevo incidente", description = "Registra un nuevo incidente en el sistema. Requiere IDs válidos para TipoIncidente, Estado, Ciudadano y Dirección.")
+    @ApiResponse(responseCode = "201", description = "Incidente creado con éxito.")
+    @ApiResponse(responseCode = "400", description = "Error de validación o ID de referencia no encontrado.")
+    @ApiResponse(responseCode = "500", description = "Error interno del servidor.")
     @PostMapping
     public ResponseEntity<String> agregarIncidente(@RequestBody Incidente incidente) {
         try {
@@ -79,8 +98,15 @@ public class IncidenteController {
      * @param incidente Datos actualizados del incidente
      * @return ResponseEntity con mensaje de confirmación o error
      */
+    @Operation(summary = "Actualizar incidente", description = "Modifica los datos de un incidente existente.")
+    @ApiResponse(responseCode = "200", description = "Incidente actualizado con éxito.")
+    @ApiResponse(responseCode = "404", description = "Incidente no encontrado.")
+    @ApiResponse(responseCode = "400", description = "Error de validación o ID de referencia no válido.")
     @PutMapping("/{id}")
-    public ResponseEntity<String> actualizarIncidente(@PathVariable Integer id, @RequestBody Incidente incidente) {
+    public ResponseEntity<String> actualizarIncidente(
+            @Parameter(description = "ID del incidente a actualizar", required = true)
+            @PathVariable Integer id,
+            @RequestBody Incidente incidente) {
         try {
             Incidente nuevoIncidente = incidenteService.update(incidente, id);
             return ResponseEntity.ok("Actualizado con éxito");
@@ -101,8 +127,13 @@ public class IncidenteController {
      * @param id ID del incidente a eliminar
      * @return ResponseEntity con mensaje de confirmación
      */
+    @Operation(summary = "Eliminar incidente", description = "Elimina un incidente del sistema usando su ID.")
+    @ApiResponse(responseCode = "200", description = "Incidente eliminado con éxito.")
+    @ApiResponse(responseCode = "404", description = "Incidente no encontrado.")
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> eliminarIncidente(@PathVariable Integer id) {
+    public ResponseEntity<String> eliminarIncidente(
+            @Parameter(description = "ID del incidente a eliminar", required = true)
+            @PathVariable Integer id) {
         try {
             incidenteService.delete(id);
             return ResponseEntity.ok("Incidente eliminado con éxito.");
@@ -127,8 +158,13 @@ public class IncidenteController {
      * @param ciudadanoId del ciudadano
      * @return ResponseEntity con mensaje de confirmación o error
      */
+    @Operation(summary = "Asignar Ciudadano", description = "Asigna un Ciudadano existente (ID externo) a un incidente.")
+    @ApiResponse(responseCode = "200", description = "Ciudadano asignado con éxito.")
+    @ApiResponse(responseCode = "404", description = "Incidente o Ciudadano no encontrado.")
     @PostMapping("/{incidenteId}/asignar-ciudadano/{ciudadanoId}")
-    public ResponseEntity<String> asignacCiudadano(@PathVariable Integer incidenteId, @PathVariable Integer ciudadanoId) {
+    public ResponseEntity<String> asignacCiudadano(
+            @Parameter(description = "ID del incidente", required = true) @PathVariable Integer incidenteId,
+            @Parameter(description = "ID del ciudadano", required = true) @PathVariable Integer ciudadanoId) {
         try {
             incidenteService.asignarCiudadano(incidenteId,ciudadanoId);
             return ResponseEntity.ok("UsuarioDTO asignado al Incidente exitosamente");
@@ -143,8 +179,13 @@ public class IncidenteController {
      * @param estadoIncidenteId ID del estado de incidente a asignar
      * @return ResponseEntity con mensaje de confirmación o error
      */
+    @Operation(summary = "Asignar Estado de Incidente", description = "Asigna un Estado existente (ID externo) a un incidente.")
+    @ApiResponse(responseCode = "200", description = "Estado asignado con éxito.")
+    @ApiResponse(responseCode = "404", description = "Incidente o Estado no encontrado.")
     @PostMapping("/{incidenteId}/asignar-estado-incidente/{estadoIncidenteId}")
-    public ResponseEntity<String> asignarEstadoIncidente(@PathVariable Integer incidenteId, @PathVariable Integer estadoIncidenteId) {
+    public ResponseEntity<String> asignarEstadoIncidente(
+            @Parameter(description = "ID del incidente", required = true) @PathVariable Integer incidenteId,
+            @Parameter(description = "ID del estado de incidente", required = true) @PathVariable Integer estadoIncidenteId) {
         try {
             incidenteService.asignarEstadoIncidente(incidenteId,estadoIncidenteId);
             return ResponseEntity.ok("Estado Incidente asignado al Incidente exitosamente");
@@ -159,8 +200,13 @@ public class IncidenteController {
      * @param tipoIncidenteId ID del tipo de incidente a asignar
      * @return ResponseEntity con mensaje de confirmación o error
      */
+    @Operation(summary = "Asignar Tipo de Incidente", description = "Asigna un Tipo de Incidente existente (ID local) a un incidente.")
+    @ApiResponse(responseCode = "200", description = "Tipo de Incidente asignado con éxito.")
+    @ApiResponse(responseCode = "404", description = "Incidente o Tipo de Incidente no encontrado.")
     @PostMapping("/{incidenteId}/asignar-tipo-incidente/{tipoIncidenteId}")
-    public ResponseEntity<String> asignarTipoIncidente(@PathVariable Integer incidenteId, @PathVariable Integer tipoIncidenteId) {
+    public ResponseEntity<String> asignarTipoIncidente(
+            @Parameter(description = "ID del incidente", required = true) @PathVariable Integer incidenteId,
+            @Parameter(description = "ID del tipo de incidente", required = true) @PathVariable Integer tipoIncidenteId) {
         try {
             incidenteService.asignarTipoIncidente(incidenteId,tipoIncidenteId);
             return ResponseEntity.ok("Tipo Incidente asignado al Incidente exitosamente");
@@ -170,13 +216,18 @@ public class IncidenteController {
     }
 
     /**
-     * Asigna una equipo a un incidente.
+     * Asigna un Equipo a un incidente.
      * @param incidenteId ID del incidente
      * @param equipoId del equipo
      * @return ResponseEntity con mensaje de confirmación o error
      */
+    @Operation(summary = "Asignar Equipo", description = "Asigna un Equipo existente (ID externo) a un incidente.")
+    @ApiResponse(responseCode = "200", description = "Equipo asignado con éxito.")
+    @ApiResponse(responseCode = "404", description = "Incidente o Equipo no encontrado.")
     @PostMapping("/{incidenteId}/asignar-equipo/{equipoId}")
-    public ResponseEntity<String> asignaEquipo(@PathVariable Integer incidenteId, @PathVariable Integer equipoId) {
+    public ResponseEntity<String> asignaEquipo(
+            @Parameter(description = "ID del incidente", required = true) @PathVariable Integer incidenteId,
+            @Parameter(description = "ID del equipo", required = true) @PathVariable Integer equipoId) {
         try {
             incidenteService.asignarEquipo(incidenteId,equipoId);
             return ResponseEntity.ok("EquipoDTO asignado al Incidente exitosamente");
@@ -186,17 +237,52 @@ public class IncidenteController {
     }
 
     /**
-     * Asigna una ubicacion a un incidente.
+     * Crea una nueva dirección en el microservicio de Geolocalización y la asigna al incidente.
+     * @param incidenteId ID del incidente al que asignar la dirección
+     * @param ubicacionJson Payload JSON con los datos de la dirección a crear
+     * @return ResponseEntity con el incidente actualizado o error
+     */
+    @Operation(summary = "Crear y Asignar Nueva Ubicación (Dirección)",
+            description = "Envía el JSON de la dirección al microservicio de Geolocalización para crearla, y luego asigna el ID retornado al incidente especificado.")
+    @ApiResponse(responseCode = "200", description = "Dirección creada y asignada al incidente con éxito.",
+            content = @Content(schema = @Schema(implementation = Incidente.class)))
+    @ApiResponse(responseCode = "404", description = "Incidente no encontrado.")
+    @ApiResponse(responseCode = "400", description = "Error en el formato JSON de la dirección o falla del microservicio de Geolocalización.")
+    @PostMapping("/{incidenteId}/agregar-ubicacion")
+    public ResponseEntity<?> agregarUbicacionAIncidente(
+            @Parameter(description = "ID del incidente al que asignar la nueva dirección", required = true)
+            @PathVariable Integer incidenteId,
+            @Parameter(description = "JSON con los datos de la nueva dirección (calle, altura, coordenadas, etc.)", required = true)
+            @RequestBody String ubicacionJson) {
+        try {
+            Incidente incidenteActualizado = incidenteService.agregarUbicacionAIncidente(incidenteId, ubicacionJson);
+            return ResponseEntity.ok(incidenteActualizado);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Incidente no encontrado.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error al crear o asignar la dirección: " + e.getMessage());
+        }
+    }
+
+
+    /**
+     * Asigna una Dirección (Ubicación) a un incidente existente mediante IDs.
      * @param incidenteId ID del incidente
-     * @param ubicacionId ID de la DireccionDTO
+     * @param direccionId ID de la DireccionDTO
      * @return ResponseEntity con mensaje de confirmación o error
      */
-    @PostMapping("/{incidenteId}/asignar-ubicacion/{ubicacionId}")
-    public ResponseEntity<String> asignarUbicacion(@PathVariable Integer incidenteId, @PathVariable Integer ubicacionId) {
+    @Operation(summary = "Asignar Dirección existente", description = "Asigna una Dirección existente (ID externo) a un incidente.")
+    @ApiResponse(responseCode = "200", description = "Dirección asignada con éxito.")
+    @ApiResponse(responseCode = "404", description = "Incidente o Dirección no encontrada.")
+    @PostMapping("/{incidenteId}/asignar-direccion/{direccionId}")
+    public ResponseEntity<String> asignarDireccion(
+            @Parameter(description = "ID del incidente", required = true) @PathVariable Integer incidenteId,
+            @Parameter(description = "ID de la dirección (ubicación)", required = true) @PathVariable Integer direccionId) {
         try {
-            incidenteService.asignarUbicacion(incidenteId, ubicacionId);
+            incidenteService.asignarDireccion(incidenteId, direccionId);
             return ResponseEntity.ok("DireccionDTO asignada al incidente exitosamente");
         } catch (RuntimeException e) {
+            // Cambiado a usar direccionId para claridad en la ruta y el método
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }

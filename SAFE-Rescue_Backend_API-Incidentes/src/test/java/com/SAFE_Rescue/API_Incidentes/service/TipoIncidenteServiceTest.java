@@ -1,8 +1,7 @@
 package com.SAFE_Rescue.API_Incidentes.service;
 
-import com.SAFE_Rescue.API_Geolocalizacion.modelo.Comuna;
-import com.SAFE_Rescue.API_Geolocalizacion.modelo.Region;
-import com.SAFE_Rescue.API_Geolocalizacion.repositoy.ComunaRepository;
+import com.SAFE_Rescue.API_Incidentes.modelo.TipoIncidente;
+import com.SAFE_Rescue.API_Incidentes.repository.TipoIncidenteRepository;
 import net.datafaker.Faker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,257 +9,197 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DataIntegrityViolationException;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class TipoIncidenteServiceTest {
 
     @Mock
-    private ComunaRepository comunaRepository;
+    private TipoIncidenteRepository tipoIncidenteRepository;
 
     @InjectMocks
-    private ComunaService comunaService;
+    private TipoIncidenteService tipoIncidenteService;
 
-    private Comuna comuna;
-    private Region region;
+    private TipoIncidente tipoIncidenteValido;
     private Faker faker;
-    private Integer id;
+    private Integer idExistente;
+    private Integer idNoExistente;
 
     @BeforeEach
     public void setUp() {
         faker = new Faker();
-        id = faker.number().numberBetween(1, 100);
+        idExistente = faker.number().numberBetween(1, 100);
+        idNoExistente = 999;
 
-        // 1. Crear el objeto Region (dependencia)
-        region = new Region();
-        region.setIdRegion(1);
-        region.setNombre("Región Metropolitana");
-
-        // 2. Crear el objeto Comuna
-        comuna = new Comuna();
-        comuna.setIdComuna(id);
-        comuna.setNombre("Las Condes");
-        comuna.setCodigoPostal("7550000");
-        comuna.setRegion(region);
+        // Tipo de Incidente Válido y listo para usar en las pruebas
+        tipoIncidenteValido = new TipoIncidente(idExistente, "Incendio Estructural");
     }
 
-    // --- Pruebas de operaciones exitosas (Happy Path) ---
+    // --- PRUEBAS DE FINDALL ---
 
     @Test
-    public void findAll_shouldReturnAllComunas() {
+    public void findAll_shouldReturnListOfIncidents() {
         // Arrange
-        when(comunaRepository.findAll()).thenReturn(List.of(comuna));
+        TipoIncidente tipo2 = new TipoIncidente(2, "Accidente de Tráfico");
+        List<TipoIncidente> listaEsperada = Arrays.asList(tipoIncidenteValido, tipo2);
+
+        when(tipoIncidenteRepository.findAll()).thenReturn(listaEsperada);
 
         // Act
-        List<Comuna> comunas = comunaService.findAll();
+        List<TipoIncidente> resultado = tipoIncidenteService.findAll();
 
         // Assert
-        assertNotNull(comunas);
-        assertFalse(comunas.isEmpty());
-        assertEquals(1, comunas.size());
-        assertEquals(comuna.getNombre(), comunas.get(0).getNombre());
-        verify(comunaRepository, times(1)).findAll();
+        assertNotNull(resultado);
+        assertEquals(2, resultado.size());
+        verify(tipoIncidenteRepository, times(1)).findAll();
     }
 
+    // --- PRUEBAS DE FIND_BY_ID ---
+
     @Test
-    public void findById_shouldReturnComuna_whenFound() {
+    public void findById_shouldReturnIncident_whenIdExists() {
         // Arrange
-        when(comunaRepository.findById(id)).thenReturn(Optional.of(comuna));
+        when(tipoIncidenteRepository.findById(idExistente)).thenReturn(Optional.of(tipoIncidenteValido));
 
         // Act
-        Comuna encontrada = comunaService.findById(id);
+        TipoIncidente encontrado = tipoIncidenteService.findById(idExistente);
 
         // Assert
-        assertNotNull(encontrada);
-        assertEquals(comuna.getNombre(), encontrada.getNombre());
-        verify(comunaRepository, times(1)).findById(id);
+        assertNotNull(encontrado);
+        assertEquals(idExistente, encontrado.getIdTipoIncidente());
+        verify(tipoIncidenteRepository, times(1)).findById(idExistente);
     }
 
     @Test
-    public void save_shouldReturnSavedComuna_whenValid() {
+    public void findById_shouldThrowException_whenIdDoesNotExist() {
         // Arrange
-        when(comunaRepository.save(any(Comuna.class))).thenReturn(comuna);
+        when(tipoIncidenteRepository.findById(idNoExistente)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(NoSuchElementException.class, () -> tipoIncidenteService.findById(idNoExistente));
+        verify(tipoIncidenteRepository, times(1)).findById(idNoExistente);
+    }
+
+    // --- PRUEBAS DE SAVE (Con validación) ---
+
+    @Test
+    public void save_shouldReturnSavedIncident_whenValid() {
+        // Arrange
+        TipoIncidente nuevoTipo = new TipoIncidente(1,"Inundación leve");
+        when(tipoIncidenteRepository.save(any(TipoIncidente.class))).thenReturn(tipoIncidenteValido);
 
         // Act
-        Comuna guardada = comunaService.save(comuna);
+        TipoIncidente guardado = tipoIncidenteService.save(nuevoTipo);
 
         // Assert
-        assertNotNull(guardada);
-        assertEquals(comuna.getNombre(), guardada.getNombre());
-        verify(comunaRepository, times(1)).save(comuna);
+        assertNotNull(guardado);
+        verify(tipoIncidenteRepository, times(1)).save(nuevoTipo);
     }
 
     @Test
-    public void update_shouldReturnUpdatedComuna_whenValid() {
+    public void save_shouldThrowRuntimeException_whenNameIsNull() {
         // Arrange
-        String nuevoNombre = "Providencia";
-        String nuevoCodigoPostal = "7500000";
+        TipoIncidente tipoInvalido = new TipoIncidente(1,null);
 
-        // Creamos una nueva región para simular un cambio de región
-        Region nuevaRegion = new Region();
-        nuevaRegion.setIdRegion(2);
-        nuevaRegion.setNombre("Región de Valparaíso");
+        // Act & Assert
+        // El servicio envuelve la IllegalArgumentException en una RuntimeException
+        assertThrows(RuntimeException.class, () -> tipoIncidenteService.save(tipoInvalido));
+        verify(tipoIncidenteRepository, never()).save(any());
+    }
 
-        Comuna comunaConNuevosDatos = new Comuna();
-        comunaConNuevosDatos.setNombre(nuevoNombre);
-        comunaConNuevosDatos.setCodigoPostal(nuevoCodigoPostal);
-        comunaConNuevosDatos.setRegion(nuevaRegion);
+    @Test
+    public void save_shouldThrowRuntimeException_whenNameIsTooLong() {
+        // Arrange
+        // Generar una cadena de más de 50 caracteres (por ejemplo, 60)
+        String nombreLargo = faker.lorem().characters(60);
+        TipoIncidente tipoInvalido = new TipoIncidente(1,nombreLargo);
 
-        when(comunaRepository.findById(id)).thenReturn(Optional.of(comuna));
+        // Act & Assert
+        assertThrows(RuntimeException.class, () -> tipoIncidenteService.save(tipoInvalido));
+        verify(tipoIncidenteRepository, never()).save(any());
+    }
 
-        Comuna comunaModificada = new Comuna();
-        comunaModificada.setIdComuna(id);
-        comunaModificada.setNombre(nuevoNombre);
-        comunaModificada.setCodigoPostal(nuevoCodigoPostal);
-        comunaModificada.setRegion(nuevaRegion);
+    // --- PRUEBAS DE UPDATE ---
 
-        when(comunaRepository.save(any(Comuna.class))).thenReturn(comunaModificada);
+    @Test
+    public void update_shouldReturnUpdatedIncident_whenIncidentExists() {
+        // Arrange
+        TipoIncidente tipoExistente = new TipoIncidente(idExistente, "Nombre Antiguo");
+        TipoIncidente datosActualizados = new TipoIncidente(1,"Nombre Nuevo Válido");
+
+        when(tipoIncidenteRepository.findById(idExistente)).thenReturn(Optional.of(tipoExistente));
+        when(tipoIncidenteRepository.save(any(TipoIncidente.class))).thenReturn(tipoExistente); // Devuelve el objeto modificado
 
         // Act
-        Comuna actualizado = comunaService.update(comunaConNuevosDatos, id);
+        TipoIncidente resultado = tipoIncidenteService.update(datosActualizados, idExistente);
 
         // Assert
-        assertNotNull(actualizado);
-        assertEquals(nuevoNombre, actualizado.getNombre());
-        assertEquals(nuevoCodigoPostal, actualizado.getCodigoPostal());
-        assertEquals(nuevaRegion.getNombre(), actualizado.getRegion().getNombre());
-        verify(comunaRepository, times(1)).findById(id);
-        verify(comunaRepository, times(1)).save(comuna);
+        assertNotNull(resultado);
+        assertEquals("Nombre Nuevo Válido", resultado.getNombre());
+        verify(tipoIncidenteRepository, times(1)).findById(idExistente);
+        verify(tipoIncidenteRepository, times(1)).save(tipoExistente);
     }
 
     @Test
-    public void delete_shouldDeleteComuna_whenExists() {
+    public void update_shouldThrowException_whenIdDoesNotExist() {
         // Arrange
-        when(comunaRepository.existsById(id)).thenReturn(true);
-        doNothing().when(comunaRepository).deleteById(id);
+        TipoIncidente datosActualizados = new TipoIncidente(1,"Nombre Nuevo");
+        when(tipoIncidenteRepository.findById(idNoExistente)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertDoesNotThrow(() -> comunaService.delete(id));
-        verify(comunaRepository, times(1)).existsById(id);
-        verify(comunaRepository, times(1)).deleteById(id);
-    }
-
-    // --- Pruebas de escenarios de error ---
-
-    @Test
-    public void findById_shouldThrowException_whenNotFound() {
-        // Arrange
-        when(comunaRepository.findById(id)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(NoSuchElementException.class, () -> comunaService.findById(id));
-        verify(comunaRepository, times(1)).findById(id);
-    }
-
-    // --- Pruebas de Validación en SAVE ---
-
-    @Test
-    public void save_shouldThrowException_whenNameIsNull() {
-        // Arrange
-        comuna.setNombre(null);
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> comunaService.save(comuna));
-        verify(comunaRepository, never()).save(any());
+        assertThrows(NoSuchElementException.class, () -> tipoIncidenteService.update(datosActualizados, idNoExistente));
+        verify(tipoIncidenteRepository, times(1)).findById(idNoExistente);
+        verify(tipoIncidenteRepository, never()).save(any());
     }
 
     @Test
-    public void save_shouldThrowException_whenRegionIsNull() {
+    public void update_shouldThrowRuntimeException_whenNewNameIsTooLong() {
         // Arrange
-        comuna.setRegion(null);
+        TipoIncidente tipoExistente = new TipoIncidente(idExistente, "Nombre Antiguo");
+        // Generar una cadena de más de 50 caracteres
+        TipoIncidente datosActualizados = new TipoIncidente(1,faker.lorem().characters(51));
+
+        when(tipoIncidenteRepository.findById(idExistente)).thenReturn(Optional.of(tipoExistente));
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> comunaService.save(comuna));
-        verify(comunaRepository, never()).save(any());
+        assertThrows(RuntimeException.class, () -> tipoIncidenteService.update(datosActualizados, idExistente));
+        verify(tipoIncidenteRepository, times(1)).findById(idExistente);
+        verify(tipoIncidenteRepository, never()).save(any());
+    }
+
+    // --- PRUEBAS DE DELETE ---
+
+    @Test
+    public void delete_shouldSucceed_whenIdExists() {
+        // Arrange
+        when(tipoIncidenteRepository.existsById(idExistente)).thenReturn(true);
+        // No simulamos el deleteById porque es un método void
+
+        // Act
+        tipoIncidenteService.delete(idExistente);
+
+        // Assert
+        verify(tipoIncidenteRepository, times(1)).existsById(idExistente);
+        verify(tipoIncidenteRepository, times(1)).deleteById(idExistente);
     }
 
     @Test
-    public void save_shouldThrowException_whenNameIsTooLong() {
+    public void delete_shouldThrowException_whenIdDoesNotExist() {
         // Arrange
-        comuna.setNombre(faker.lorem().characters(101)); // Más de 100 caracteres
+        when(tipoIncidenteRepository.existsById(idNoExistente)).thenReturn(false);
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> comunaService.save(comuna));
-        verify(comunaRepository, never()).save(any());
-    }
-
-    @Test
-    public void save_shouldThrowException_whenDataIntegrityViolation_invalidRegion() {
-        // Arrange
-        when(comunaRepository.save(any(Comuna.class))).thenThrow(DataIntegrityViolationException.class);
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> comunaService.save(comuna));
-        verify(comunaRepository, times(1)).save(comuna);
-    }
-
-    // --- Pruebas de Validación y Errores en UPDATE ---
-
-    @Test
-    public void update_shouldThrowException_whenComunaIsNull() {
-        // Arrange
-        Comuna nullComuna = null;
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> comunaService.update(nullComuna, id));
-        verify(comunaRepository, never()).findById(any());
-    }
-
-    @Test
-    public void update_shouldThrowException_whenComunaNotFound() {
-        // Arrange
-        when(comunaRepository.findById(id)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(NoSuchElementException.class, () -> comunaService.update(comuna, id));
-        verify(comunaRepository, times(1)).findById(id);
-        verify(comunaRepository, never()).save(any());
-    }
-
-    @Test
-    public void update_shouldThrowException_whenNewRegionIsNull() {
-        // Arrange
-        Comuna comunaConError = new Comuna();
-        comunaConError.setNombre("Vitacura");
-        comunaConError.setCodigoPostal("7630000");
-        comunaConError.setRegion(null); // Violación de validación
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> comunaService.update(comunaConError, id));
-        verify(comunaRepository, never()).findById(any());
-    }
-
-    @Test
-    public void update_shouldThrowException_whenDataIntegrityViolation() {
-        // Arrange
-        when(comunaRepository.findById(id)).thenReturn(Optional.of(comuna));
-        when(comunaRepository.save(any(Comuna.class))).thenThrow(DataIntegrityViolationException.class);
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> comunaService.update(comuna, id));
-        verify(comunaRepository, times(1)).findById(id);
-        verify(comunaRepository, times(1)).save(comuna);
-    }
-
-    // --- Pruebas de Eliminación con Restricciones ---
-
-    @Test
-    public void delete_shouldThrowException_whenComunaHasDireccionesAssociated() {
-        // Arrange
-        when(comunaRepository.existsById(id)).thenReturn(true);
-        // Simula la restricción de clave externa (Foreign Key Constraint)
-        doThrow(DataIntegrityViolationException.class).when(comunaRepository).deleteById(id);
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> comunaService.delete(id));
-        verify(comunaRepository, times(1)).existsById(id);
-        verify(comunaRepository, times(1)).deleteById(id);
+        assertThrows(NoSuchElementException.class, () -> tipoIncidenteService.delete(idNoExistente));
+        verify(tipoIncidenteRepository, times(1)).existsById(idNoExistente);
+        verify(tipoIncidenteRepository, never()).deleteById(anyInt());
     }
 }

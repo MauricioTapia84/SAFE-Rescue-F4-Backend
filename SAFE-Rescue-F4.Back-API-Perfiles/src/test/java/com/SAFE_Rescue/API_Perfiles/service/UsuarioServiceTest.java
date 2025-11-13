@@ -17,6 +17,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -70,7 +71,7 @@ public class UsuarioServiceTest {
         usuario.setNombre(faker.name().firstName());
         usuario.setAPaterno(faker.name().lastName());
         usuario.setAMaterno(faker.name().lastName());
-        usuario.setFechaRegistro(LocalDate.now());
+        usuario.setFechaRegistro(LocalDateTime.now());
         usuario.setTelefono(faker.phoneNumber().cellPhone());
         usuario.setCorreo(faker.internet().emailAddress());
         usuario.setContrasenia(faker.internet().password());
@@ -78,7 +79,7 @@ public class UsuarioServiceTest {
         usuario.setRazonBaneo(null);
         usuario.setDiasBaneo(0);
         usuario.setTipoUsuario(tipoUsuario);
-        usuario.setIdEstado(estadoDTO.getId());
+        usuario.setIdEstado(estadoDTO.getIdEstado());
         usuario.setIdFoto(faker.number().numberBetween(1, 50));
     }
 
@@ -140,13 +141,13 @@ public class UsuarioServiceTest {
         usuarioExistente.setDv("9");
         usuarioExistente.setAPaterno("Paterno");
         usuarioExistente.setAMaterno("Materno");
-        usuarioExistente.setFechaRegistro(LocalDate.now());
+        usuarioExistente.setFechaRegistro(LocalDateTime.now());
         usuarioExistente.setTelefono("987654321");
         usuarioExistente.setCorreo("old@email.com");
         usuarioExistente.setContrasenia("pass");
         usuarioExistente.setTipoUsuario(usuario.getTipoUsuario());
         usuarioExistente.setIdFoto(1);
-        usuarioExistente.setIdEstado(estadoDTO.getId()); // ID DE ESTADO VÁLIDO
+        usuarioExistente.setIdEstado(estadoDTO.getIdEstado()); // ID DE ESTADO VÁLIDO
 
         when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuarioExistente));
         when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);

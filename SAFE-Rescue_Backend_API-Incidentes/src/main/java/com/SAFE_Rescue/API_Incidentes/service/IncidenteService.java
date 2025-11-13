@@ -159,7 +159,47 @@ public class IncidenteService {
         incidenteRepository.delete(incidente);
     }
 
-    // MÉTODOS PRIVADOS DE VALIDACIÓN
+    // --- MÉTODOS PARA GESTIÓN DE DIRECCIONES ---
+
+    /**
+     * Crea una nueva dirección en el microservicio de Geolocalización
+     * y la asigna al incidente especificado.
+     *
+     * @param incidenteId ID del incidente a actualizar.
+     * @param ubicacionJson Payload JSON con los datos de la dirección.
+     * @return El Incidente actualizado con el nuevo ID de Dirección.
+     * @throws NoSuchElementException Si no se encuentra el incidente.
+     * @throws RuntimeException Si el cliente de geolocalización falla.
+     */
+    public Incidente agregarUbicacionAIncidente(Integer incidenteId, String ubicacionJson) {
+        // 1. Llamar al microservicio para crear la dirección
+        DireccionDTO direccionCreada = geolocalizacionClient.subirUbicacion(ubicacionJson);
+
+        // 2. Obtener el incidente
+        Incidente incidente = findById(incidenteId);
+
+        // 3. Asignar el ID de la dirección al incidente
+        incidente.setIdDireccion(direccionCreada.getIdDireccion());
+
+        // 4. Guardar y retornar
+        return incidenteRepository.save(incidente);
+    }
+
+    /**
+     * Asigna una Dirección (Ubicación) a un incidente existente mediante IDs.
+     * @param incidenteId ID del incidente
+     * @param idDireccion ID de la Dirección a asignar
+     */
+    public void asignarDireccion(
+            Integer incidenteId,
+            Integer idDireccion) {
+        Incidente incidente = findById(incidenteId);
+        validarExistenciaReferencia(geolocalizacionClient, idDireccion, "Direccion");
+        incidente.setIdDireccion(idDireccion);
+        incidenteRepository.save(incidente);
+    }
+
+    // --- MÉTODOS PRIVADOS DE VALIDACIÓN ---
 
     /**
      * Método genérico para validar la existencia de una referencia externa (DTO/Entidad) por ID.
@@ -321,17 +361,4 @@ public class IncidenteService {
         incidenteRepository.save(incidente);
     }
 
-    /**
-     * Asigna una Dirección (Ubicación) a un incidente existente mediante IDs.
-     * @param incidenteId ID del incidente
-     * @param idDireccion ID de la Dirección a asignar
-     */
-    public void asignarUbicacion(
-            Integer incidenteId,
-            Integer idDireccion) {
-        Incidente incidente = findById(incidenteId);
-        validarExistenciaReferencia(geolocalizacionClient, idDireccion, "Direccion");
-        incidente.setIdDireccion(idDireccion);
-        incidenteRepository.save(incidente);
-    }
 }

@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -63,7 +64,7 @@ public class BomberoServiceTest {
         bombero.setNombre(faker.name().firstName());
         bombero.setAPaterno(faker.name().lastName());
         bombero.setAMaterno(faker.name().lastName());
-        bombero.setFechaRegistro(LocalDate.now());
+        bombero.setFechaRegistro(LocalDateTime.now());
         bombero.setTelefono(faker.phoneNumber().phoneNumber());
         bombero.setCorreo(faker.internet().emailAddress());
         bombero.setContrasenia(faker.internet().password());
