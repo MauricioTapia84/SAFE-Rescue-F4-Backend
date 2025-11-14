@@ -1,9 +1,7 @@
 package com.SAFE_Rescue.API_Registros.service;
 
-import com.SAFE_Rescue.API_Registros.modelo.Categoria;
 import com.SAFE_Rescue.API_Registros.modelo.Estado;
 import com.SAFE_Rescue.API_Registros.repository.EstadoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 

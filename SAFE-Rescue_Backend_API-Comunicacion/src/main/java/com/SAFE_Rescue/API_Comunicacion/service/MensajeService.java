@@ -1,96 +1,101 @@
 package com.SAFE_Rescue.API_Comunicacion.service;
 
-import com.SAFE_Rescue.API_Comunicacion.modelo.BorradorMensaje;
+import com.SAFE_Rescue.API_Comunicacion.modelo.Conversacion;
 import com.SAFE_Rescue.API_Comunicacion.modelo.Mensaje;
-import com.SAFE_Rescue.API_Comunicacion.repository.BorradorMensajeRepository;
+import com.SAFE_Rescue.API_Comunicacion.repository.ConversacionRepository;
 import com.SAFE_Rescue.API_Comunicacion.repository.MensajeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional; // Usa la anotación de Spring
+import org.springframework.data.domain.Sort;
 
-import java.util.Date;
+import java.time.LocalDateTime; // Usa LocalDateTime
 import java.util.List;
-import java.util.NoSuchElementException; // <-- ¡NUEVA IMPORTACIÓN!
-import java.util.Optional;
+import java.util.NoSuchElementException;
 
 /**
  * Servicio que implementa la lógica de negocio para la gestión de Mensajes.
- * Permite crear, obtener y eliminar mensajes, y gestionar la relación con Borradores.
+ * Permite crear, obtener y eliminar mensajes, y gestionar la relación con Conversaciones.
  */
 @Service
 public class MensajeService {
 
     private final MensajeRepository mensajeRepository;
-    private final BorradorMensajeRepository borradorMensajeRepository;
+    private final ConversacionRepository conversacionRepository;
 
     /**
-     * Constructor para inyección de dependencias de los repositorios.
-     * @param mensajeRepository Repositorio para la entidad Mensaje.
-     * @param borradorMensajeRepository Repositorio para la entidad BorradorMensaje.
+     * Constructor para inyección de dependencias.
      */
     @Autowired
-    public MensajeService(MensajeRepository mensajeRepository, BorradorMensajeRepository borradorMensajeRepository) {
+    public MensajeService(MensajeRepository mensajeRepository, ConversacionRepository conversacionRepository) {
         this.mensajeRepository = mensajeRepository;
-        this.borradorMensajeRepository = borradorMensajeRepository;
+        this.conversacionRepository = conversacionRepository;
     }
 
     /**
-     * Crea un nuevo mensaje a partir de un borrador existente y lo asocia a un receptor.
-     * Marca el borrador como enviado.
-     * @param idBorrador ID del borrador original.
-     * @param idReceptor ID del usuario/entidad que recibirá el mensaje.
+     * Crea un nuevo mensaje y lo asocia a una conversación existente.
+     * La fecha de creación se asigna automáticamente en la entidad Mensaje (@PrePersist).
+     *
+     * @param conversacionId ID de la conversación a la que pertenece el mensaje.
+     * @param nuevoMensaje Objeto Mensaje con el detalle, emisor y estado.
      * @return El mensaje creado y guardado.
-     * @throws NoSuchElementException Si el borrador no es encontrado.
+     * @throws NoSuchElementException Si la conversación no es encontrada.
+     * @throws IllegalArgumentException Si falta algún campo obligatorio.
      */
     @Transactional
-    public Mensaje crearMensajeDesdeBorradorYReceptor(int idBorrador, int idReceptor) {
-        Optional<BorradorMensaje> borradorOptional = borradorMensajeRepository.findById(idBorrador);
+    public Mensaje createMessage(Integer conversacionId, Mensaje nuevoMensaje) {
+        // 1. Buscar y validar la conversación
+        Conversacion conversacion = conversacionRepository.findById(conversacionId)
+                .orElseThrow(() -> new NoSuchElementException("Conversación con ID " + conversacionId + " no encontrada."));
 
-        if (borradorOptional.isEmpty()) {
-            // Lanza NoSuchElementException para que el controlador pueda mapearlo a 404
-            throw new NoSuchElementException("Borrador con ID " + idBorrador + " no encontrado para crear el mensaje.");
+        // 2. Validaciones adicionales (se complementan con @NotNull y @NotBlank en la entidad)
+        if (nuevoMensaje.getIdUsuarioEmisor() == null) {
+            throw new IllegalArgumentException("El ID del usuario emisor es obligatorio.");
+        }
+        if (nuevoMensaje.getIdEstado() == null) {
+            // Nota: Es crucial definir el estado inicial (ej. 'Enviado', ID 1)
+            throw new IllegalArgumentException("El ID del estado del mensaje es obligatorio (ej: 'Enviado').");
         }
 
-        BorradorMensaje borrador = borradorOptional.get();
+        // 3. Vincular la entidad
+        nuevoMensaje.setConversacion(conversacion);
 
-        // Puedes añadir una validación extra si el borrador ya fue enviado:
-        if (borrador.isBorradorEnviado()) {
-            throw new IllegalStateException("El borrador con ID " + idBorrador + " ya ha sido enviado y no puede usarse para crear otro mensaje.");
-        }
-
-
-        Mensaje nuevoMensaje = new Mensaje();
-        nuevoMensaje.setIdEmisor(borrador.getIdBrdrEmisor());
-        nuevoMensaje.setIdReceptor(idReceptor);
-        nuevoMensaje.setFechaMensaje(new Date()); // La fecha actual de envío del mensaje
-        nuevoMensaje.setTitulo(borrador.getBrdrTitulo());
-        nuevoMensaje.setContenido(borrador.getBrdrContenido());
-        nuevoMensaje.setBorradorOriginal(borrador); // Asocia el borrador
-
-        Mensaje mensajeGuardado = mensajeRepository.save(nuevoMensaje);
-
-        // Marca el borrador como enviado después de guardar el mensaje
-        borrador.setBorradorEnviado(true);
-        borradorMensajeRepository.save(borrador);
-
-        return mensajeGuardado;
+        // 4. Guardar el mensaje (la fecha de creación se asigna en @PrePersist)
+        return mensajeRepository.save(nuevoMensaje);
     }
 
     /**
-     * Obtiene una lista de todos los mensajes en el sistema.
+     * Obtiene una lista de todos los mensajes, ordenados por fecha de creación descendente.
      * @return Una lista de objetos Mensaje.
      */
-    public List<Mensaje> obtenerTodosLosMensajes() {
-        return mensajeRepository.findAll();
+    public List<Mensaje> findAll() {
+        // Ordenar por la fecha de creación para mostrar lo más reciente primero
+        return mensajeRepository.findAll(Sort.by(Sort.Direction.DESC, "fechaCreacion"));
+    }
+
+    /**
+     * Obtiene todos los mensajes pertenecientes a una conversación específica.
+     * @param conversacionId ID de la conversación.
+     * @return Lista de mensajes ordenados cronológicamente.
+     */
+    public List<Mensaje> findMessagesByConversation(Integer conversacionId) {
+        // Validación de existencia de conversación
+        if (!conversacionRepository.existsById(conversacionId)) {
+            throw new NoSuchElementException("Conversación con ID " + conversacionId + " no encontrada.");
+        }
+        // Buscar mensajes ordenados por fecha de creación (ascendente, cronológico)
+        return mensajeRepository.findByConversacionIdConversacion(conversacionId);
     }
 
     /**
      * Busca un mensaje por su identificador único.
      * @param idMensaje ID del mensaje a buscar.
-     * @return Un Optional que contiene el Mensaje si es encontrado.
+     * @return El objeto Mensaje si es encontrado.
+     * @throws NoSuchElementException Si el mensaje no se encuentra.
      */
-    public Optional<Mensaje> obtenerMensajePorId(int idMensaje) {
-        return mensajeRepository.findById(idMensaje);
+    public Mensaje findById(Integer idMensaje) {
+        return mensajeRepository.findById(idMensaje)
+                .orElseThrow(() -> new NoSuchElementException("Mensaje no encontrado con ID: " + idMensaje));
     }
 
     /**
@@ -99,12 +104,11 @@ public class MensajeService {
      * @throws NoSuchElementException Si el mensaje no se encuentra.
      */
     @Transactional
-    public void eliminarMensaje(int idMensaje) {
-        if (mensajeRepository.existsById(idMensaje)) {
-            mensajeRepository.deleteById(idMensaje);
-        } else {
-            // Lanza NoSuchElementException para que el controlador pueda mapearlo a 404
-            throw new NoSuchElementException("Mensaje no encontrado con ID: " + idMensaje + " para eliminar.");
-        }
+    public void delete(Integer idMensaje) {
+        Mensaje mensaje = mensajeRepository.findById(idMensaje)
+                .orElseThrow(() -> new NoSuchElementException("Mensaje no encontrado con ID: " + idMensaje + " para eliminar."));
+
+        // Se podría agregar lógica de auditoría aquí antes de la eliminación
+        mensajeRepository.delete(mensaje);
     }
 }

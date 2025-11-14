@@ -4,7 +4,7 @@ import com.SAFE_Rescue.API_Incidentes.modelo.Incidente;
 import com.SAFE_Rescue.API_Incidentes.modelo.TipoIncidente;
 import com.SAFE_Rescue.API_Incidentes.service.IncidenteService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature; // Importación necesaria
+import com.fasterxml.jackson.databind.SerializationFeature;
 import net.datafaker.Faker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,7 +14,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -64,10 +63,9 @@ public class IncidenteControllerTest {
         relatedId = faker.number().numberBetween(1, 10);
         invalidId = 999;
 
-        // Objeto base para las pruebas (usando LocalDateTime)
-        // Nota: Si 'Accidente de tráfico en la ruta 5' se mapea a 'titulo',
-        // y 'Este incidente es una prueba' se mapea a 'detalle', el modelo es correcto.
-        incidenteValido = new Incidente(idExistente, "Accidente de tráfico en la ruta 5","Este incidente es una prueba", LocalDateTime.now(),new TipoIncidente(),1,1,1,1);
+        // Objeto base para las pruebas: Se asume que el constructor ahora recibe 5 FKs (TipoIncidente, Ciudadano, Estado, Dirección, UsuarioAsignado)
+        // Usaremos '1' para el ID de Usuario Asignado.
+        incidenteValido = new Incidente(idExistente, "Accidente de tráfico en la ruta 5","Este incidente es una prueba", MOCK_DATETIME,new TipoIncidente(),1,1,1,1);
     }
 
     // ====================================================================
@@ -75,27 +73,24 @@ public class IncidenteControllerTest {
     // ====================================================================
 
     // --- GET /incidentes (Listar todos) ---
-    // En IncidenteControllerTest.java, alrededor de la línea 94
-// --- GET /incidentes (Listar todos) ---
     @Test
     void listar_shouldReturnOk_whenListIsNotEmpty() throws Exception {
         // Usamos una fecha constante para hacer la aserción más predecible
-        LocalDateTime fechaDePrueba = MOCK_DATETIME; // MOCK_DATETIME es 2025-01-01T10:30:00
+        LocalDateTime fechaDePrueba = MOCK_DATETIME;
 
-        // Corregido: Los constructores deben recibir LocalDateTime
+        // Corregido: Los constructores deben recibir 5 FKs, incluyendo el idUsuarioAsignado (último '1')
         List<Incidente> lista = Arrays.asList(
                 new Incidente(idExistente, "Accidente de tráfico en la ruta 5","Desc", fechaDePrueba,new TipoIncidente(),1,1,1,1),
                 new Incidente(2, "Incendio reportado","Esta es la descripción",fechaDePrueba,new TipoIncidente(),2,2,2,2));
 
         when(incidenteService.findAll()).thenReturn(lista);
 
-        // La aserción de la fecha/hora debe ser el formato ISO de LocalDateTime (e.g., "2025-01-01T10:30:00")
         mockMvc.perform(get(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size()").value(2))
                 .andExpect(jsonPath("$[0].titulo").value("Accidente de tráfico en la ruta 5"))
-                // CORRECCIÓN: Usamos la cadena de formato ISO 8601 completa (incluyendo segundos)
+                // La aserción de la fecha/hora debe ser el formato ISO de LocalDateTime
                 .andExpect(jsonPath("$[0].fechaRegistro").value("2025-01-01T10:30:00"));
 
         verify(incidenteService, times(1)).findAll();
@@ -120,7 +115,6 @@ public class IncidenteControllerTest {
         mockMvc.perform(get(BASE_URL + "/{id}", idExistente)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk()) // 200 OK
-                // CAMBIO 2: Cambiado de $.detalle a $.detalle (asumiendo que getDetalle() coincide con el campo 'detalle' del JSON)
                 .andExpect(jsonPath("$.detalle").value(incidenteValido.getDetalle()));
 
         verify(incidenteService, times(1)).findById(idExistente);
@@ -141,6 +135,7 @@ public class IncidenteControllerTest {
     // --- POST /incidentes (Crear) ---
     @Test
     void agregarIncidente_shouldReturnCreated_whenValid() throws Exception {
+        // Nuevo Incidente con 5 FKs, incluyendo idUsuarioAsignado: 1
         Incidente nuevoIncidente = new Incidente(null, "Fuga de gas","Descripcion",LocalDateTime.now(),new TipoIncidente(),1,1,1,1);
         when(incidenteService.save(any(Incidente.class))).thenReturn(incidenteValido);
 
@@ -155,9 +150,11 @@ public class IncidenteControllerTest {
 
     @Test
     void agregarIncidente_shouldReturnBadRequest_whenReferenceIdIsInvalid() throws Exception {
+        // Incidente con 5 FKs
         Incidente incidenteInvalido = new Incidente(null, "Falta relación","Descripcion",LocalDateTime.now(),new TipoIncidente(),1,1,1,1);
         String errorMsg = "El ID de TipoIncidente no existe.";
-        when(incidenteService.save(any(Incidente.class))).thenThrow(new RuntimeException(errorMsg));
+        // Simular excepción lanzada por el Service (ej. si falla la validación del Ciudadano)
+        when(incidenteService.save(any(Incidente.class))).thenThrow(new IllegalArgumentException(errorMsg));
 
         mockMvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -171,6 +168,7 @@ public class IncidenteControllerTest {
     // --- PUT /incidentes/{id} (Actualizar) ---
     @Test
     void actualizarIncidente_shouldReturnOk_whenValidUpdate() throws Exception {
+        // Datos Actualizados con 5 FKs
         Incidente datosActualizados = new Incidente(idExistente, "Descripción actualizada","Descripcion Actualizada",LocalDateTime.now(),new TipoIncidente(),1,1,1,1);
         when(incidenteService.update(any(Incidente.class), eq(idExistente))).thenReturn(datosActualizados);
 
@@ -185,6 +183,7 @@ public class IncidenteControllerTest {
 
     @Test
     void actualizarIncidente_shouldReturnNotFound_whenIdDoesNotExist() throws Exception {
+        // Datos Actualizados con 5 FKs
         Incidente datosActualizados = new Incidente(idNoExistente, "Intento de actualización","Descripcion",LocalDateTime.now(),new TipoIncidente(),1,1,1,1);
         when(incidenteService.update(any(Incidente.class), eq(idNoExistente))).thenThrow(new NoSuchElementException());
 
@@ -223,8 +222,34 @@ public class IncidenteControllerTest {
     }
 
     // ====================================================================
-    // TESTS PARA GESTIÓN DE RELACIONES
+    // TESTS PARA GESTIÓN DE RELACIONES (AJUSTADO)
     // ====================================================================
+
+    // --- POST /asignar-usuario-asignado/{usuarioAsignadoId} (NUEVO ENDPOINT) ---
+    @Test
+    void asignarUsuarioAsignado_shouldReturnOk_whenSuccess() throws Exception {
+        doNothing().when(incidenteService).asignarUsuarioAsignado(idExistente, relatedId);
+
+        mockMvc.perform(post(BASE_URL + "/{incidenteId}/asignar-usuario-asignado/{usuarioAsignadoId}", idExistente, relatedId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Usuario Asignado al Incidente exitosamente"));
+
+        verify(incidenteService, times(1)).asignarUsuarioAsignado(idExistente, relatedId);
+    }
+
+    @Test
+    void asignarUsuarioAsignado_shouldReturnNotFound_whenIncidenteOrUserNotFound() throws Exception {
+        String errorMsg = "Incidente o Usuario Asignado no encontrado";
+        doThrow(new RuntimeException(errorMsg)).when(incidenteService).asignarUsuarioAsignado(idExistente, invalidId);
+
+        mockMvc.perform(post(BASE_URL + "/{incidenteId}/asignar-usuario-asignado/{usuarioAsignadoId}", idExistente, invalidId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound()) // 404 Not Found
+                .andExpect(content().string(errorMsg));
+
+        verify(incidenteService, times(1)).asignarUsuarioAsignado(idExistente, invalidId);
+    }
 
     // --- POST /asignar-ciudadano/{ciudadanoId} ---
     @Test
@@ -292,23 +317,11 @@ public class IncidenteControllerTest {
         verify(incidenteService, times(1)).asignarTipoIncidente(idExistente, relatedId);
     }
 
-    // --- POST /asignar-equipo/{equipoId} ---
-    @Test
-    void asignaEquipo_shouldReturnOk_whenSuccess() throws Exception {
-        doNothing().when(incidenteService).asignarEquipo(idExistente, relatedId);
-
-        mockMvc.perform(post(BASE_URL + "/{incidenteId}/asignar-equipo/{equipoId}", idExistente, relatedId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().string("EquipoDTO asignado al Incidente exitosamente"));
-
-        verify(incidenteService, times(1)).asignarEquipo(idExistente, relatedId);
-    }
-
     // --- POST /agregar-ubicacion (Crear y Asignar Dirección) ---
     @Test
     void agregarUbicacionAIncidente_shouldReturnOk_whenSuccess() throws Exception {
         String ubicacionJson = "{\"calle\": \"Av. Principal\", \"coordenadas\": \"-33,-70\"}";
+        // Incidente con 5 FKs
         Incidente incidenteConUbicacion = new Incidente(idExistente, "Incidente con Dir","Descripcion",LocalDateTime.now(),new TipoIncidente(),1,1,1,1);
 
         when(incidenteService.agregarUbicacionAIncidente(eq(idExistente), eq(ubicacionJson)))
@@ -318,7 +331,6 @@ public class IncidenteControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(ubicacionJson))
                 .andExpect(status().isOk()) // 200 OK
-                // CAMBIO 3: Cambiado de $.descripcion a $.titulo (para verificar el campo 'Incidente con Dir')
                 .andExpect(jsonPath("$.titulo").value("Incidente con Dir"));
 
         verify(incidenteService, times(1)).agregarUbicacionAIncidente(eq(idExistente), eq(ubicacionJson));

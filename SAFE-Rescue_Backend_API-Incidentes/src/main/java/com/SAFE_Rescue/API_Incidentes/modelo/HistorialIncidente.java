@@ -1,4 +1,4 @@
-package com.SAFE_Rescue.API_Perfiles.modelo;
+package com.SAFE_Rescue.API_Incidentes.modelo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -10,17 +10,17 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * Entidad que registra específicamente los cambios de estado aplicados a un perfil de Usuario o Equipo.
+ * Entidad que registra específicamente los cambios de estado aplicados a un Incidente.
  * Sirve como registro de auditoría inmutable para la trazabilidad de los estados.
- * Se mapea a la tabla "historial_perfil" (renombrada para reflejar su nuevo alcance).
+ * Se mapea a la tabla "historial_incidente".
  */
 @Entity
-@Table(name = "historial_perfil") // Renombrado para ser más genérico
+@Table(name = "historial_incidente") // Cambiado para reflejar el alcance de Incidentes
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-@Schema(description = "Registro de historial de cambios de estado aplicados a un usuario o equipo")
-public class HistorialUsuario { // Se mantiene el nombre de la clase para simplificar, aunque ahora es multi-perfil
+@Schema(description = "Registro de historial de cambios de estado aplicados a un Incidente")
+public class HistorialIncidente {
 
     /**
      * Identificador único del registro de historial.
@@ -32,26 +32,18 @@ public class HistorialUsuario { // Se mantiene el nombre de la clase para simpli
     private Integer idHistorial;
 
     // -------------------------------------------------------------------------
-    // RELACIONES CON PERFILES (Solo una debe estar presente)
+    // RELACIÓN CON INCIDENTE
     // -------------------------------------------------------------------------
 
     /**
-     * Relación Muchos-a-Uno con la entidad {@code Usuario}.
-     * Es nullable ya que el registro podría ser para un equipo.
+     * Relación Muchos-a-Uno con la entidad {@code Incidente}.
+     * Indica a qué incidente pertenece este registro de historial.
      */
+    // Asumo que la entidad Incidente está definida en este paquete
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_usuario", nullable = true) // Ahora es opcional
-    @Schema(description = "Usuario al que se le aplicó el cambio de estado (puede ser nulo)")
-    private Usuario usuario;
-
-    /**
-     * Relación Muchos-a-Uno con la entidad {@code Equipo}.
-     * Indica a qué equipo se le aplicó el cambio de estado.
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_equipo", nullable = true) // Nuevo campo opcional
-    @Schema(description = "Equipo al que se le aplicó el cambio de estado (puede ser nulo)")
-    private Equipo equipo;
+    @JoinColumn(name = "id_incidente", nullable = false) // Ahora apunta a la clave del Incidente
+    @Schema(description = "Incidente al que se le aplicó el cambio de estado")
+    private Incidente incidente;
 
 
     // -------------------------------------------------------------------------
@@ -89,7 +81,7 @@ public class HistorialUsuario { // Se mantiene el nombre de la clase para simpli
      * Descripción detallada del evento registrado (ej: Razón del cambio de estado).
      */
     @Column(name = "detalle", length = 250, nullable = false)
-    @Schema(description = "Descripción detallada del evento del historial", example = "El administrador Juan Pérez cambió el estado de Inactivo a Activo por solicitud.")
+    @Schema(description = "Descripción detallada del evento del historial", example = "El operador Pedro cambió el estado de En Asignación a En Curso.")
     private String detalle;
 
     // Método de callback que se ejecuta antes de persistir la entidad.

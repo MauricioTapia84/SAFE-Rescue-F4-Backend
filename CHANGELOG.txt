@@ -1,3 +1,17 @@
+❚❙❘ VERSIÓN 0.0.6
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se Eliminan historial y categorias para registros
+├─• Se añaden historial para incidentes y mensajes
+├─• Se empieza el microserivico de comunicacion
+├─• Se cambia en incidente la asignacion de equipo a usuario
+└─• Se corrigen errores
+
+->>> Crear Dataloader para comunicacion
+->>> Implementar el webclient en comunicacion
+->>> Terminar los controlladores de comunicacion
+
+
+
 ❚❙❘ VERSIÓN 0.0.5
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Se terminar pruebas unitarias de api incidentes

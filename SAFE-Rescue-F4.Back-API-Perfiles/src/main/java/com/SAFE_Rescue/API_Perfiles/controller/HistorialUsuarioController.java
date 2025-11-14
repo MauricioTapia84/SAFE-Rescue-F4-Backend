@@ -1,4 +1,4 @@
-package com.SAFE_Rescue.API_Perfiles.controlador;
+package com.SAFE_Rescue.API_Perfiles.controller;
 
 import com.SAFE_Rescue.API_Perfiles.modelo.HistorialUsuario;
 import com.SAFE_Rescue.API_Perfiles.service.HistorialUsuarioService;

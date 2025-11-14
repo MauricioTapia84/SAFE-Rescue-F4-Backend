@@ -1,4 +1,4 @@
-package com.SAFE_Rescue.API_Incidentes.modelo;
+package com.SAFE_Rescue.API_Comunicacion.modelo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;

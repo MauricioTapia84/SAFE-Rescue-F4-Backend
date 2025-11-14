@@ -76,7 +76,7 @@ public class IncidenteController {
      * @param incidente Datos del incidente a crear
      * @return ResponseEntity con mensaje de confirmación o error
      */
-    @Operation(summary = "Crear nuevo incidente", description = "Registra un nuevo incidente en el sistema. Requiere IDs válidos para TipoIncidente, Estado, Ciudadano y Dirección.")
+    @Operation(summary = "Crear nuevo incidente", description = "Registra un nuevo incidente en el sistema. Requiere IDs válidos para TipoIncidente, Estado, Ciudadano y Dirección. El Usuario Asignado es opcional.")
     @ApiResponse(responseCode = "201", description = "Incidente creado con éxito.")
     @ApiResponse(responseCode = "400", description = "Error de validación o ID de referencia no encontrado.")
     @ApiResponse(responseCode = "500", description = "Error interno del servidor.")
@@ -167,7 +167,7 @@ public class IncidenteController {
             @Parameter(description = "ID del ciudadano", required = true) @PathVariable Integer ciudadanoId) {
         try {
             incidenteService.asignarCiudadano(incidenteId,ciudadanoId);
-            return ResponseEntity.ok("UsuarioDTO asignado al Incidente exitosamente");
+            return ResponseEntity.ok("Ciudadano asignado al Incidente exitosamente");
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
@@ -215,26 +215,29 @@ public class IncidenteController {
         }
     }
 
+    // NUEVO ENDPOINT PARA ASIGNAR USUARIO RESPONSABLE
     /**
-     * Asigna un Equipo a un incidente.
+     * Asigna un Usuario Responsable a un incidente.
      * @param incidenteId ID del incidente
-     * @param equipoId del equipo
+     * @param usuarioId ID del usuario a asignar
      * @return ResponseEntity con mensaje de confirmación o error
      */
-    @Operation(summary = "Asignar Equipo", description = "Asigna un Equipo existente (ID externo) a un incidente.")
-    @ApiResponse(responseCode = "200", description = "Equipo asignado con éxito.")
-    @ApiResponse(responseCode = "404", description = "Incidente o Equipo no encontrado.")
-    @PostMapping("/{incidenteId}/asignar-equipo/{equipoId}")
-    public ResponseEntity<String> asignaEquipo(
+    @Operation(summary = "Asignar Usuario Responsable", description = "Asigna un Usuario existente (ID externo) como responsable del incidente.")
+    @ApiResponse(responseCode = "200", description = "Usuario asignado con éxito.")
+    @ApiResponse(responseCode = "404", description = "Incidente o Usuario no encontrado.")
+    @PostMapping("/{incidenteId}/asignar-usuario-asignado/{usuarioId}")
+    public ResponseEntity<String> asignarUsuarioAsignado(
             @Parameter(description = "ID del incidente", required = true) @PathVariable Integer incidenteId,
-            @Parameter(description = "ID del equipo", required = true) @PathVariable Integer equipoId) {
+            @Parameter(description = "ID del usuario responsable", required = true) @PathVariable Integer usuarioId) {
         try {
-            incidenteService.asignarEquipo(incidenteId,equipoId);
-            return ResponseEntity.ok("EquipoDTO asignado al Incidente exitosamente");
+            incidenteService.asignarUsuarioAsignado(incidenteId, usuarioId);
+            return ResponseEntity.ok("Usuario responsable asignado al Incidente exitosamente");
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
+
+    // ELIMINADO: Endpoint 'asignarEquipo'
 
     /**
      * Crea una nueva dirección en el microservicio de Geolocalización y la asigna al incidente.
@@ -280,7 +283,7 @@ public class IncidenteController {
             @Parameter(description = "ID de la dirección (ubicación)", required = true) @PathVariable Integer direccionId) {
         try {
             incidenteService.asignarDireccion(incidenteId, direccionId);
-            return ResponseEntity.ok("DireccionDTO asignada al incidente exitosamente");
+            return ResponseEntity.ok("Dirección asignada al incidente exitosamente");
         } catch (RuntimeException e) {
             // Cambiado a usar direccionId para claridad en la ruta y el método
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());

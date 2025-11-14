@@ -1,8 +1,8 @@
 package com.SAFE_Rescue.API_Comunicacion;
 
-import com.SAFE_Rescue.API_Comunicacion.modelo.BorradorMensaje;
+import com.SAFE_Rescue.API_Comunicacion.modelo.Conversacion;
 import com.SAFE_Rescue.API_Comunicacion.modelo.Mensaje; // <-- NUEVA IMPORTACIÓN
-import com.SAFE_Rescue.API_Comunicacion.repository.BorradorMensajeRepository;
+import com.SAFE_Rescue.API_Comunicacion.repository.ConversacionRepository;
 import com.SAFE_Rescue.API_Comunicacion.repository.MensajeRepository; // <-- NUEVA IMPORTACIÓN
 import net.datafaker.Faker;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +22,7 @@ public class DataLoader implements CommandLineRunner {
 
     // Inyección de dependencia por campo, como en el DataLoader de tu amigo.
     @Autowired
-    private BorradorMensajeRepository borradorMensajeRepository;
+    private ConversacionRepository conversacionRepository;
 
     @Autowired // <-- NUEVA INYECCIÓN PARA MENSAJE
     private MensajeRepository mensajeRepository;
@@ -36,11 +36,11 @@ public class DataLoader implements CommandLineRunner {
         Random random = new Random();
 
         // --- Carga de Borradores de Mensajes ---
-        if (borradorMensajeRepository.count() == 0) {
+        if (conversacionRepository.count() == 0) {
             System.out.println("Cargando datos iniciales para BorradorMensajes...");
             // Generar más borradores para tener una buena base para crear mensajes
             for (int i = 0; i < 15; i++) { // Cambiado a 15 borradores
-                BorradorMensaje borrador = new BorradorMensaje();
+                Conversacion borrador = new Conversacion();
 
                 borrador.setIdBrdrEmisor(faker.number().numberBetween(1, 20)); // ID de emisor aleatorio
                 borrador.setFechaBrdrMensaje(faker.date().past(random.nextInt(90), TimeUnit.DAYS));
@@ -56,10 +56,10 @@ public class DataLoader implements CommandLineRunner {
                 borrador.setBorradorEnviado(false);
 
                 try {
-                    borradorMensajeRepository.save(borrador);
+                    conversacionRepository.save(borrador);
                     // System.out.println("Borrador guardado: " + borrador.getIdBrdrMensaje()); // Puedes descomentar para depurar
                 } catch (Exception e) {
-                    System.err.println("Error al guardar BorradorMensaje: " + e.getMessage());
+                    System.err.println("Error al guardar Conversacion: " + e.getMessage());
                 }
             }
             System.out.println("Carga de datos iniciales de BorradorMensajes completada.");
@@ -72,14 +72,14 @@ public class DataLoader implements CommandLineRunner {
         if (mensajeRepository.count() == 0) {
             System.out.println("Cargando datos iniciales para Mensajes...");
 
-            List<BorradorMensaje> borradoresDisponibles = borradorMensajeRepository.findAll();
+            List<Conversacion> borradoresDisponibles = conversacionRepository.findAll();
 
             if (borradoresDisponibles.isEmpty()) {
                 System.out.println("No hay borradores disponibles para crear mensajes. Omita la carga de Mensajes.");
                 // Si no hay borradores, no podemos crear mensajes a partir de ellos.
             } else {
                 // Filtrar borradores que no han sido enviados para usarlos en mensajes
-                List<BorradorMensaje> borradoresNoEnviados = borradoresDisponibles.stream()
+                List<Conversacion> borradoresNoEnviados = borradoresDisponibles.stream()
                         .filter(b -> !b.isBorradorEnviado())
                         .collect(Collectors.toList());
 
@@ -91,7 +91,7 @@ public class DataLoader implements CommandLineRunner {
                 } else {
                     for (int i = 0; i < mensajesACrear; i++) {
                         // Tomar un borrador aleatorio de los que aún no han sido enviados
-                        BorradorMensaje borradorSeleccionado = borradoresNoEnviados.remove(random.nextInt(borradoresNoEnviados.size()));
+                        Conversacion borradorSeleccionado = borradoresNoEnviados.remove(random.nextInt(borradoresNoEnviados.size()));
 
                         Mensaje mensaje = new Mensaje();
                         mensaje.setIdEmisor(borradorSeleccionado.getIdBrdrEmisor());
@@ -105,7 +105,7 @@ public class DataLoader implements CommandLineRunner {
                             mensajeRepository.save(mensaje);
                             // Importante: Marcar el borrador como enviado DESPUÉS de que el mensaje se guarde exitosamente
                             borradorSeleccionado.setBorradorEnviado(true);
-                            borradorMensajeRepository.save(borradorSeleccionado);
+                            conversacionRepository.save(borradorSeleccionado);
                             // System.out.println("Mensaje guardado a partir de borrador: " + borradorSeleccionado.getIdBrdrMensaje()); // Descomentar para depurar
                         } catch (Exception e) {
                             System.err.println("Error al guardar Mensaje o actualizar Borrador: " + e.getMessage());

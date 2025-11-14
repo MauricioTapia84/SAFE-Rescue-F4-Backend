@@ -86,9 +86,9 @@ public class Incidente {
     private Integer idEstadoIncidente; // Reemplaza EstadoDTO
 
     /**
-     * ID del Equipo asignado al incidente (Referencia lógica).
+     * ID del Usuario responsable/asignado al incidente (Referencia lógica).
      */
-    @Column(name = "equipo_id", nullable = true) // Mapeo al nombre de columna original, puede ser nulo
-    @Schema(description = "ID del Equipo asignado (Clave foránea lógica)")
-    private Integer idEquipo; // Reemplaza EquipoDTO
+    @Column(name = "usuario_asignado_id", nullable = true) // Nuevo nombre de columna
+    @Schema(description = "ID del Usuario responsable/asignado (Clave foránea lógica)", required = false, example = "15")
+    private Integer idUsuarioAsignado; // Cambiado de 'UsuarioDto' y representa al usuario.
 }

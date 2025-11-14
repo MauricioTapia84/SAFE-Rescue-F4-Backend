@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class FotoDTO implements IHasId {
+public class FotoDTO {
 
     /**
      * Identificador único de la foto.
@@ -42,12 +42,4 @@ public class FotoDTO implements IHasId {
     @Schema(description = "Descripción de la foto", example = "Fotografía de incidente.")
     private String descripcion;
 
-    /**
-     * @brief Implementación del método getId() de la interfaz IHasId.
-     * @return El idFoto.
-     */
-    @Override
-    public Integer getId() {
-        return idFoto;
-    }
 }

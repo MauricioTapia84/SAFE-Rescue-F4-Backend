@@ -4,9 +4,9 @@ import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.SAFE_Rescue.API_Comunicacion.modelo.BorradorMensaje;
-import com.SAFE_Rescue.API_Comunicacion.repository.BorradorMensajeRepository;
-import com.SAFE_Rescue.API_Comunicacion.service.BorradorMensajeService;
+import com.SAFE_Rescue.API_Comunicacion.modelo.Conversacion;
+import com.SAFE_Rescue.API_Comunicacion.repository.ConversacionRepository;
+import com.SAFE_Rescue.API_Comunicacion.service.ConversacionService;
 import net.datafaker.Faker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,24 +21,24 @@ import java.util.Optional;
 import java.util.Arrays;
 
 @SpringBootTest
-@DisplayName("Tests para BorradorMensajeService")
-public class BorradorMensajeServiceTest {
+@DisplayName("Tests para ConversacionController")
+public class ConversacionControllerTest {
 
     @Autowired
-    private BorradorMensajeService borradorMensajeService;
+    private ConversacionService conversacionService;
 
     // CAMBIO CLAVE: Usa @MockBean para que Spring reemplace el repositorio real con un mock.
-    // Esto inyectará el mock automáticamente en borradorMensajeService.
+    // Esto inyectará el mock automáticamente en conversacionService.
     @MockBean
-    private BorradorMensajeRepository borradorMensajeRepository;
+    private ConversacionRepository conversacionRepository;
 
     private Faker faker;
-    private BorradorMensaje sampleBorrador;
+    private Conversacion sampleBorrador;
 
     @BeforeEach
     void setUp() {
         faker = new Faker();
-        sampleBorrador = new BorradorMensaje(
+        sampleBorrador = new Conversacion(
                 1,
                 faker.number().numberBetween(1, 100),
                 new Date(),
@@ -48,13 +48,13 @@ public class BorradorMensajeServiceTest {
         );
         // Reiniciar los mocks antes de cada prueba es una buena práctica,
         // aunque @MockBean a menudo lo maneja automáticamente.
-        reset(borradorMensajeRepository);
+        reset(conversacionRepository);
     }
 
     @Test
     @DisplayName("Debería guardar un nuevo borrador y asignar fecha/estado por defecto")
     public void testGuardarBorrador_newBorrador() {
-        BorradorMensaje newBorrador = new BorradorMensaje(
+        Conversacion newBorrador = new Conversacion(
                 0, // ID 0 para indicar que es nuevo
                 faker.number().numberBetween(1, 100),
                 null,
@@ -64,8 +64,8 @@ public class BorradorMensajeServiceTest {
         );
 
         // Cuando se llama a save, simulamos que el repositorio devuelve el objeto con un ID y fecha
-        when(borradorMensajeRepository.save(any(BorradorMensaje.class))).thenAnswer(invocation -> {
-            BorradorMensaje savedBorrador = invocation.getArgument(0);
+        when(conversacionRepository.save(any(Conversacion.class))).thenAnswer(invocation -> {
+            Conversacion savedBorrador = invocation.getArgument(0);
             // El servicio es quien debería establecer estos valores si no están.
             // Aquí en el mock, solo simulamos lo que el repositorio devolvería si el servicio se los pasa.
             // Si tu servicio modifica el objeto antes de save, mockea el save con ese objeto modificado.
@@ -78,7 +78,7 @@ public class BorradorMensajeServiceTest {
             return savedBorrador;
         });
 
-        BorradorMensaje result = borradorMensajeService.guardarBorrador(newBorrador);
+        Conversacion result = conversacionService.guardarBorrador(newBorrador);
 
         assertNotNull(result);
         assertThat(result.getIdBrdrMensaje()).isNotZero();
@@ -88,14 +88,14 @@ public class BorradorMensajeServiceTest {
         assertThat(result.getBrdrTitulo()).isEqualTo(newBorrador.getBrdrTitulo());
         assertThat(result.getBrdrContenido()).isEqualTo(newBorrador.getBrdrContenido());
 
-        verify(borradorMensajeRepository, times(1)).save(any(BorradorMensaje.class));
+        verify(conversacionRepository, times(1)).save(any(Conversacion.class));
     }
 
     @Test
     @DisplayName("Debería guardar un borrador manteniendo la fecha proporcionada")
     public void testGuardarBorrador_withProvidedDate() {
         Date specificDate = new Date(System.currentTimeMillis() - 100000);
-        BorradorMensaje existingBorrador = new BorradorMensaje(
+        Conversacion existingBorrador = new Conversacion(
                 10,
                 faker.number().numberBetween(1, 100),
                 specificDate, // Fecha proporcionada
@@ -104,35 +104,35 @@ public class BorradorMensajeServiceTest {
                 true // Esto se debería cambiar a false por el servicio
         );
 
-        when(borradorMensajeRepository.save(any(BorradorMensaje.class))).thenAnswer(invocation -> {
-            BorradorMensaje savedBorrador = invocation.getArgument(0);
+        when(conversacionRepository.save(any(Conversacion.class))).thenAnswer(invocation -> {
+            Conversacion savedBorrador = invocation.getArgument(0);
             savedBorrador.setBorradorEnviado(false); // El servicio lo cambia a false
             return savedBorrador;
         });
 
-        BorradorMensaje result = borradorMensajeService.guardarBorrador(existingBorrador);
+        Conversacion result = conversacionService.guardarBorrador(existingBorrador);
 
         assertNotNull(result);
         assertThat(result.getIdBrdrMensaje()).isEqualTo(10);
         assertThat(result.getFechaBrdrMensaje()).isEqualTo(specificDate); // La fecha debe permanecer
         assertThat(result.isBorradorEnviado()).isFalse();
-        verify(borradorMensajeRepository, times(1)).save(any(BorradorMensaje.class));
+        verify(conversacionRepository, times(1)).save(any(Conversacion.class));
     }
 
     @Test
     @DisplayName("Debería actualizar el título y contenido de un borrador existente")
     public void testActualizarBorrador_existing() {
         int borradorId = sampleBorrador.getIdBrdrMensaje();
-        BorradorMensaje updates = new BorradorMensaje();
+        Conversacion updates = new Conversacion();
         updates.setBrdrTitulo("Nuevo Título Actualizado");
         updates.setBrdrContenido("Contenido actualizado para el borrador.");
 
         // Cuando se busca por ID, devolver el sampleBorrador
-        when(borradorMensajeRepository.findById(borradorId)).thenReturn(Optional.of(sampleBorrador));
-        // Cuando se llama a save con *cualquier* BorradorMensaje, devolver el mismo argumento que se pasó
-        when(borradorMensajeRepository.save(any(BorradorMensaje.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(conversacionRepository.findById(borradorId)).thenReturn(Optional.of(sampleBorrador));
+        // Cuando se llama a save con *cualquier* Conversacion, devolver el mismo argumento que se pasó
+        when(conversacionRepository.save(any(Conversacion.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        BorradorMensaje updatedBorrador = borradorMensajeService.actualizarBorrador(borradorId, updates);
+        Conversacion updatedBorrador = conversacionService.actualizarBorrador(borradorId, updates);
 
         assertNotNull(updatedBorrador);
         assertEquals(borradorId, updatedBorrador.getIdBrdrMensaje());
@@ -143,10 +143,10 @@ public class BorradorMensajeServiceTest {
         assertEquals(sampleBorrador.isBorradorEnviado(), updatedBorrador.isBorradorEnviado());
 
 
-        verify(borradorMensajeRepository, times(1)).findById(borradorId);
+        verify(conversacionRepository, times(1)).findById(borradorId);
         // Verifica que se llamó a save con el objeto 'sampleBorrador' modificado (el que fue devuelto por findById)
-        // Usamos 'any(BorradorMensaje.class)' o capturamos el argumento para verificar sus propiedades
-        verify(borradorMensajeRepository, times(1)).save(argThat(b ->
+        // Usamos 'any(Conversacion.class)' o capturamos el argumento para verificar sus propiedades
+        verify(conversacionRepository, times(1)).save(argThat(b ->
                 b.getIdBrdrMensaje() == borradorId &&
                         b.getBrdrTitulo().equals(updates.getBrdrTitulo()) &&
                         b.getBrdrContenido().equals(updates.getBrdrContenido())
@@ -157,101 +157,101 @@ public class BorradorMensajeServiceTest {
     @DisplayName("Debería lanzar RuntimeException cuando el borrador no se encuentra al actualizar")
     public void testActualizarBorrador_nonExisting_throwsException() {
         int nonExistingId = 999;
-        BorradorMensaje updates = new BorradorMensaje();
+        Conversacion updates = new Conversacion();
         updates.setBrdrTitulo("Cualquier título");
 
-        when(borradorMensajeRepository.findById(nonExistingId)).thenReturn(Optional.empty());
+        when(conversacionRepository.findById(nonExistingId)).thenReturn(Optional.empty());
 
         RuntimeException thrown = assertThrows(RuntimeException.class, () -> {
-            borradorMensajeService.actualizarBorrador(nonExistingId, updates);
+            conversacionService.actualizarBorrador(nonExistingId, updates);
         });
 
         assertThat(thrown.getMessage()).isEqualTo("Borrador no encontrado con ID: " + nonExistingId);
-        verify(borradorMensajeRepository, times(1)).findById(nonExistingId);
-        verify(borradorMensajeRepository, never()).save(any(BorradorMensaje.class));
+        verify(conversacionRepository, times(1)).findById(nonExistingId);
+        verify(conversacionRepository, never()).save(any(Conversacion.class));
     }
 
     @Test
     @DisplayName("Debería retornar una lista de todos los borradores cuando existen")
     public void testObtenerTodosLosBorradores_whenExist() {
-        BorradorMensaje borrador2 = new BorradorMensaje(
+        Conversacion borrador2 = new Conversacion(
                 2, faker.number().numberBetween(1, 100), new Date(),
                 faker.lorem().sentence(3), faker.lorem().paragraph(2), false
         );
-        List<BorradorMensaje> borradores = Arrays.asList(sampleBorrador, borrador2);
-        when(borradorMensajeRepository.findAll()).thenReturn(borradores);
+        List<Conversacion> borradores = Arrays.asList(sampleBorrador, borrador2);
+        when(conversacionRepository.findAll()).thenReturn(borradores);
 
-        List<BorradorMensaje> result = borradorMensajeService.obtenerTodosLosBorradores();
+        List<Conversacion> result = conversacionService.obtenerTodosLosBorradores();
 
         assertNotNull(result);
         assertEquals(2, result.size());
         assertThat(result).containsExactlyInAnyOrder(sampleBorrador, borrador2);
-        verify(borradorMensajeRepository, times(1)).findAll();
+        verify(conversacionRepository, times(1)).findAll();
     }
 
     @Test
     @DisplayName("Debería retornar una lista vacía si no hay borradores")
     public void testObtenerTodosLosBorradores_whenEmpty() {
-        when(borradorMensajeRepository.findAll()).thenReturn(List.of());
+        when(conversacionRepository.findAll()).thenReturn(List.of());
 
-        List<BorradorMensaje> result = borradorMensajeService.obtenerTodosLosBorradores();
+        List<Conversacion> result = conversacionService.obtenerTodosLosBorradores();
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
-        verify(borradorMensajeRepository, times(1)).findAll();
+        verify(conversacionRepository, times(1)).findAll();
     }
 
     @Test
     @DisplayName("Debería retornar el borrador si se encuentra por ID")
     public void testObtenerBorradorPorId_found() {
         int borradorId = sampleBorrador.getIdBrdrMensaje();
-        when(borradorMensajeRepository.findById(borradorId)).thenReturn(Optional.of(sampleBorrador));
+        when(conversacionRepository.findById(borradorId)).thenReturn(Optional.of(sampleBorrador));
 
-        Optional<BorradorMensaje> result = borradorMensajeService.obtenerBorradorPorId(borradorId);
+        Optional<Conversacion> result = conversacionService.obtenerBorradorPorId(borradorId);
 
         assertTrue(result.isPresent());
         assertEquals(sampleBorrador, result.get());
-        verify(borradorMensajeRepository, times(1)).findById(borradorId);
+        verify(conversacionRepository, times(1)).findById(borradorId);
     }
 
     @Test
     @DisplayName("Debería retornar un Optional vacío si el borrador no se encuentra por ID")
     public void testObtenerBorradorPorId_notFound() {
         int nonExistingId = 999;
-        when(borradorMensajeRepository.findById(nonExistingId)).thenReturn(Optional.empty());
+        when(conversacionRepository.findById(nonExistingId)).thenReturn(Optional.empty());
 
-        Optional<BorradorMensaje> result = borradorMensajeService.obtenerBorradorPorId(nonExistingId);
+        Optional<Conversacion> result = conversacionService.obtenerBorradorPorId(nonExistingId);
 
         assertFalse(result.isPresent());
-        verify(borradorMensajeRepository, times(1)).findById(nonExistingId);
+        verify(conversacionRepository, times(1)).findById(nonExistingId);
     }
 
     @Test
     @DisplayName("Debería eliminar un borrador existente exitosamente")
     public void testEliminarBorrador_existing() {
         int borradorId = sampleBorrador.getIdBrdrMensaje();
-        when(borradorMensajeRepository.existsById(borradorId)).thenReturn(true);
+        when(conversacionRepository.existsById(borradorId)).thenReturn(true);
         // doNothing().when() es para métodos void
-        doNothing().when(borradorMensajeRepository).deleteById(borradorId);
+        doNothing().when(conversacionRepository).deleteById(borradorId);
 
-        borradorMensajeService.eliminarBorrador(borradorId);
+        conversacionService.eliminarBorrador(borradorId);
 
-        verify(borradorMensajeRepository, times(1)).existsById(borradorId);
-        verify(borradorMensajeRepository, times(1)).deleteById(borradorId);
+        verify(conversacionRepository, times(1)).existsById(borradorId);
+        verify(conversacionRepository, times(1)).deleteById(borradorId);
     }
 
     @Test
     @DisplayName("Debería lanzar RuntimeException si el borrador no se encuentra para eliminar")
     public void testEliminarBorrador_nonExisting_throwsException() {
         int nonExistingId = 999;
-        when(borradorMensajeRepository.existsById(nonExistingId)).thenReturn(false);
+        when(conversacionRepository.existsById(nonExistingId)).thenReturn(false);
 
         RuntimeException thrown = assertThrows(RuntimeException.class, () -> {
-            borradorMensajeService.eliminarBorrador(nonExistingId);
+            conversacionService.eliminarBorrador(nonExistingId);
         });
 
         assertThat(thrown.getMessage()).isEqualTo("Borrador no encontrado con ID: " + nonExistingId + " para eliminar.");
-        verify(borradorMensajeRepository, times(1)).existsById(nonExistingId);
-        verify(borradorMensajeRepository, never()).deleteById(anyInt());
+        verify(conversacionRepository, times(1)).existsById(nonExistingId);
+        verify(conversacionRepository, never()).deleteById(anyInt());
     }
 }

@@ -15,7 +15,7 @@ import java.util.NoSuchElementException;
  * @brief Servicio para la gestión integral de Incidentes.
  * Maneja operaciones CRUD y validación de datos para Incidentes.
  * Se utiliza el patrón de Claves Foráneas Lógicas (Integer IDs) para referenciar
- * entidades externas (Estado, Usuario, Dirección, Equipo).
+ * entidades externas (Estado, Usuario, Dirección, Usuario Asignado).
  */
 @Service
 @Transactional
@@ -30,7 +30,7 @@ public class IncidenteService {
     @Autowired private EstadoClient estadoClient;
     @Autowired private GeolocalizacionClient geolocalizacionClient;
     @Autowired private UsuarioClient usuarioClient;
-    @Autowired private EquipoClient equipoClient;
+    // @Autowired private EquipoClient equipoClient; // Eliminado: Reemplazado por UsuarioClient/Usuario
 
     // SERVICIO LOCAL
     @Autowired private TipoIncidenteService tipoIncidenteService;
@@ -128,9 +128,10 @@ public class IncidenteService {
                 validarExistenciaReferencia(estadoClient, incidente.getIdEstadoIncidente(), "Estado");
                 incidenteExistente.setIdEstadoIncidente(incidente.getIdEstadoIncidente());
             }
-            if (incidente.getIdEquipo() != null) {
-                validarExistenciaReferencia(equipoClient, incidente.getIdEquipo(), "Equipo");
-                incidenteExistente.setIdEquipo(incidente.getIdEquipo());
+            // MODIFICADO: Ahora se asigna un usuario en lugar de un equipo.
+            if (incidente.getIdUsuarioAsignado() != null) {
+                validarExistenciaReferencia(usuarioClient, incidente.getIdUsuarioAsignado(), "Usuario Asignado");
+                incidenteExistente.setIdUsuarioAsignado(incidente.getIdUsuarioAsignado());
             }
             // TipoIncidente (local - se debe buscar la entidad completa para la relación JPA)
             if (incidente.getTipoIncidente() != null && incidente.getTipoIncidente().getIdTipoIncidente() != null) {
@@ -216,10 +217,10 @@ public class IncidenteService {
         } else if (client instanceof GeolocalizacionClient) {
             found = ((GeolocalizacionClient) client).findById(id);
         } else if (client instanceof UsuarioClient) {
+            // El UsuarioClient se usa tanto para Ciudadano como para Usuario Asignado
             found = ((UsuarioClient) client).findById(id);
-        } else if (client instanceof EquipoClient) {
-            found = ((EquipoClient) client).findById(id);
         }
+        // Eliminado: else if (client instanceof EquipoClient) { ... }
 
         if (found == null) {
             throw new NoSuchElementException(entityName + " no encontrado con ID: " + id);
@@ -256,9 +257,9 @@ public class IncidenteService {
         }
         validarExistenciaReferencia(geolocalizacionClient, incidente.getIdDireccion(), "Direccion");
 
-        // EquipoID es opcional al crear
-        if (incidente.getIdEquipo() != null) {
-            validarExistenciaReferencia(equipoClient, incidente.getIdEquipo(), "Equipo");
+        // MODIFICADO: UsuarioAsignadoID es opcional al crear
+        if (incidente.getIdUsuarioAsignado() != null) {
+            validarExistenciaReferencia(usuarioClient, incidente.getIdUsuarioAsignado(), "Usuario Asignado");
         }
     }
 
@@ -348,17 +349,16 @@ public class IncidenteService {
     }
 
     /**
-     * Asigna un Equipo a un incidente existente mediante IDs.
+     * Asigna un Usuario responsable/asignado a un incidente existente mediante IDs.
      * @param incidenteId ID del incidente
-     * @param idEquipo ID del Equipo a asignar
+     * @param idUsuarioAsignado ID del Usuario a asignar
      */
-    public void asignarEquipo(
+    public void asignarUsuarioAsignado(
             Integer incidenteId,
-            Integer idEquipo) {
+            Integer idUsuarioAsignado) {
         Incidente incidente = findById(incidenteId);
-        validarExistenciaReferencia(equipoClient, idEquipo, "Equipo");
-        incidente.setIdEquipo(idEquipo);
+        validarExistenciaReferencia(usuarioClient, idUsuarioAsignado, "Usuario Asignado");
+        incidente.setIdUsuarioAsignado(idUsuarioAsignado);
         incidenteRepository.save(incidente);
     }
-
 }

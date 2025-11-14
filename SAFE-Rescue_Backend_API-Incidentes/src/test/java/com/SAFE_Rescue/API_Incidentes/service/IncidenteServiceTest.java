@@ -2,7 +2,6 @@ package com.SAFE_Rescue.API_Incidentes.service;
 
 import com.SAFE_Rescue.API_Incidentes.config.EstadoClient;
 import com.SAFE_Rescue.API_Incidentes.config.GeolocalizacionClient;
-import com.SAFE_Rescue.API_Incidentes.config.EquipoClient;
 import com.SAFE_Rescue.API_Incidentes.modelo.*;
 import com.SAFE_Rescue.API_Incidentes.config.UsuarioClient;
 import com.SAFE_Rescue.API_Incidentes.repository.IncidenteRepository;
@@ -47,8 +46,7 @@ public class IncidenteServiceTest {
     @Mock
     private GeolocalizacionClient geolocalizacionClient;
 
-    @Mock
-    private EquipoClient equipoClient;
+    // Se elimina el mock de EquipoClient
 
     @InjectMocks
     private IncidenteService incidenteService;
@@ -59,6 +57,7 @@ public class IncidenteServiceTest {
     private EstadoDTO estadoDTO = new EstadoDTO();
     private TipoIncidente tipoIncidente;
     private UsuarioDTO usuarioReporta;
+    private UsuarioDTO usuarioAsignado; // Nuevo DTO para el usuario asignado
     private Integer idDireccionExistente;
 
     @BeforeEach
@@ -72,22 +71,28 @@ public class IncidenteServiceTest {
         estadoDTO.setNombre("Activo");
 
         tipoIncidente = new TipoIncidente(2, "Incendio");
+
+        // Usuario que reporta (ID 1)
         usuarioReporta = new UsuarioDTO(1,"20000000","2","Jose","Nogales","Benites",LocalDate.now(),"111119999","correo@correo.cl",estadoDTO.getIdEstado(),1,1);
+        // Usuario asignado (ID 10)
+        usuarioAsignado = new UsuarioDTO(10,"30000000","3","Ana","Gomez","Perez",LocalDate.now(),"222223333","ana@correo.cl",estadoDTO.getIdEstado(),2,2);
+
 
         // Crear objeto Incidente con datos simulados
         incidente = new Incidente();
         incidente.setIdIncidente(id);
-
-        // CORRECCIÓN: Título corto para pasar la validación de 50 caracteres
         incidente.setTitulo("Título corto para prueba unitaria");
-
         incidente.setDetalle(faker.lorem().paragraph());
         incidente.setFechaRegistro(LocalDateTime.now());
+
+        // Asignación de IDs
         incidente.setTipoIncidente(tipoIncidente);
-        incidente.setIdCiudadano(usuarioReporta.getId());
+        incidente.setIdCiudadano(usuarioReporta.getIdUsuario());
         incidente.setIdEstadoIncidente(estadoDTO.getIdEstado());
         incidente.setIdDireccion(idDireccionExistente);
-        incidente.setIdEquipo(null);
+
+        // Nuevo campo: Usuario Asignado (se setea para los tests positivos)
+        incidente.setIdUsuarioAsignado(usuarioAsignado.getIdUsuario());
     }
 
     // --- Pruebas de operaciones CRUD BÁSICAS (Ajustadas) ---
@@ -103,10 +108,13 @@ public class IncidenteServiceTest {
     public void save_shouldReturnSavedIncident_whenValid() {
         // Arrange: Mocks de validación de todas las referencias
         when(tipoIncidenteService.findById(anyInt())).thenReturn(tipoIncidente);
-        when(usuarioClient.findById(anyInt())).thenReturn(usuarioReporta);
-        when(estadoClient.findById(anyInt())).thenReturn(estadoDTO);
 
-        // El cliente devuelve un objeto (DireccionDTO simple) para validar su existencia
+        // 1. Mockear la validación del Ciudadano (id=1)
+        when(usuarioClient.findById(incidente.getIdCiudadano())).thenReturn(usuarioReporta);
+        // 2. Mockear la validación del Usuario Asignado (id=10)
+        when(usuarioClient.findById(incidente.getIdUsuarioAsignado())).thenReturn(usuarioAsignado);
+
+        when(estadoClient.findById(anyInt())).thenReturn(estadoDTO);
         when(geolocalizacionClient.findById(anyInt())).thenReturn(new DireccionDTO());
 
         when(incidenteRepository.save(any(Incidente.class))).thenReturn(incidente);
@@ -117,21 +125,69 @@ public class IncidenteServiceTest {
         // Assert
         assertNotNull(guardado);
         verify(incidenteRepository, times(1)).save(incidente);
-        verify(geolocalizacionClient, times(1)).findById(incidente.getIdDireccion());
+        verify(usuarioClient, times(1)).findById(incidente.getIdCiudadano());
+        verify(usuarioClient, times(1)).findById(incidente.getIdUsuarioAsignado());
     }
+
+    @Test
+    public void save_shouldThrowException_whenAssignedUserNotFound() {
+        // Arrange: Se configura el incidente con un usuario asignado para probar la validación
+
+        when(tipoIncidenteService.findById(anyInt())).thenReturn(tipoIncidente);
+        when(estadoClient.findById(anyInt())).thenReturn(estadoDTO);
+        when(geolocalizacionClient.findById(anyInt())).thenReturn(new DireccionDTO());
+
+        // Mockear findById: Ciudadano OK (1)
+        when(usuarioClient.findById(incidente.getIdCiudadano())).thenReturn(usuarioReporta);
+        // Mockear findById: Usuario Asignado NOT FOUND (10) -> Falla la validación
+        when(usuarioClient.findById(incidente.getIdUsuarioAsignado())).thenReturn(null);
+
+        // Act & Assert
+        // Se espera un IllegalArgumentException al fallar la validación del Usuario Asignado
+        assertThrows(IllegalArgumentException.class, () -> incidenteService.save(incidente));
+
+        // Verificaciones
+        verify(usuarioClient, times(1)).findById(incidente.getIdUsuarioAsignado());
+        verify(incidenteRepository, never()).save(any());
+    }
+
+    @Test
+    public void save_shouldHandleNullAssignedUser_whenValid() {
+        // Arrange: Incidente sin usuario asignado
+        incidente.setIdUsuarioAsignado(null);
+
+        when(tipoIncidenteService.findById(anyInt())).thenReturn(tipoIncidente);
+        // 1. Mockear la validación del Ciudadano (id=1)
+        when(usuarioClient.findById(incidente.getIdCiudadano())).thenReturn(usuarioReporta);
+        // La validación del Usuario Asignado NO debería ser llamada
+
+        when(estadoClient.findById(anyInt())).thenReturn(estadoDTO);
+        when(geolocalizacionClient.findById(anyInt())).thenReturn(new DireccionDTO());
+
+        when(incidenteRepository.save(any(Incidente.class))).thenReturn(incidente);
+
+        // Act
+        Incidente guardado = incidenteService.save(incidente);
+
+        // Assert
+        assertNotNull(guardado);
+        verify(usuarioClient, never()).findById(null); // Asegura que no se llama con null
+        verify(usuarioClient, times(1)).findById(incidente.getIdCiudadano());
+    }
+
 
     @Test
     public void save_shouldThrowException_whenDireccionNotFound() {
         // Arrange: Mocks de dependencias exitosos, excepto Dirección
         when(tipoIncidenteService.findById(anyInt())).thenReturn(tipoIncidente);
-        when(usuarioClient.findById(anyInt())).thenReturn(usuarioReporta);
+        when(usuarioClient.findById(incidente.getIdCiudadano())).thenReturn(usuarioReporta);
+        when(usuarioClient.findById(incidente.getIdUsuarioAsignado())).thenReturn(usuarioAsignado);
         when(estadoClient.findById(anyInt())).thenReturn(estadoDTO);
 
         // Simular que GeolocalizacionClient falla (devuelve null)
         when(geolocalizacionClient.findById(anyInt())).thenReturn(null);
 
         // Act & Assert
-        // Se espera un IllegalArgumentException (el tipo de excepción correcto)
         assertThrows(IllegalArgumentException.class, () -> incidenteService.save(incidente));
 
         // Verificaciones
@@ -147,28 +203,34 @@ public class IncidenteServiceTest {
         incidenteExistente.setIdIncidente(id);
         incidenteExistente.setTitulo("Título Antiguo");
         incidenteExistente.setTipoIncidente(tipoIncidente);
-        incidenteExistente.setIdCiudadano(usuarioReporta.getId());
+        incidenteExistente.setIdCiudadano(usuarioReporta.getIdUsuario());
         incidenteExistente.setIdEstadoIncidente(estadoDTO.getIdEstado());
         incidenteExistente.setIdDireccion(idDireccionExistente);
+        incidenteExistente.setIdUsuarioAsignado(null); // El existente no tiene asignado
 
         when(incidenteRepository.findById(id)).thenReturn(Optional.of(incidenteExistente));
         when(incidenteRepository.save(any(Incidente.class))).thenReturn(incidente);
 
         // Mocks para la validación interna y externa
         when(tipoIncidenteRepository.findById(anyInt())).thenReturn(Optional.of(tipoIncidente));
-        when(usuarioClient.findById(anyInt())).thenReturn(usuarioReporta);
+
+        // Mocks para las referencias de usuario que vienen en el incidente de entrada (ambos existen)
+        when(usuarioClient.findById(incidente.getIdCiudadano())).thenReturn(usuarioReporta);
+        when(usuarioClient.findById(incidente.getIdUsuarioAsignado())).thenReturn(usuarioAsignado);
+
         when(estadoClient.findById(anyInt())).thenReturn(estadoDTO);
-        // El cliente devuelve un objeto (DireccionDTO simple) para validar su existencia
         when(geolocalizacionClient.findById(anyInt())).thenReturn(new DireccionDTO());
 
         // Act
+        // El incidente de entrada tiene un idUsuarioAsignado (10)
         Incidente actualizado = incidenteService.update(incidente, id);
 
         // Assert
         assertNotNull(actualizado);
+        // Se verifica que el incidente existente fue modificado con el nuevo campo
+        assertEquals(incidente.getIdUsuarioAsignado(), incidenteExistente.getIdUsuarioAsignado());
         verify(incidenteRepository, times(1)).findById(id);
         verify(incidenteRepository, times(1)).save(incidenteExistente);
-        verify(geolocalizacionClient, times(1)).findById(incidente.getIdDireccion());
     }
 
     // --- Pruebas de métodos de GESTIÓN DE DIRECCIONES (Ubicación) ---
@@ -179,7 +241,7 @@ public class IncidenteServiceTest {
         Integer expectedDireccionId = 98765;
         String mockUbicacionJson = "{\"calle\":\"Nueva\",\"numero\":\"456\"}";
 
-        // 1. Simular el DTO que devuelve el cliente de geolocalización (usando el constructor completo)
+        // 1. Simular el DTO que devuelve el cliente de geolocalización
         DireccionDTO direccionResponse = new DireccionDTO(expectedDireccionId,"Avenida Pajaritos","1234","Los saltamontes","Depto 12",new ComunaDTO(),new GeolocalizacionDTO());
 
         when(geolocalizacionClient.subirUbicacion(mockUbicacionJson))

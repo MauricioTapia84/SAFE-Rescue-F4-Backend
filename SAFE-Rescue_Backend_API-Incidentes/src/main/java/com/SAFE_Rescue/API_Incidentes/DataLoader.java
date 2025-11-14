@@ -36,7 +36,7 @@ public class DataLoader implements CommandLineRunner {
     @Autowired private EstadoClient estadoClient;
     @Autowired private GeolocalizacionClient geolocalizacionClient;
     @Autowired private UsuarioClient usuarioClient;
-    @Autowired private EquipoClient equipoClient;
+    // El EquipoClient ha sido eliminado.
     // ------------------------------------
 
     private final Faker faker = new Faker(new Locale("es"));
@@ -46,7 +46,6 @@ public class DataLoader implements CommandLineRunner {
     private List<UsuarioDTO> usuariosExistentes;
     private List<EstadoDTO> estadosExistentes;
     private List<DireccionDTO> direccionesExistentes;
-    private List<EquipoDTO> equiposExistentes;
 
     @Override
     public void run(String... args) {
@@ -93,11 +92,10 @@ public class DataLoader implements CommandLineRunner {
         System.out.println("-> Consumiendo API externa: Direcciones...");
         direccionesExistentes = geolocalizacionClient.getAllDirecciones();
 
-        System.out.println("-> Consumiendo API externa: Usuarios...");
+        System.out.println("-> Consumiendo API externa: Usuarios (Ciudadanos y Recursos)...");
         usuariosExistentes = usuarioClient.findAll();
 
-        System.out.println("-> Consumiendo API externa: Equipos...");
-        equiposExistentes = equipoClient.findAll();
+        // Se eliminó la llamada a equipoClient
     }
 
     /**
@@ -115,13 +113,10 @@ public class DataLoader implements CommandLineRunner {
             valid = false;
         }
         if (usuariosExistentes == null || usuariosExistentes.isEmpty()) {
-            System.err.println("ADVERTENCIA: No se obtuvieron Usuarios de la API externa. (Fatal para Incidentes)");
+            System.err.println("ADVERTENCIA: No se obtuvieron Usuarios (Ciudadanos/Asignados) de la API externa. (Fatal para Incidentes)");
             valid = false;
         }
-        if (equiposExistentes == null || equiposExistentes.isEmpty()) {
-            System.err.println("ADVERTENCIA: No se obtuvieron Equipos de la API externa. (No fatal)");
-            // Esto no es fatal, se pueden crear incidentes sin equipo asignado
-        }
+        // Se eliminó la validación de equipos
         return valid;
     }
 
@@ -159,7 +154,6 @@ public class DataLoader implements CommandLineRunner {
         int numUsuarios = usuariosExistentes.size();
         int numDirecciones = direccionesExistentes.size();
         int numEstados = estadosExistentes.size();
-        int numEquipos = equiposExistentes != null ? equiposExistentes.size() : 0;
 
         // Generar 10 incidentes aleatorios
         for (int i = 0; i < 10; i++) {
@@ -174,19 +168,25 @@ public class DataLoader implements CommandLineRunner {
             inc.setTipoIncidente(tiposIncidentes.get(random.nextInt(tiposIncidentes.size())));
 
             // 2. Claves Foráneas Lógicas (IDs) de Microservicios:
-            // Ciudadano/Usuario
+            // Ciudadano/Usuario que reporta (MANDATORIO)
             inc.setIdCiudadano(usuariosExistentes.get(random.nextInt(numUsuarios)).getIdUsuario());
-            // Dirección/Ubicación
+
+            // Dirección/Ubicación (MANDATORIO)
             inc.setIdDireccion(direccionesExistentes.get(random.nextInt(numDirecciones)).getIdDireccion());
-            // Estado
+
+            // Estado (MANDATORIO)
             inc.setIdEstadoIncidente(estadosExistentes.get(random.nextInt(numEstados)).getIdEstado());
 
-            // Equipo (Opcional)
-            if (numEquipos > 0 && random.nextBoolean()) {
-                inc.setIdEquipo(equiposExistentes.get(random.nextInt(numEquipos)).getIdEquipo());
+            // Usuario Asignado / Recurso (OPCIONAL)
+            // Se asigna un usuario al 50% de los incidentes
+            if (random.nextBoolean()) {
+                inc.setIdUsuarioAsignado(usuariosExistentes.get(random.nextInt(numUsuarios)).getIdUsuario());
             } else {
-                inc.setIdEquipo(null);
+                inc.setIdUsuarioAsignado(null);
             }
+
+            // Se elimina la asignación de idEquipo
+            // inc.setIdEquipo(null); // No es necesario si ya se eliminó del modelo. Si no lo has eliminado, déjalo.
 
             incidenteRepository.save(inc);
         }

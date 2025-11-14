@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ComunaDTO implements IHasId  {
+public class ComunaDTO {
 
     /**
      * Identificador único de la Comuna.
@@ -34,12 +34,4 @@ public class ComunaDTO implements IHasId  {
     @Schema(description = "Código postal de la Comuna", example = "7550000")
     private String codigoPostal;
 
-    /**
-     * @brief Implementación del método getId() de la interfaz IHasId.
-     * @return El idComuna.
-     */
-    @Override
-    public Integer getId() {
-        return idComuna;
-    }
 }

@@ -1,8 +1,8 @@
 package com.SAFE_Rescue.API_Comunicacion; // Manteniendo el paquete que tú utilizas
 
-import com.SAFE_Rescue.API_Comunicacion.modelo.BorradorMensaje;
+import com.SAFE_Rescue.API_Comunicacion.modelo.Conversacion;
 import com.SAFE_Rescue.API_Comunicacion.modelo.Mensaje;
-import com.SAFE_Rescue.API_Comunicacion.repository.BorradorMensajeRepository;
+import com.SAFE_Rescue.API_Comunicacion.repository.ConversacionRepository;
 import com.SAFE_Rescue.API_Comunicacion.repository.MensajeRepository;
 import com.SAFE_Rescue.API_Comunicacion.service.MensajeService; // Asegúrate de que esta importación sea correcta
 
@@ -40,19 +40,19 @@ public class MensajeServiceTest {
     private MensajeService mensajeService;
 
     @Autowired // Spring inyectará el repositorio real
-    private BorradorMensajeRepository borradorMensajeRepository;
+    private ConversacionRepository conversacionRepository;
 
     @Autowired // Spring inyectará el repositorio real
     private MensajeRepository mensajeRepository;
 
     // Ya no necesitamos inicializar estos aquí si los vamos a guardar en la DB
-    // private BorradorMensaje borradorEjemplo;
+    // private Conversacion borradorEjemplo;
     // private Mensaje mensajeEjemplo;
 
     @BeforeEach
     void setUp() {
         // Limpiar la base de datos si DDL-auto no es create-drop o si hay problemas
-        // borradorMensajeRepository.deleteAll();
+        // conversacionRepository.deleteAll();
         // mensajeRepository.deleteAll();
 
         // Para las pruebas de integración, normalmente insertas datos iniciales
@@ -69,14 +69,14 @@ public class MensajeServiceTest {
     void crearMensajeDesdeBorradorYReceptor_BorradorExistenteYNoEnviado_DeberiaCrearMensaje() {
         // GIVEN (Dado que...)
         // Insertar un borrador real en la base de datos de prueba
-        BorradorMensaje borradorParaTest = new BorradorMensaje();
+        Conversacion borradorParaTest = new Conversacion();
         borradorParaTest.setIdBrdrMensaje(0); // El ID se generará automáticamente
         borradorParaTest.setIdBrdrEmisor(101);
         borradorParaTest.setFechaBrdrMensaje(new Date());
         borradorParaTest.setBrdrTitulo("Título de Borrador para Mensaje");
         borradorParaTest.setBrdrContenido("Contenido de Borrador para Mensaje.");
         borradorParaTest.setBorradorEnviado(false);
-        borradorMensajeRepository.save(borradorParaTest); // Guarda en la DB real de H2
+        conversacionRepository.save(borradorParaTest); // Guarda en la DB real de H2
 
         int idReceptor = 202;
 
@@ -94,7 +94,7 @@ public class MensajeServiceTest {
         assertThat(mensajeRecuperado.get().getBorradorOriginal().isBorradorEnviado()).isTrue(); // Verificar estado en DB
 
         // Verificar que el borrador original también se actualizó en la DB
-        Optional<BorradorMensaje> borradorActualizado = borradorMensajeRepository.findById(borradorParaTest.getIdBrdrMensaje());
+        Optional<Conversacion> borradorActualizado = conversacionRepository.findById(borradorParaTest.getIdBrdrMensaje());
         assertTrue(borradorActualizado.isPresent());
         assertTrue(borradorActualizado.get().isBorradorEnviado());
     }
@@ -121,14 +121,14 @@ public class MensajeServiceTest {
     @DisplayName("Debería lanzar IllegalStateException cuando el borrador ya ha sido enviado")
     void crearMensajeDesdeBorradorYReceptor_BorradorYaEnviado_DeberiaLanzarExcepcion() {
         // GIVEN: Insertar un borrador que ya esté marcado como enviado
-        BorradorMensaje borradorYaEnviado = new BorradorMensaje();
+        Conversacion borradorYaEnviado = new Conversacion();
         borradorYaEnviado.setIdBrdrMensaje(0);
         borradorYaEnviado.setIdBrdrEmisor(101);
         borradorYaEnviado.setFechaBrdrMensaje(new Date());
         borradorYaEnviado.setBrdrTitulo("Título Borrador Enviado");
         borradorYaEnviado.setBrdrContenido("Contenido Borrador Enviado.");
         borradorYaEnviado.setBorradorEnviado(true); // Ya enviado
-        borradorMensajeRepository.save(borradorYaEnviado);
+        conversacionRepository.save(borradorYaEnviado);
 
         int idReceptor = 202;
 
@@ -147,8 +147,8 @@ public class MensajeServiceTest {
     @DisplayName("Debería devolver un mensaje cuando se encuentra por ID")
     void obtenerMensajePorId_MensajeExistente_DeberiaDevolverMensaje() {
         // GIVEN: Guardar un mensaje de ejemplo en la DB
-        BorradorMensaje borradorBase = new BorradorMensaje(0, 1, new Date(), "T", "C", false);
-        borradorMensajeRepository.save(borradorBase);
+        Conversacion borradorBase = new Conversacion(0, 1, new Date(), "T", "C", false);
+        conversacionRepository.save(borradorBase);
 
         Mensaje mensajeParaTest = new Mensaje(0, 1, 2, new Date(), "Titulo", "Contenido", borradorBase);
         mensajeRepository.save(mensajeParaTest);
@@ -181,8 +181,8 @@ public class MensajeServiceTest {
     @DisplayName("Debería eliminar un mensaje exitosamente cuando el mensaje existe")
     void eliminarMensaje_MensajeExistente_DeberiaEliminar() {
         // GIVEN: Guardar un mensaje para luego eliminarlo
-        BorradorMensaje borradorBase = new BorradorMensaje(0, 1, new Date(), "T", "C", false);
-        borradorMensajeRepository.save(borradorBase);
+        Conversacion borradorBase = new Conversacion(0, 1, new Date(), "T", "C", false);
+        conversacionRepository.save(borradorBase);
         Mensaje mensajeParaEliminar = new Mensaje(0, 1, 2, new Date(), "Titulo", "Contenido", borradorBase);
         mensajeRepository.save(mensajeParaEliminar);
 
@@ -215,9 +215,9 @@ public class MensajeServiceTest {
     @DisplayName("Debería devolver todos los mensajes")
     void obtenerTodosLosMensajes_DeberiaDevolverListaDeMensajes() {
         // GIVEN: Guardar varios mensajes
-        BorradorMensaje b1 = new BorradorMensaje(0, 1, new Date(), "T1", "C1", false);
-        BorradorMensaje b2 = new BorradorMensaje(0, 2, new Date(), "T2", "C2", false);
-        borradorMensajeRepository.saveAll(List.of(b1, b2)); // Guardar borradores primero
+        Conversacion b1 = new Conversacion(0, 1, new Date(), "T1", "C1", false);
+        Conversacion b2 = new Conversacion(0, 2, new Date(), "T2", "C2", false);
+        conversacionRepository.saveAll(List.of(b1, b2)); // Guardar borradores primero
 
         Mensaje m1 = new Mensaje(0, 1, 10, new Date(), "Mensaje 1", "Contenido 1", b1);
         Mensaje m2 = new Mensaje(0, 2, 20, new Date(), "Mensaje 2", "Contenido 2", b2);
