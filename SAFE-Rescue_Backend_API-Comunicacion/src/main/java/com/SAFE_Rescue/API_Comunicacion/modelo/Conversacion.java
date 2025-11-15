@@ -55,18 +55,6 @@ public class Conversacion implements Serializable {
     @Schema(description = "Marca de tiempo de la creación de la conversación")
     private LocalDateTime fechaCreacion;
 
-    /**
-     * Relación OneToMany con la entidad Mensaje.
-     * Indica todos los mensajes que pertenecen a esta conversación.
-     * - mappedBy: Hace que la relación sea manejada por el campo 'conversacion' en la entidad Mensaje.
-     * - CascadeType.ALL: Si se elimina la conversación, se eliminan todos sus mensajes.
-     * - orphanRemoval: true: Elimina mensajes de la BD si se eliminan de la lista.
-     * - FetchType.LAZY: Los mensajes solo se cargan cuando se accede a la lista.
-     */
-    @OneToMany(mappedBy = "conversacion", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @Schema(description = "Lista de mensajes asociados a esta conversación")
-    private List<Mensaje> mensajes = new ArrayList<>();
-
 
     // Método de callback que se ejecuta antes de persistir la entidad.
     @PrePersist

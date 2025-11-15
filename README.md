@@ -14,14 +14,11 @@ SAFE Rescue es una aplicación diseñada para la gestión eficiente y rápida de
 
 ### ❚❙❘ VERSIÓN 0.0.6
 
-> <br>• Se Eliminan historial y categorias para registros
-> <br>• Se añaden historial para incidentes y mensajes
-> <br>• Se empieza el microserivico de comunicacion
-> <br>• Se cambia en incidente la asignacion de equipo a usuario
-> <br>• Se corrigen errores
-> <br> > > > Crear Dataloader para comunicacion
-> <br> > > > Implementar el webclient en comunicacion
-> <br> > > > Terminar los controlladores de comunicacion
+> <br>• Se crean controladores para api comunicaciones
+> <br>• Se corrige la lógica de la api de comunicaciones
+> <br>• Se crea el dataloader de comunicaciones
+> <br>• Se realizan los test para los controladores y service de comunicaciones
+> <br>• Se elimino pais de la entidad geolocalizacion
 > <br>
 
 ---

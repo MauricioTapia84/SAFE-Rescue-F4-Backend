@@ -1,133 +1,98 @@
 package com.SAFE_Rescue.API_Comunicacion.service;
 
-import com.SAFE_Rescue.API_Comunicacion.modelo.Conversacion;
 import com.SAFE_Rescue.API_Comunicacion.modelo.Mensaje;
-import com.SAFE_Rescue.API_Comunicacion.repository.MensajeRepository;
+import com.SAFE_Rescue.API_Comunicacion.modelo.HistorialMensaje; // Modelo de auditoría
+import com.SAFE_Rescue.API_Comunicacion.repository.HistorialMensajeRepository; // Repositorio de auditoría
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
- * Servicio que gestiona el envío, recuperación (historial) y eliminación de mensajes.
- * Implementa lógica de validación de participantes y utiliza paginación para el historial.
+ * Servicio encargado de gestionar y registrar los cambios de estado (auditoría) de los mensajes,
+ * así como de proveer la consulta de dichos registros.
+ * Este servicio se centra en la AUDITORÍA, no en el CRUD del recurso principal Mensaje.
  */
 @Service
 public class HistorialMensajeService {
 
-    private final MensajeRepository mensajeRepository;
-    private final ConversacionService conversacionService;
-    private final ParticipanteConvService participanteConvService; // Para verificar si el remitente es miembro
+    private final HistorialMensajeRepository historialMensajeRepository;
+    // Necesario para validar si el mensaje existe
+    private final MensajeService mensajeService;
 
     @Autowired
     public HistorialMensajeService(
-            MensajeRepository mensajeRepository,
-            ConversacionService conversacionService,
-            ParticipanteConvService participanteConvService) {
-        this.mensajeRepository = mensajeRepository;
-        this.conversacionService = conversacionService;
-        this.participanteConvService = participanteConvService;
+            HistorialMensajeRepository historialMensajeRepository,
+            MensajeService mensajeService) {
+        this.historialMensajeRepository = historialMensajeRepository;
+        this.mensajeService = mensajeService;
     }
 
+    public List<HistorialMensaje> findAll() {
+        return historialMensajeRepository.findAll();
+    }
+
+    // =========================================================================
+    // REGISTRO DE CAMBIOS DE ESTADO
+    // =========================================================================
+
     /**
-     * Envía y persiste un nuevo mensaje en una conversación.
+     * Crea y persiste un nuevo registro de historial de cambio de estado para un MENSAJE.
+     * Este método es para uso INTERNO (llamado desde MensajeService cuando ocurre un cambio).
      *
-     * @param idConversacion ID de la conversación de destino.
-     * @param idUsuarioEmisor ID del participante que envía el mensaje.
-     * @param detalle Contenido textual del mensaje.
-     * @param idEstado ID del estado inicial del mensaje (ej: 1 para Enviado).
-     * @return El mensaje persistido.
-     * @throws NoSuchElementException Si la conversación no existe.
-     * @throws IllegalStateException Si el remitente no es un participante activo de la conversación.
+     * @param mensaje Mensaje que sufrió el cambio.
+     * @param idEstadoAnterior ID del estado previo.
+     * @param idEstadoNuevo ID del nuevo estado.
+     * @param detalle Descripción del cambio.
+     * @return El registro de historial persistido.
      */
     @Transactional
-    public Mensaje enviarMensaje(Integer idConversacion, Integer idUsuarioEmisor, String detalle, Integer idEstado) {
-        // 1. Validar que la conversación exista
-        Conversacion conversacion = conversacionService.findById(idConversacion);
+    public HistorialMensaje registrarCambioEstado(
+            Mensaje mensaje,
+            Integer idEstadoAnterior,
+            Integer idEstadoNuevo,
+            String detalle) {
 
-        // 2. Validar que el remitente sea un participante activo de la conversación
-        boolean esParticipante = participanteConvService.findParticipantesByConversacion(idConversacion).stream()
-                .anyMatch(p -> p.getIdUsuario().equals(idUsuarioEmisor));
-
-        if (!esParticipante) {
-            throw new IllegalStateException("El remitente con ID " + idUsuarioEmisor + " no es un participante activo de la conversación " + idConversacion);
+        if (mensaje == null || idEstadoAnterior == null || idEstadoNuevo == null || detalle == null || detalle.trim().isEmpty()) {
+            throw new IllegalArgumentException("No se puede registrar el historial para Mensaje: Faltan datos obligatorios.");
         }
 
-        // 3. Crear el objeto Mensaje
-        Mensaje nuevoMensaje = new Mensaje();
-        nuevoMensaje.setConversacion(conversacion);
-        nuevoMensaje.setIdUsuarioEmisor(idUsuarioEmisor);
-        nuevoMensaje.setDetalle(detalle);
-        nuevoMensaje.setIdEstado(idEstado);
-        // La fecha de creación se asigna automáticamente mediante @PrePersist en la entidad.
+        HistorialMensaje registro = new HistorialMensaje();
+        registro.setMensaje(mensaje); // Asume que HistorialMensaje tiene una propiedad 'mensaje'
+        registro.setIdEstadoAnterior(idEstadoAnterior);
+        registro.setIdEstadoNuevo(idEstadoNuevo);
+        registro.setDetalle(detalle);
+        registro.setFechaHistorial(LocalDateTime.now());
 
-        return mensajeRepository.save(nuevoMensaje);
+        return historialMensajeRepository.save(registro);
     }
 
-    /**
-     * Actualiza el estado de un mensaje (ej: de Enviado a Leído).
-     *
-     * @param idMensaje ID del mensaje a actualizar.
-     * @param nuevoIdEstado El nuevo ID del estado.
-     * @return El mensaje actualizado.
-     * @throws NoSuchElementException Si el mensaje no existe.
-     */
-    @Transactional
-    public Mensaje actualizarEstadoMensaje(Integer idMensaje, Integer nuevoIdEstado) {
-        Mensaje mensaje = mensajeRepository.findById(idMensaje)
-                .orElseThrow(() -> new NoSuchElementException("Mensaje no encontrado con ID: " + idMensaje));
-
-        mensaje.setIdEstado(nuevoIdEstado);
-        return mensajeRepository.save(mensaje);
-    }
-
+    // =========================================================================
+    // CONSULTA DEL HISTORIAL
+    // =========================================================================
 
     /**
-     * Recupera el historial de mensajes de una conversación con paginación.
-     * Los mensajes se ordenan por fecha de creación ascendente (los más antiguos primero).
+     * Obtiene todo el historial de cambios de estado para un MENSAJE específico.
      *
-     * @param idConversacion ID de la conversación.
-     * @param page Número de página (0-based).
-     * @param size Número de mensajes por página.
-     * @return Una página de objetos Mensaje.
+     * @param idMensaje El ID del mensaje cuyo historial se desea consultar.
+     * @return Lista de HistorialMensaje ordenados por fecha descendente.
+     * @throws EntityNotFoundException Si el mensaje no existe.
      */
-    public Page<Mensaje> cargarHistorial(Integer idConversacion, int page, int size) {
-        // 1. Opcionalmente, validar la existencia de la conversación
-        conversacionService.findById(idConversacion);
-
-        // 2. Crear la configuración de paginación
-        Pageable pageable = PageRequest.of(page, size);
-
-        // 3. Buscar mensajes (ordenados por fecha de creación)
-        return mensajeRepository.findByConversacion_IdConversacion(idConversacion, pageable);
-    }
-
-    /**
-     * Elimina un mensaje por su ID.
-     *
-     * @param idMensaje ID del mensaje a eliminar.
-     * @throws NoSuchElementException Si el mensaje no existe.
-     */
-    @Transactional
-    public void eliminarMensaje(Integer idMensaje) {
-        if (!mensajeRepository.existsById(idMensaje)) {
-            throw new NoSuchElementException("Mensaje no encontrado con ID: " + idMensaje);
+    public List<HistorialMensaje> obtenerHistorialPorMensaje(Integer idMensaje) {
+        try {
+            // 1. Validar la existencia del mensaje usando el servicio principal
+            mensajeService.findById(idMensaje);
+        } catch (NoSuchElementException e) {
+            // Convertir NoSuchElementException a EntityNotFoundException para consistencia
+            throw new EntityNotFoundException("Mensaje con ID " + idMensaje + " no encontrado.");
         }
-        mensajeRepository.deleteById(idMensaje);
-    }
 
-    /**
-     * Busca un mensaje específico por su ID.
-     * @param idMensaje ID del mensaje.
-     * @return El objeto Mensaje.
-     * @throws NoSuchElementException Si el mensaje no existe.
-     */
-    public Mensaje findById(Integer idMensaje) {
-        return mensajeRepository.findById(idMensaje)
-                .orElseThrow(() -> new NoSuchElementException("Mensaje no encontrado con ID: " + idMensaje));
+        // 2. Buscar registros por el ID del Mensaje
+        // Asume que HistorialMensajeRepository tiene un método findByMensajeIdMensaje
+        return historialMensajeRepository.findByMensajeIdMensaje(idMensaje);
     }
 }

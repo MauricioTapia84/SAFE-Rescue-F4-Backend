@@ -1,6 +1,8 @@
 package com.SAFE_Rescue.API_Comunicacion.service;
 
-import com.SAFE_Rescue.API_Comunicacion.modelo.Conversacion; // Importar si se usa
+import com.SAFE_Rescue.API_Comunicacion.config.EstadoClient;
+import com.SAFE_Rescue.API_Comunicacion.config.UsuarioClient;
+import com.SAFE_Rescue.API_Comunicacion.modelo.Conversacion;
 import com.SAFE_Rescue.API_Comunicacion.modelo.Notificacion;
 import com.SAFE_Rescue.API_Comunicacion.repository.NotificacionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,21 +16,27 @@ import java.util.NoSuchElementException;
 /**
  * Servicio que gestiona la lógica de negocio para las Notificaciones.
  * Opera con el String idUsuarioReceptor y el Integer idEstado para la persistencia.
- * Los IDs de estado están basados en la tabla 'estado' proporcionada:
- * 8 = Recibido (Pendiente/No Leída), 9 = Visto (Leída).
+ * Utiliza UsuarioClient para validar la existencia del usuario receptor.
  */
 @Service
 public class NotificacionService {
 
     private final NotificacionRepository notificacionRepository;
+    // Clientes de microservicios inyectados
+    private final UsuarioClient usuarioClient;
+    private final EstadoClient estadoClient; // Se inyecta por si se necesita validar en el futuro.
 
     // Se obtienen las constantes del Repositorio para asegurar la consistencia con la DB
     private static final Integer ESTADO_PENDIENTE = NotificacionRepository.ESTADO_PENDIENTE; // ID 8 (Recibido)
     private static final Integer ESTADO_LEIDA = NotificacionRepository.ESTADO_LEIDA;       // ID 9 (Visto)
 
     @Autowired
-    public NotificacionService(NotificacionRepository notificacionRepository) {
+    public NotificacionService(NotificacionRepository notificacionRepository,
+                               UsuarioClient usuarioClient,
+                               EstadoClient estadoClient) {
         this.notificacionRepository = notificacionRepository;
+        this.usuarioClient = usuarioClient;
+        this.estadoClient = estadoClient;
     }
 
     /**
@@ -38,15 +46,43 @@ public class NotificacionService {
      * @param detalle Contenido textual de la notificación.
      * @param conversacion La Conversacion asociada a la notificación.
      * @return La notificación persistida.
+     * @throws IllegalArgumentException Si el ID del usuario receptor no existe o no es numérico.
      */
     @Transactional
     public Notificacion crearNotificacion(String idUsuarioReceptor, String detalle, Conversacion conversacion) {
+
+        Integer idReceptorInt;
+        // 1. Manejo y validación del formato del ID fuera del bloque de conexión
+        try {
+            idReceptorInt = Integer.parseInt(idUsuarioReceptor);
+        } catch (NumberFormatException e) {
+            // Lanza directamente IllegalArgumentException, ya que es un error de formato de entrada.
+            throw new IllegalArgumentException("ID de Usuario Receptor no válido (debe ser numérico): " + idUsuarioReceptor);
+        }
+
+        // 2. Validar la existencia del usuario receptor en el microservicio externo
+        try {
+            if (usuarioClient.findById(idReceptorInt).isEmpty()) {
+                // Lanza directamente IllegalArgumentException, ya que el usuario no existe.
+                throw new IllegalArgumentException("Usuario receptor con ID " + idUsuarioReceptor + " no encontrado en el microservicio de Usuarios.");
+            }
+        } catch (IllegalArgumentException e) {
+            // Propagamos la excepción de negocio (usuario no encontrado) sin envolver.
+            throw e;
+        } catch (RuntimeException e) {
+            // Captura errores de conexión (ej. Feign client o WebClient) y los envuelve en RuntimeException.
+            throw new RuntimeException("Fallo al validar el Usuario Receptor con ID " + idUsuarioReceptor + " con el microservicio: " + e.getMessage(), e);
+        }
+
+
+        // 3. Crear la notificación
         Notificacion nuevaNotificacion = new Notificacion();
         nuevaNotificacion.setIdUsuarioReceptor(idUsuarioReceptor);
         nuevaNotificacion.setDetalle(detalle);
         nuevaNotificacion.setConversacion(conversacion);
         nuevaNotificacion.setIdEstado(ESTADO_PENDIENTE); // Estado inicial: 8 (Recibido)
 
+        // 4. Persistir y retornar
         return notificacionRepository.save(nuevaNotificacion);
     }
 

@@ -3,12 +3,10 @@ package com.SAFE_Rescue.API_Geolocalizacion;
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Comuna;
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Direccion;
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Geolocalizacion;
-import com.SAFE_Rescue.API_Geolocalizacion.modelo.Pais;
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Region;
 import com.SAFE_Rescue.API_Geolocalizacion.repositoy.ComunaRepository;
 import com.SAFE_Rescue.API_Geolocalizacion.repositoy.DireccionRepository;
 import com.SAFE_Rescue.API_Geolocalizacion.repositoy.GeolocalizacionRepository;
-import com.SAFE_Rescue.API_Geolocalizacion.repositoy.PaisRepository;
 import com.SAFE_Rescue.API_Geolocalizacion.repositoy.RegionRepository;
 import net.datafaker.Faker;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +26,6 @@ import java.util.*;
 public class DataLoader implements CommandLineRunner {
 
     // --- REPOSITORIOS DE GEOLOCALIZACIÓN ---
-    @Autowired private PaisRepository paisRepository;
     @Autowired private RegionRepository regionRepository;
     @Autowired private ComunaRepository comunaRepository;
     @Autowired private GeolocalizacionRepository geolocalizacionRepository;
@@ -46,8 +43,7 @@ public class DataLoader implements CommandLineRunner {
             limpiarDatosExistentes();
 
             // 1. GENERAR DATOS GEOGRÁFICOS
-            List<Pais> paises = crearPaises();
-            List<Region> regiones = crearRegiones(paises);
+            List<Region> regiones = crearRegiones();
 
             // Buscar la Región Metropolitana para la carga de comunas y direcciones
             Region regionMetropolitana = regiones.stream()
@@ -77,43 +73,12 @@ public class DataLoader implements CommandLineRunner {
         comunaRepository.deleteAllInBatch();
         regionRepository.deleteAllInBatch();
         // Borrar entidades base al final
-        paisRepository.deleteAllInBatch();
         System.out.println("-> Limpieza completada.");
     }
 
     // --- MÉTODOS PARA CREAR ENTIDADES GEOGRÁFICAS ---
 
-    private List<Pais> crearPaises() {
-        List<Pais> paises = new ArrayList<>();
-
-        // Chile
-        Pais chile = new Pais();
-        chile.setNombre("Chile");
-        chile.setCodigoIso("CHL");
-        paises.add(paisRepository.save(chile));
-
-        // Países vecinos
-        Pais argentina = new Pais();
-        argentina.setNombre("Argentina");
-        argentina.setCodigoIso("ARG");
-        paises.add(paisRepository.save(argentina));
-
-        Pais peru = new Pais();
-        peru.setNombre("Perú");
-        peru.setCodigoIso("PER");
-        paises.add(paisRepository.save(peru));
-
-        System.out.println("-> Creados " + paises.size() + " países.");
-        return paises;
-    }
-
-    // ... (El método crearRegiones se mantiene igual, ya que está correcto)
-    private List<Region> crearRegiones(List<Pais> paises) {
-        // ... (Tu implementación de crearRegiones)
-        Pais chile = paises.stream()
-                .filter(p -> "Chile".equals(p.getNombre()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Chile no encontrado."));
+    private List<Region> crearRegiones() {
 
         // Definición de las 16 regiones de Chile
         Map<String, String> regionesData = new LinkedHashMap<>();
@@ -139,7 +104,6 @@ public class DataLoader implements CommandLineRunner {
             Region region = new Region();
             region.setNombre(entry.getKey());
             region.setIdentificacion(entry.getValue());
-            region.setPais(chile);
             regiones.add(regionRepository.save(region));
         }
 

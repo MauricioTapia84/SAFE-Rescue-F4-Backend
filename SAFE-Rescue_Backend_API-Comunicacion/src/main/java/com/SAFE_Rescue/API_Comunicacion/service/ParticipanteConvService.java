@@ -1,5 +1,6 @@
 package com.SAFE_Rescue.API_Comunicacion.service;
 
+import com.SAFE_Rescue.API_Comunicacion.config.UsuarioClient; // 👈 Importamos el cliente de Usuarios
 import com.SAFE_Rescue.API_Comunicacion.modelo.Conversacion;
 import com.SAFE_Rescue.API_Comunicacion.modelo.ParticipanteConversacion;
 import com.SAFE_Rescue.API_Comunicacion.repository.ParticipanteConversacionRepository;
@@ -13,19 +14,23 @@ import java.util.NoSuchElementException;
 /**
  * Servicio que gestiona la asignación y desasignación de participantes a las conversaciones.
  * Utiliza el patrón de Many-to-Many a través de la entidad ParticipanteConversacion.
+ * Ahora utiliza UsuarioClient para validar la existencia del usuario antes de la asignación.
  */
 @Service
 public class ParticipanteConvService {
 
     private final ParticipanteConversacionRepository participanteConvRepository;
-    private final ConversacionService conversacionService; // Para validar si la conversación existe
+    private final ConversacionService conversacionService;
+    private final UsuarioClient usuarioClient; // 👈 Declaramos el cliente
 
     @Autowired
     public ParticipanteConvService(
             ParticipanteConversacionRepository participanteConvRepository,
-            ConversacionService conversacionService) {
+            ConversacionService conversacionService,
+            UsuarioClient usuarioClient) { // 👈 Inyectamos el cliente
         this.participanteConvRepository = participanteConvRepository;
         this.conversacionService = conversacionService;
+        this.usuarioClient = usuarioClient; // 👈 Asignamos el cliente
     }
 
     /**
@@ -36,22 +41,27 @@ public class ParticipanteConvService {
      * @return La nueva asignación de ParticipanteConversacion.
      * @throws NoSuchElementException Si la conversación no existe.
      * @throws IllegalStateException Si el usuario ya está unido a la conversación.
+     * @throws IllegalArgumentException Si el ID de usuario no existe en el microservicio de Usuarios.
      */
     @Transactional
     public ParticipanteConversacion unirParticipanteAConversacion(Integer idConversacion, Integer idUsuario) {
-        // 1. Validar que la conversación exista (usamos el servicio existente)
+        // 1. Validar que la conversación exista
         Conversacion conversacion = conversacionService.findById(idConversacion);
 
-        // 2. Verificar si el usuario ya es miembro
+        // 2. Validar que el usuario exista en el microservicio de Usuarios
+        if (usuarioClient.findById(idUsuario).isEmpty()) {
+            throw new IllegalArgumentException("Usuario con ID " + idUsuario + " no encontrado en el microservicio de Usuarios. No se puede unir a la conversación.");
+        }
+
+        // 3. Verificar si el usuario ya es miembro
         if (participanteConvRepository.findByIdUsuarioAndConversacion_IdConversacion(idUsuario, idConversacion).isPresent()) {
             throw new IllegalStateException("El usuario con ID " + idUsuario + " ya es un participante en la conversación " + idConversacion);
         }
 
-        // 3. Crear la nueva asignación
+        // 4. Crear la nueva asignación
         ParticipanteConversacion nuevoParticipante = new ParticipanteConversacion();
         nuevoParticipante.setConversacion(conversacion);
         nuevoParticipante.setIdUsuario(idUsuario);
-        // La fecha de unión se asigna automáticamente.
 
         return participanteConvRepository.save(nuevoParticipante);
     }
@@ -65,6 +75,9 @@ public class ParticipanteConvService {
      */
     @Transactional
     public void eliminarParticipanteDeConversacion(Integer idConversacion, Integer idUsuario) {
+        // En este caso, no es estrictamente necesario validar el idUsuario con el cliente,
+        // ya que la excepción se lanzará si la asignación local (participanteConvRepository) no existe.
+
         // 1. Verificar si la asignación existe
         participanteConvRepository.findByIdUsuarioAndConversacion_IdConversacion(idUsuario, idConversacion)
                 .orElseThrow(() -> new NoSuchElementException("El participante con ID " + idUsuario + " no está asociado a la conversación " + idConversacion));

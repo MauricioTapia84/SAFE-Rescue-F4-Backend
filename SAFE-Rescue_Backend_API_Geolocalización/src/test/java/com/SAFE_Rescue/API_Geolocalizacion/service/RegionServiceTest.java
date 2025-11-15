@@ -1,6 +1,5 @@
 package com.SAFE_Rescue.API_Geolocalizacion.service;
 
-import com.SAFE_Rescue.API_Geolocalizacion.modelo.Pais;
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Region;
 import com.SAFE_Rescue.API_Geolocalizacion.repositoy.RegionRepository;
 import net.datafaker.Faker;
@@ -29,7 +28,6 @@ public class RegionServiceTest {
     private RegionService regionService;
 
     private Region region;
-    private Pais pais;
     private Faker faker;
     private Integer id;
 
@@ -38,18 +36,11 @@ public class RegionServiceTest {
         faker = new Faker();
         id = faker.number().numberBetween(1, 100);
 
-        // 1. Crear el objeto Pais (dependencia)
-        pais = new Pais();
-        pais.setIdPais(1);
-        pais.setNombre("Chile");
-        pais.setCodigoIso("CHL");
-
         // 2. Crear el objeto Region
         region = new Region();
         region.setIdRegion(id);
         region.setNombre("Región Metropolitana");
         region.setIdentificacion("RM");
-        region.setPais(pais);
     }
 
     // --- Pruebas de operaciones exitosas (Happy Path) ---
@@ -107,7 +98,6 @@ public class RegionServiceTest {
         Region regionConNuevosDatos = new Region();
         regionConNuevosDatos.setNombre(nuevoNombre);
         regionConNuevosDatos.setIdentificacion(nuevaIdentificacion);
-        regionConNuevosDatos.setPais(pais); // Debe tener un país válido
 
         when(regionRepository.findById(id)).thenReturn(Optional.of(region));
 
@@ -115,7 +105,6 @@ public class RegionServiceTest {
         regionModificada.setIdRegion(id);
         regionModificada.setNombre(nuevoNombre);
         regionModificada.setIdentificacion(nuevaIdentificacion);
-        regionModificada.setPais(pais);
 
         when(regionRepository.save(any(Region.class))).thenReturn(regionModificada);
 
@@ -176,15 +165,6 @@ public class RegionServiceTest {
         verify(regionRepository, never()).save(any());
     }
 
-    @Test
-    public void save_shouldThrowException_whenPaisIsNull() {
-        // Arrange
-        region.setPais(null);
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> regionService.save(region));
-        verify(regionRepository, never()).save(any());
-    }
 
     @Test
     public void save_shouldThrowException_whenNameIsTooLong() {
@@ -245,7 +225,6 @@ public class RegionServiceTest {
         Region regionConError = new Region();
         regionConError.setNombre("Nueva");
         regionConError.setIdentificacion("NVA");
-        regionConError.setPais(null); // Violación de validación
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> regionService.update(regionConError, id));

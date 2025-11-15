@@ -1,6 +1,5 @@
 package com.SAFE_Rescue.API_Geolocalizacion.controller;
 
-import com.SAFE_Rescue.API_Geolocalizacion.modelo.Pais;
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Region;
 import com.SAFE_Rescue.API_Geolocalizacion.service.RegionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,17 +46,10 @@ public class RegionControllerTest {
         faker = new Faker();
         id = 1;
 
-        // Crear dependencia Pais
-        Pais pais = new Pais();
-        pais.setIdPais(1);
-        pais.setNombre("Chile");
-        pais.setCodigoIso("CHL");
-
         // Crear la entidad Region
         region = new Region();
         region.setIdRegion(id);
         region.setNombre(faker.address().state());
-        region.setPais(pais);
     }
 
     // --- Pruebas de operaciones exitosas (Happy Path) ---
@@ -84,9 +76,7 @@ public class RegionControllerTest {
         // Act & Assert
         mockMvc.perform(get(BASE_URL + "/{id}", id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nombre").value(region.getNombre()))
-                // Verifica que la dependencia (País) se serialice correctamente
-                .andExpect(jsonPath("$.pais.nombre").value(region.getPais().getNombre()));
+                .andExpect(jsonPath("$.nombre").value(region.getNombre()));
 
         verify(regionService, times(1)).findById(id);
     }
@@ -114,7 +104,6 @@ public class RegionControllerTest {
         Region updatedRegion = new Region();
         updatedRegion.setIdRegion(id);
         updatedRegion.setNombre("Región Actualizada");
-        updatedRegion.setPais(region.getPais());
 
         // CORRECCIÓN: Usar thenReturn() ya que regionService.update() devuelve una entidad.
         when(regionService.update(any(Region.class), eq(id))).thenReturn(updatedRegion);

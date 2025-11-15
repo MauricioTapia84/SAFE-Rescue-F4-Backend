@@ -1,3 +1,12 @@
+❚❙❘ VERSIÓN 0.0.7
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se crean controladores para api comunicaciones
+├─• Se corrige la lógica de la api de comunicaciones
+├─• Se crea el dataloader de comunicaciones
+├─• Se realizan los test para los controladores y service de comunicaciones
+└─• Se elimino pais de la entidad geolocalizacion
+
+
 ❚❙❘ VERSIÓN 0.0.6
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Se Eliminan historial y categorias para registros
@@ -9,7 +18,6 @@
 ->>> Crear Dataloader para comunicacion
 ->>> Implementar el webclient en comunicacion
 ->>> Terminar los controlladores de comunicacion
-
 
 
 ❚❙❘ VERSIÓN 0.0.5

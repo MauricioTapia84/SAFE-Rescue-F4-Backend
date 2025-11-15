@@ -2,7 +2,6 @@ package com.SAFE_Rescue.API_Perfiles.controller;
 
 import com.SAFE_Rescue.API_Perfiles.modelo.Equipo;
 import com.SAFE_Rescue.API_Perfiles.modelo.HistorialUsuario;
-import com.SAFE_Rescue.API_Perfiles.controlador.HistorialUsuarioController;
 import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
 import com.SAFE_Rescue.API_Perfiles.service.HistorialUsuarioService;
 import org.junit.jupiter.api.BeforeEach;

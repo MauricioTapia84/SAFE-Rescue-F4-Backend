@@ -37,11 +37,4 @@ public class Region {
     @Size(max = 5)
     private String identificacion; // Campo para el número o abreviatura (ej: "RM", "XIII")
 
-    // --- Relación a Pais (ManyToOne: Muchas Regiones a Un País) ---
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JsonBackReference
-    @JoinColumn(name = "id_pais", nullable = false) // Clave foránea a la entidad Pais
-    @Schema(description = "País al que pertenece la región", required = true)
-    private Pais pais;
 }

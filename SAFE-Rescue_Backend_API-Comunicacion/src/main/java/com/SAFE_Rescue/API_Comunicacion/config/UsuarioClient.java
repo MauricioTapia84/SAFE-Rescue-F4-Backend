@@ -14,6 +14,8 @@ import java.util.Optional;
 /**
  * Cliente de WebClient para interactuar con el microservicio de Usuarios.
  * Permite obtener, guardar y listar los objetos UsuarioDTO (Ciudadanos y Usuarios Asignados).
+ * * NOTA: La firma de findById ha sido ajustada para retornar Optional<UsuarioDTO>,
+ * un patrón más idiomático en Java moderno.
  */
 @Component
 public class UsuarioClient {
@@ -36,12 +38,12 @@ public class UsuarioClient {
      * Busca un UsuarioDTO por su ID único.
      *
      * @param idUsuario El ID del usuario.
-     * @return El UsuarioDTO si se encuentra (o null si hay 404/Not Found, capturado y no relanzado).
+     * @return Un Optional que contiene el UsuarioDTO si se encuentra.
      */
-    public UsuarioDTO findById(Integer idUsuario) {
+    public Optional<UsuarioDTO> findById(Integer idUsuario) { // Firma actualizada para retornar Optional
         try {
             // Se utiliza blockOptional() para manejar el caso 404 (Not Found) de forma limpia.
-            Optional<UsuarioDTO> optionalUsuario = this.webClient.get()
+            return this.webClient.get()
                     .uri("/{id}", idUsuario)
                     .retrieve()
 
@@ -62,9 +64,6 @@ public class UsuarioClient {
                     // Convierte el cuerpo de la respuesta a la clase UsuarioDTO y espera de forma opcional
                     .bodyToMono(UsuarioDTO.class)
                     .blockOptional(); // Bloquea hasta recibir la respuesta, devuelve Optional
-
-            // Retorna el objeto si está presente, o null si fue 404 (para compatibilidad con el IncidenteService)
-            return optionalUsuario.orElse(null);
 
         } catch (WebClientResponseException e) {
             // Manejo de errores específicos no capturados por onStatus (ej. otros 4xx o 5xx)

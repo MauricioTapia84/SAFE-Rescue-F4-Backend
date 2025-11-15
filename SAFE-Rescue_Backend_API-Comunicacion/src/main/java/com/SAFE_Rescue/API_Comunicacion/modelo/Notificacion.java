@@ -3,7 +3,6 @@ package com.SAFE_Rescue.API_Comunicacion.modelo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -51,19 +50,17 @@ public class Notificacion implements Serializable {
 
     /**
      * Relación con la Conversacion asociada a esta notificación.
-     * La columna id_conversacion debe existir en la tabla 'notificacion'.
+     * Hacemos nullable = true para permitir notificaciones de sistema (sin conversación).
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_conversacion", nullable = false)
-    @NotNull(message = "La conversación asociada es obligatoria")
+    @JoinColumn(name = "id_conversacion", nullable = true) // <-- CAMBIO CLAVE: AHORA ES OPCIONAL
+    @Schema(description = "La conversación asociada (opcional para notificaciones de sistema)")
     private Conversacion conversacion;
 
     // --- Mapeo de IDs (asumiendo que idUsuarioReceptor e idEstado son IDs de otras entidades) ---
 
     /**
      * ID del usuario que debe recibir esta notificación.
-     * Mapeo directo a ID para evitar cargar la entidad Usuario completa.
-     * Se asume que es un String, que es el tipo estándar para IDs de usuarios en sistemas modernos.
      */
     @Column(name = "id_usuario_receptor", length = 255, nullable = false)
     @NotBlank(message = "El ID del usuario receptor es obligatorio")
@@ -72,10 +69,8 @@ public class Notificacion implements Serializable {
 
     /**
      * ID del estado actual de la notificación (ej: 1=Pendiente, 2=Leída).
-     * Mapeo directo a ID para evitar cargar la entidad Estado completa.
      */
     @Column(name = "id_estado", nullable = false)
-    @NotNull(message = "El ID del estado es obligatorio")
     @Schema(description = "ID que indica el estado de la notificación (ej: 1=Pendiente)", required = true)
     private Integer idEstado;
 

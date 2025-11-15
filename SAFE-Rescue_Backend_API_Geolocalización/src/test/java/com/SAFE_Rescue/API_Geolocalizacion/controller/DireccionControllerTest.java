@@ -3,7 +3,6 @@ package com.SAFE_Rescue.API_Geolocalizacion.controller;
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Comuna;
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Direccion;
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Geolocalizacion;
-import com.SAFE_Rescue.API_Geolocalizacion.modelo.Pais;
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Region;
 import com.SAFE_Rescue.API_Geolocalizacion.service.DireccionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,8 +52,7 @@ public class DireccionControllerTest {
         id = 1;
 
         // 1. Crear dependencias jerárquicas (para simular Comuna)
-        Pais pais = new Pais(1, "Chile", "CHL");
-        Region region = new Region(1, "Región Metropolitana","RM", pais);
+        Region region = new Region(1, "Región Metropolitana","RM");
         comuna = new Comuna(1, "Santiago","7500000", region);
 
         // 2. Crear dependencia Geolocalizacion

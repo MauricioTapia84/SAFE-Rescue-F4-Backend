@@ -83,7 +83,6 @@ public class RegionService {
         antiguaRegion.setNombre(region.getNombre());
         antiguaRegion.setIdentificacion(region.getIdentificacion());
         // El País asociado también puede ser actualizado si es necesario (asumiendo que viene en el objeto región)
-        antiguaRegion.setPais(region.getPais());
 
         try {
             return regionRepository.save(antiguaRegion);
@@ -126,10 +125,6 @@ public class RegionService {
 
         if (region.getIdentificacion() == null || region.getIdentificacion().trim().isEmpty()) {
             throw new IllegalArgumentException("La identificación (número/abreviatura) de la región es requerida.");
-        }
-
-        if (region.getPais() == null) {
-            throw new IllegalArgumentException("La región debe estar asociada a una entidad País válida.");
         }
 
         // Asumiendo que las longitudes máximas son 100 y 5 respectivamente (como en la entidad)

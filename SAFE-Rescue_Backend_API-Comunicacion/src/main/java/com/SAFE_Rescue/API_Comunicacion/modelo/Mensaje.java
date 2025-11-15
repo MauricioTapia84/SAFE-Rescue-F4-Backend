@@ -1,5 +1,6 @@
 package com.SAFE_Rescue.API_Comunicacion.modelo;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -13,13 +14,13 @@ import java.time.LocalDateTime;
 /**
  * Entidad Mensaje: Contiene el contenido de un mensaje dentro de una Conversacion.
  * Representa la tabla 'mensaje' en la base de datos.
- * Esta entidad no extiende RepresentationModel (HATEOAS) siguiendo los requisitos.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name = "mensaje")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "conversacion"})
 public class Mensaje implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -33,25 +34,22 @@ public class Mensaje implements Serializable {
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 
-    // Usamos @NotBlank para asegurar que no sea nulo ni vacío/solo espacios.
     @NotBlank(message = "El detalle del mensaje no puede estar vacío.")
-    @Column(name = "detalle", length = 255) // Aumentado el tamaño del detalle a 255
+    @Column(name = "detalle", length = 2000)
     @Schema(description = "Contenido textual del mensaje", required = true, example = "Hola, ¿puedes confirmar la recepción?")
     private String detalle;
 
     /**
      * Relación ManyToOne con la Conversacion.
-     * FetchType.LAZY es preferido para evitar cargar la conversación completa innecesariamente.
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_conversacion", nullable = false) // Corregido a id_conversacion
+    @ManyToOne
+    @JoinColumn(name = "id_conversacion", nullable = false)
     @NotNull(message = "La conversación asociada es obligatoria")
     @Schema(description = "Objeto de la conversación al que pertenece el mensaje")
-    private Conversacion conversacion;
+    private Conversacion conversacion; // Necesita la clase Conversacion para compilar
 
     /**
-     * ID del Usuario que envía el mensaje (Emisor).
-     * Mapeado como ID simple ya que el Usuario está en otra API.
+     * ID del Usuario que envía el mensaje (Emisor), externo a esta API.
      */
     @Column(name = "id_usuario_emisor", nullable = false)
     @NotNull(message = "El ID del usuario emisor es obligatorio")
@@ -59,10 +57,9 @@ public class Mensaje implements Serializable {
     private Integer idUsuarioEmisor;
 
     /**
-     * ID del Estado del mensaje (ej: Enviado, Leído).
-     * Mapeado como ID simple ya que el Estado está en otra API.
+     * ID del Estado del mensaje (ej: Enviado, Leído), externo a esta API.
      */
-    @Column(name = "id_estado", nullable = false) // Corregido el nombre de la columna para ser consistente
+    @Column(name = "id_estado", nullable = false)
     @NotNull(message = "El ID del estado del mensaje es obligatorio")
     @Schema(description = "ID del Estado (clave foránea lógica a la API externa de Estados)", required = true, example = "1")
     private Integer idEstado;
