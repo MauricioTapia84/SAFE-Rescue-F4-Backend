@@ -41,7 +41,7 @@ public class GeolocalizacionClient {
                     .onStatus(
                             status -> status.is4xxClientError(),
                             response -> response.bodyToMono(String.class)
-                                    .map(body -> new RuntimeException("Direccion no encontrada (ID: " + id + ") en MS-Geolocalizacion"))
+                                    .map(body -> new RuntimeException("Direccion no encontrada (ID: " + id + ") en MS-Cordenadas"))
                     )
                     .bodyToMono(DireccionDTO.class) // Se espera un DireccionDTO
                     .block(); // Bloquea hasta que la respuesta esté disponible
@@ -50,7 +50,7 @@ public class GeolocalizacionClient {
             throw e;
         } catch (Exception e) {
             // Maneja fallos de conexión o errores 5xx no específicos
-            throw new IllegalStateException("Error al comunicarse con MS-Geolocalizacion para obtener dirección: " + e.getMessage(), e);
+            throw new IllegalStateException("Error al comunicarse con MS-Cordenadas para obtener dirección: " + e.getMessage(), e);
         }
     }
 
@@ -87,14 +87,14 @@ public class GeolocalizacionClient {
                     .onStatus(
                             status -> status.isError(),
                             response -> response.bodyToMono(String.class)
-                                    .map(body -> new IllegalStateException("Error al guardar dirección en MS-Geolocalizacion. Código: " + response.statusCode() + ", Mensaje: " + body))
+                                    .map(body -> new IllegalStateException("Error al guardar dirección en MS-Cordenadas. Código: " + response.statusCode() + ", Mensaje: " + body))
                     )
                     .bodyToMono(DireccionDTO.class)
                     .block(); // Bloqueamos la ejecución para el servicio síncrono
 
         } catch (WebClientResponseException e) {
             // Captura errores específicos lanzados por onStatus o problemas de conexión
-            throw new IllegalStateException("Fallo de comunicación con MS-Geolocalizacion: " + e.getMessage(), e);
+            throw new IllegalStateException("Fallo de comunicación con MS-Cordenadas: " + e.getMessage(), e);
         } catch (Exception e) {
             // Fallo general (ej. error de deserialización, timeout)
             throw new IllegalStateException("Error inesperado al intentar guardar la dirección: " + e.getMessage(), e);

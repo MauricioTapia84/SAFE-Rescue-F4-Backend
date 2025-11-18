@@ -3,8 +3,8 @@ package com.SAFE_Rescue.API_Perfiles.service;
 import com.SAFE_Rescue.API_Perfiles.config.GeolocalizacionClient;
 import com.SAFE_Rescue.API_Perfiles.modelo.Compania;
 import com.SAFE_Rescue.API_Perfiles.modelo.ComunaDTO;
+import com.SAFE_Rescue.API_Perfiles.modelo.CordenadasDTO;
 import com.SAFE_Rescue.API_Perfiles.modelo.DireccionDTO;
-import com.SAFE_Rescue.API_Perfiles.modelo.GeolocalizacionDTO;
 import com.SAFE_Rescue.API_Perfiles.repositoy.CompaniaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,7 +60,7 @@ public class CompaniaServiceTest {
                 "Villa villera",
                 "Depto 123",
                 new ComunaDTO(),
-                new GeolocalizacionDTO()
+                new CordenadasDTO()
         );
 
         // 2. Mocking del GeolocalizacionClient: por defecto, devuelve el DTO base para CUALQUIER ID.
@@ -247,7 +247,7 @@ public class CompaniaServiceTest {
                 "Villa villosa",
                 "Depto 1231",
                 new ComunaDTO(),
-                new GeolocalizacionDTO()
+                new CordenadasDTO()
         );
 
         // Compañía con los nuevos detalles (solo se usan nombre e idDireccion)
@@ -327,7 +327,7 @@ public class CompaniaServiceTest {
                 "Villa villosa",
                 "Depto 1123",
                 new ComunaDTO(),
-                new GeolocalizacionDTO()
+                new CordenadasDTO()
         );
 
         // 1. Mockeamos la búsqueda (encuentra la entidad)

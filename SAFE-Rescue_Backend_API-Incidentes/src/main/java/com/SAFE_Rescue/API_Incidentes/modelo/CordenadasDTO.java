@@ -1,4 +1,4 @@
-package com.SAFE_Rescue.API_Perfiles.modelo;
+package com.SAFE_Rescue.API_Incidentes.modelo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -6,14 +6,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * @class GeolocalizacionDTO
+ * @class CordenadasDTO
  * @brief DTO que representa las coordenadas geográficas (Latitud y Longitud) de una ubicación.
  */
 @Schema(description = "DTO que contiene las coordenadas geográficas de un punto.")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class GeolocalizacionDTO {
+public class CordenadasDTO {
 
     /**
      * @property idGeolocalizacion

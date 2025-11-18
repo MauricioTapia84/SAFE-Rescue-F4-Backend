@@ -12,13 +12,13 @@ SAFE Rescue es una aplicación diseñada para la gestión eficiente y rápida de
 
 ## Últimos cambios
 
-### ❚❙❘ VERSIÓN 0.0.6
+### ❚❙❘ VERSIÓN 0.0.8
 
-> <br>• Se crean controladores para api comunicaciones
-> <br>• Se corrige la lógica de la api de comunicaciones
-> <br>• Se crea el dataloader de comunicaciones
-> <br>• Se realizan los test para los controladores y service de comunicaciones
-> <br>• Se elimino pais de la entidad geolocalizacion
+> <br>• Se elimina historial de mesnaje de api de comunicacion
+> <br>• Se elimina conversacion de notificaciones
+> <br>• Se cambia el nombre de entidad a geolocalizacion por coordenadas en la api de geolocalizacion
+> <br>• Se añade la logica de la api de donaciones
+> <br>• Se hacen las pruebas unitarias de donaciones
 > <br>
 
 ---

@@ -136,7 +136,7 @@ public class CiudadanoService {
     }
 
     /**
-     * Valida la existencia de la Dirección DTO y la guarda/actualiza en el MS-Geolocalizacion.
+     * Valida la existencia de la Dirección DTO y la guarda/actualiza en el MS-Cordenadas.
      * Luego, asigna el ID retornado a la entidad Ciudadano.
      *
      * @param ciudadano El ciudadano con el DireccionDTO a persistir.
@@ -158,7 +158,7 @@ public class CiudadanoService {
                 // Asignamos el ID retornado por el MS-Geolocalización al campo idDireccion del Ciudadano.
                 ciudadano.setIdDireccion(direccionGuardada.getIdDireccion());
             } else {
-                throw new IllegalStateException("El MS-Geolocalizacion no devolvió un ID de dirección válido.");
+                throw new IllegalStateException("El MS-Cordenadas no devolvió un ID de dirección válido.");
             }
         } catch (Exception e) {
             // Captura errores de comunicación con el microservicio externo.

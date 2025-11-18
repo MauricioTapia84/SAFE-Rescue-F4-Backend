@@ -63,7 +63,7 @@ public class NotificacionControllerTest {
         creacionDTO.setIdConversacion(ID_CONV);
 
         // Inicializar Notificación de salida
-        notificacionMock = new Notificacion(ID_NOTIFICACION,LocalDateTime.now(),"Emergencia",null, ID_RECEPTOR, 1);
+        notificacionMock = new Notificacion(ID_NOTIFICACION,LocalDateTime.now(),"Emergencia", ID_RECEPTOR, 1);
     }
 
     // =========================================================================
@@ -173,8 +173,8 @@ public class NotificacionControllerTest {
     void obtenerNotificacionesPendientes_success() throws Exception {
         // Preparar Page mock
         List<Notificacion> content = List.of(
-                new Notificacion(1,LocalDateTime.now(),"Hola",null, ID_RECEPTOR, 1),
-                new Notificacion(2,LocalDateTime.now(),"Hi",null, ID_RECEPTOR, 1)
+                new Notificacion(1,LocalDateTime.now(),"Hola", ID_RECEPTOR, 1),
+                new Notificacion(2,LocalDateTime.now(),"Hi", ID_RECEPTOR, 1)
         );
         Page<Notificacion> pageMock = new PageImpl<>(content, PageRequest.of(0, 10), 5); // Total 5 elementos
 
@@ -205,7 +205,7 @@ public class NotificacionControllerTest {
     @DisplayName("PATCH /leida - Debe marcar una notificación como leída y retornar 200 OK")
     void marcarNotificacionComoLeida_success() throws Exception {
         // Notificación de salida marcada como leída (estado 9)
-        Notificacion leidaMock = new Notificacion(ID_NOTIFICACION,LocalDateTime.now(),"casa",new Conversacion(), ID_RECEPTOR, 9);
+        Notificacion leidaMock = new Notificacion(ID_NOTIFICACION,LocalDateTime.now(),"casa", ID_RECEPTOR, 9);
 
         // Simular el comportamiento del servicio
         when(notificacionService.marcarComoLeida(ID_NOTIFICACION)).thenReturn(leidaMock);

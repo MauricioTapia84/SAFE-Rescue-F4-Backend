@@ -242,7 +242,7 @@ public class IncidenteServiceTest {
         String mockUbicacionJson = "{\"calle\":\"Nueva\",\"numero\":\"456\"}";
 
         // 1. Simular el DTO que devuelve el cliente de geolocalización
-        DireccionDTO direccionResponse = new DireccionDTO(expectedDireccionId,"Avenida Pajaritos","1234","Los saltamontes","Depto 12",new ComunaDTO(),new GeolocalizacionDTO());
+        DireccionDTO direccionResponse = new DireccionDTO(expectedDireccionId,"Avenida Pajaritos","1234","Los saltamontes","Depto 12",new ComunaDTO(),new CordenadasDTO());
 
         when(geolocalizacionClient.subirUbicacion(mockUbicacionJson))
                 .thenReturn(direccionResponse);

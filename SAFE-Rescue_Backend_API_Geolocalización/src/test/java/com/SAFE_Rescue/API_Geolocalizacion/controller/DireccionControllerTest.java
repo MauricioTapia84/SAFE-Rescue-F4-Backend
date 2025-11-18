@@ -1,8 +1,8 @@
 package com.SAFE_Rescue.API_Geolocalizacion.controller;
 
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Comuna;
+import com.SAFE_Rescue.API_Geolocalizacion.modelo.Cordenadas;
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Direccion;
-import com.SAFE_Rescue.API_Geolocalizacion.modelo.Geolocalizacion;
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Region;
 import com.SAFE_Rescue.API_Geolocalizacion.service.DireccionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class DireccionControllerTest {
 
     // Ruta base definida en el controlador
-    private final String BASE_URL = "/api-geolocalizacion/v1/direcciones";
+    private final String BASE_URL = "/api-cordenadas/v1/direcciones";
 
     @Autowired
     private MockMvc mockMvc;
@@ -44,7 +44,7 @@ public class DireccionControllerTest {
     private Direccion direccion;
     private Integer id;
     private Comuna comuna;
-    private Geolocalizacion geolocalizacion;
+    private Cordenadas cordenadas;
 
     @BeforeEach
     public void setUp() {
@@ -55,11 +55,11 @@ public class DireccionControllerTest {
         Region region = new Region(1, "Región Metropolitana","RM");
         comuna = new Comuna(1, "Santiago","7500000", region);
 
-        // 2. Crear dependencia Geolocalizacion
-        geolocalizacion = new Geolocalizacion();
-        geolocalizacion.setIdGeolocalizacion(101);
-        geolocalizacion.setLatitud((float) faker.number().randomDouble(6, -34, -33)); // Latitud de Santiago
-        geolocalizacion.setLongitud((float) faker.number().randomDouble(6, -71, -70)); // Longitud de Santiago
+        // 2. Crear dependencia Cordenadas
+        cordenadas = new Cordenadas();
+        cordenadas.setIdGeolocalizacion(101);
+        cordenadas.setLatitud((float) faker.number().randomDouble(6, -34, -33)); // Latitud de Santiago
+        cordenadas.setLongitud((float) faker.number().randomDouble(6, -71, -70)); // Longitud de Santiago
 
         // 3. Crear la entidad Direccion
         direccion = new Direccion();
@@ -67,7 +67,7 @@ public class DireccionControllerTest {
         direccion.setCalle(faker.address().streetName());
         direccion.setNumero(faker.address().buildingNumber());
         direccion.setComuna(comuna);
-        direccion.setGeolocalizacion(geolocalizacion);
+        direccion.setCordenadas(cordenadas);
     }
 
     // --- Pruebas de operaciones exitosas (Happy Path) ---
@@ -97,7 +97,7 @@ public class DireccionControllerTest {
                 .andExpect(jsonPath("$.calle").value(direccion.getCalle()))
                 // Verifica que las dependencias se serialicen correctamente
                 .andExpect(jsonPath("$.comuna.nombre").value(direccion.getComuna().getNombre()))
-                .andExpect(jsonPath("$.geolocalizacion.idGeolocalizacion").value(direccion.getGeolocalizacion().getIdGeolocalizacion()));
+                .andExpect(jsonPath("$.cordenadas.idGeolocalizacion").value(direccion.getCordenadas().getIdGeolocalizacion()));
 
         verify(direccionService, times(1)).findById(id);
     }
@@ -126,7 +126,7 @@ public class DireccionControllerTest {
         updatedDireccion.setCalle("Calle Nueva");
         updatedDireccion.setNumero("9999");
         updatedDireccion.setComuna(comuna);
-        updatedDireccion.setGeolocalizacion(geolocalizacion);
+        updatedDireccion.setCordenadas(cordenadas);
 
         // CORRECCIÓN: Usar when().thenReturn() ya que direccionService.update() devuelve una entidad.
         when(direccionService.update(any(Direccion.class), eq(id))).thenReturn(updatedDireccion);

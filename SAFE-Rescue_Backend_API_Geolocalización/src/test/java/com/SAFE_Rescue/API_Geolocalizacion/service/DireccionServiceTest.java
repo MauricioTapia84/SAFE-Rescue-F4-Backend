@@ -1,8 +1,8 @@
 package com.SAFE_Rescue.API_Geolocalizacion.service;
 
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Comuna;
+import com.SAFE_Rescue.API_Geolocalizacion.modelo.Cordenadas;
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Direccion;
-import com.SAFE_Rescue.API_Geolocalizacion.modelo.Geolocalizacion;
 import com.SAFE_Rescue.API_Geolocalizacion.repositoy.DireccionRepository;
 import net.datafaker.Faker;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +31,7 @@ public class DireccionServiceTest {
 
     private Direccion direccion;
     private Comuna comuna;
-    private Geolocalizacion geolocalizacion;
+    private Cordenadas cordenadas;
     private Faker faker;
     private Integer id;
 
@@ -45,10 +45,10 @@ public class DireccionServiceTest {
         comuna.setIdComuna(10);
         comuna.setNombre("Maipú");
 
-        geolocalizacion = new Geolocalizacion();
-        geolocalizacion.setIdGeolocalizacion(20);
-        geolocalizacion.setLatitud((float) faker.number().randomDouble(6, (long) -33.5,(long) -33.4));
-        geolocalizacion.setLongitud((float) faker.number().randomDouble(6,(long) -70.7,(long) -70.6));
+        cordenadas = new Cordenadas();
+        cordenadas.setIdGeolocalizacion(20);
+        cordenadas.setLatitud((float) faker.number().randomDouble(6, (long) -33.5,(long) -33.4));
+        cordenadas.setLongitud((float) faker.number().randomDouble(6,(long) -70.7,(long) -70.6));
 
         // 2. Crear la entidad principal
         direccion = new Direccion();
@@ -57,7 +57,7 @@ public class DireccionServiceTest {
         direccion.setNumero("1234");
         direccion.setComplemento("Depto 501");
         direccion.setComuna(comuna);
-        direccion.setGeolocalizacion(geolocalizacion);
+        direccion.setCordenadas(cordenadas);
     }
 
     // --- Pruebas de operaciones exitosas (Happy Path) ---
@@ -116,7 +116,7 @@ public class DireccionServiceTest {
         direccionConNuevosDatos.setCalle(nuevaCalle);
         direccionConNuevosDatos.setNumero(nuevoNumero);
         direccionConNuevosDatos.setComuna(comuna); // Mantener dependencias válidas
-        direccionConNuevosDatos.setGeolocalizacion(geolocalizacion);
+        direccionConNuevosDatos.setCordenadas(cordenadas);
 
         when(direccionRepository.findById(id)).thenReturn(Optional.of(direccion));
 
@@ -125,7 +125,7 @@ public class DireccionServiceTest {
         direccionModificada.setCalle(nuevaCalle);
         direccionModificada.setNumero(nuevoNumero);
         direccionModificada.setComuna(comuna);
-        direccionModificada.setGeolocalizacion(geolocalizacion);
+        direccionModificada.setCordenadas(cordenadas);
 
         when(direccionRepository.save(any(Direccion.class))).thenReturn(direccionModificada);
 
@@ -199,7 +199,7 @@ public class DireccionServiceTest {
     @Test
     public void save_shouldThrowException_whenGeolocalizacionIsNull() {
         // Arrange
-        direccion.setGeolocalizacion(null);
+        direccion.setCordenadas(null);
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> direccionService.save(direccion));
@@ -220,7 +220,7 @@ public class DireccionServiceTest {
     @Test
     public void save_shouldThrowException_whenDataIntegrityViolation_invalidFK() {
         // Arrange
-        // Simula que la Comuna o Geolocalizacion no existen en la BD
+        // Simula que la Comuna o Cordenadas no existen en la BD
         when(direccionRepository.save(any(Direccion.class))).thenThrow(DataIntegrityViolationException.class);
 
         // Act & Assert

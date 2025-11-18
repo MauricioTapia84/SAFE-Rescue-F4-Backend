@@ -79,7 +79,6 @@ public class NotificacionService {
         Notificacion nuevaNotificacion = new Notificacion();
         nuevaNotificacion.setIdUsuarioReceptor(idUsuarioReceptor);
         nuevaNotificacion.setDetalle(detalle);
-        nuevaNotificacion.setConversacion(conversacion);
         nuevaNotificacion.setIdEstado(ESTADO_PENDIENTE); // Estado inicial: 8 (Recibido)
 
         // 4. Persistir y retornar

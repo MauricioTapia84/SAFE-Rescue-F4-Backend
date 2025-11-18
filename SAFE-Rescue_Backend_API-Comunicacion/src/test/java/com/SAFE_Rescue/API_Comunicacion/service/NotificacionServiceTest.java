@@ -67,7 +67,6 @@ public class NotificacionServiceTest {
         notificacionPendiente.setIdUsuarioReceptor(ID_USUARIO_VALIDO);
         notificacionPendiente.setDetalle("Nuevo mensaje en el grupo.");
         notificacionPendiente.setIdEstado(ESTADO_PENDIENTE);
-        notificacionPendiente.setConversacion(conversacion);
     }
 
     // =========================================================================

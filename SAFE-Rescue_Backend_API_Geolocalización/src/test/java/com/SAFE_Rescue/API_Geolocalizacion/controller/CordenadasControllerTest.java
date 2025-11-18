@@ -1,7 +1,7 @@
 package com.SAFE_Rescue.API_Geolocalizacion.controller;
 
-import com.SAFE_Rescue.API_Geolocalizacion.modelo.Geolocalizacion;
-import com.SAFE_Rescue.API_Geolocalizacion.service.GeolocalizacionService;
+import com.SAFE_Rescue.API_Geolocalizacion.modelo.Cordenadas;
+import com.SAFE_Rescue.API_Geolocalizacion.service.CordenadasService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.datafaker.Faker;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,23 +22,23 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(GeolocalizacionController.class)
-public class GeolocalizacionControllerTest {
+@WebMvcTest(CordenadasController.class)
+public class CordenadasControllerTest {
 
     // Ruta base definida en el controlador
-    private final String BASE_URL = "/api-geolocalizacion/v1/localizaciones";
+    private final String BASE_URL = "/api-cordenadas/v1/localizaciones";
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
-    private GeolocalizacionService geolocalizacionService;
+    private CordenadasService cordenadasService;
 
     @Autowired
     private ObjectMapper objectMapper;
 
     private Faker faker;
-    private Geolocalizacion geolocalizacion;
+    private Cordenadas cordenadas;
     private Integer id;
 
     @BeforeEach
@@ -46,11 +46,11 @@ public class GeolocalizacionControllerTest {
         faker = new Faker();
         id = 1;
 
-        // Crear la entidad Geolocalizacion con coordenadas aleatorias
-        geolocalizacion = new Geolocalizacion();
-        geolocalizacion.setIdGeolocalizacion(id);
-        geolocalizacion.setLatitud((float) faker.number().randomDouble(6, -90, 90));
-        geolocalizacion.setLongitud((float) faker.number().randomDouble(6, -180, 180));
+        // Crear la entidad Cordenadas con coordenadas aleatorias
+        cordenadas = new Cordenadas();
+        cordenadas.setIdGeolocalizacion(id);
+        cordenadas.setLatitud((float) faker.number().randomDouble(6, -90, 90));
+        cordenadas.setLongitud((float) faker.number().randomDouble(6, -180, 180));
     }
 
     // --- Pruebas de operaciones exitosas (Happy Path) ---
@@ -58,55 +58,55 @@ public class GeolocalizacionControllerTest {
     @Test
     public void listarGeolocalizacionesTest_shouldReturnOkAndContent() throws Exception {
         // Arrange
-        when(geolocalizacionService.findAll()).thenReturn(List.of(geolocalizacion));
+        when(cordenadasService.findAll()).thenReturn(List.of(cordenadas));
 
         // Act & Assert
         mockMvc.perform(get(BASE_URL))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].idGeolocalizacion").value(geolocalizacion.getIdGeolocalizacion()))
-                .andExpect(jsonPath("$[0].latitud").value(geolocalizacion.getLatitud()));
+                .andExpect(jsonPath("$[0].idGeolocalizacion").value(cordenadas.getIdGeolocalizacion()))
+                .andExpect(jsonPath("$[0].latitud").value(cordenadas.getLatitud()));
 
-        verify(geolocalizacionService, times(1)).findAll();
+        verify(cordenadasService, times(1)).findAll();
     }
 
     @Test
     public void buscarGeolocalizacionTest_shouldReturnOkAndGeolocalizacion() throws Exception {
         // Arrange
-        when(geolocalizacionService.findById(id)).thenReturn(geolocalizacion);
+        when(cordenadasService.findById(id)).thenReturn(cordenadas);
 
         // Act & Assert
         mockMvc.perform(get(BASE_URL + "/{id}", id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.latitud").value(geolocalizacion.getLatitud()));
+                .andExpect(jsonPath("$.latitud").value(cordenadas.getLatitud()));
 
-        verify(geolocalizacionService, times(1)).findById(id);
+        verify(cordenadasService, times(1)).findById(id);
     }
 
     @Test
     public void agregarGeolocalizacionTest_shouldReturnCreatedAndMessage() throws Exception {
         // Arrange
-        when(geolocalizacionService.save(any(Geolocalizacion.class))).thenReturn(geolocalizacion);
+        when(cordenadasService.save(any(Cordenadas.class))).thenReturn(cordenadas);
 
         // Act & Assert
         mockMvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(geolocalizacion)))
+                        .content(objectMapper.writeValueAsString(cordenadas)))
                 .andExpect(status().isCreated()) // 201 CREATED (Coincide con el controlador)
                 .andExpect(content().string("Geolocalización creada con éxito.")); // Coincide con el controlador
 
-        verify(geolocalizacionService, times(1)).save(any(Geolocalizacion.class));
+        verify(cordenadasService, times(1)).save(any(Cordenadas.class));
     }
 
     @Test
     public void actualizarGeolocalizacionTest_shouldReturnOkAndMessage() throws Exception {
         // Arrange
         // Creamos una copia para simular el objeto actualizado que devuelve el servicio
-        Geolocalizacion updatedGeo = new Geolocalizacion();
+        Cordenadas updatedGeo = new Cordenadas();
         updatedGeo.setIdGeolocalizacion(id);
-        updatedGeo.setLatitud((float) (geolocalizacion.getLatitud() + 0.001));
+        updatedGeo.setLatitud((float) (cordenadas.getLatitud() + 0.001));
 
         // **CORRECCIÓN AQUÍ:** Si el método update devuelve la entidad, usamos thenReturn.
-        when(geolocalizacionService.update(any(Geolocalizacion.class), eq(id))).thenReturn(updatedGeo);
+        when(cordenadasService.update(any(Cordenadas.class), eq(id))).thenReturn(updatedGeo);
 
         // Act & Assert
         mockMvc.perform(put(BASE_URL + "/{id}", id)
@@ -115,20 +115,20 @@ public class GeolocalizacionControllerTest {
                 .andExpect(status().isOk()) // 200 OK (Coincide con el controlador)
                 .andExpect(content().string("Geolocalización actualizada con éxito")); // Coincide con el controlador
 
-        verify(geolocalizacionService, times(1)).update(any(Geolocalizacion.class), eq(id));
+        verify(cordenadasService, times(1)).update(any(Cordenadas.class), eq(id));
     }
 
     @Test
     public void eliminarGeolocalizacionTest_shouldReturnOkAndMessage() throws Exception {
         // Arrange
-        doNothing().when(geolocalizacionService).delete(id);
+        doNothing().when(cordenadasService).delete(id);
 
         // Act & Assert
         mockMvc.perform(delete(BASE_URL + "/{id}", id))
                 .andExpect(status().isOk()) // 200 OK (Coincide con el controlador)
                 .andExpect(content().string("Geolocalización eliminada con éxito.")); // Coincide con el controlador
 
-        verify(geolocalizacionService, times(1)).delete(id);
+        verify(cordenadasService, times(1)).delete(id);
     }
 
     // --- Pruebas de escenarios de error ---
@@ -137,7 +137,7 @@ public class GeolocalizacionControllerTest {
     @Test
     public void listarGeolocalizacionesTest_NoContent() throws Exception {
         // Arrange
-        when(geolocalizacionService.findAll()).thenReturn(Collections.emptyList());
+        when(cordenadasService.findAll()).thenReturn(Collections.emptyList());
 
         // Act & Assert
         mockMvc.perform(get(BASE_URL))
@@ -147,7 +147,7 @@ public class GeolocalizacionControllerTest {
     @Test
     public void buscarGeolocalizacionTest_NotFound() throws Exception {
         // Arrange
-        when(geolocalizacionService.findById(id)).thenThrow(new NoSuchElementException("Geolocalización no encontrada"));
+        when(cordenadasService.findById(id)).thenThrow(new NoSuchElementException("Geolocalización no encontrada"));
 
         // Act & Assert
         mockMvc.perform(get(BASE_URL + "/{id}", id))
@@ -160,12 +160,12 @@ public class GeolocalizacionControllerTest {
         // Arrange
         final String errorMessage = "Error: La latitud debe estar entre -90 y 90.";
         // Usamos when/thenThrow aquí, lo cual es correcto si el método save devuelve algo o es void
-        when(geolocalizacionService.save(any(Geolocalizacion.class))).thenThrow(new IllegalArgumentException(errorMessage));
+        when(cordenadasService.save(any(Cordenadas.class))).thenThrow(new IllegalArgumentException(errorMessage));
 
         // Act & Assert
         mockMvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(geolocalizacion)))
+                        .content(objectMapper.writeValueAsString(cordenadas)))
                 .andExpect(status().isBadRequest()) // 400 BAD REQUEST
                 .andExpect(content().string(errorMessage));
     }
@@ -174,13 +174,13 @@ public class GeolocalizacionControllerTest {
     public void actualizarGeolocalizacionTest_NotFound() throws Exception {
         // Arrange
         // Usamos when/thenThrow, lo cual es correcto.
-        when(geolocalizacionService.update(any(Geolocalizacion.class), eq(id)))
+        when(cordenadasService.update(any(Cordenadas.class), eq(id)))
                 .thenThrow(new NoSuchElementException("Geolocalización no encontrada"));
 
         // Act & Assert
         mockMvc.perform(put(BASE_URL + "/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(geolocalizacion)))
+                        .content(objectMapper.writeValueAsString(cordenadas)))
                 .andExpect(status().isNotFound()) // 404 NOT FOUND
                 .andExpect(content().string("Geolocalización no encontrada"));
     }
@@ -190,13 +190,13 @@ public class GeolocalizacionControllerTest {
         // Arrange
         final String errorMessage = "Error: Coordenadas inválidas.";
         // Usamos when/thenThrow, lo cual es correcto.
-        when(geolocalizacionService.update(any(Geolocalizacion.class), eq(id)))
+        when(cordenadasService.update(any(Cordenadas.class), eq(id)))
                 .thenThrow(new IllegalArgumentException(errorMessage));
 
         // Act & Assert
         mockMvc.perform(put(BASE_URL + "/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(geolocalizacion)))
+                        .content(objectMapper.writeValueAsString(cordenadas)))
                 .andExpect(status().isBadRequest()) // 400 BAD REQUEST
                 .andExpect(content().string(errorMessage));
     }
@@ -204,7 +204,7 @@ public class GeolocalizacionControllerTest {
     @Test
     public void eliminarGeolocalizacionTest_NotFound() throws Exception {
         // Arrange
-        doThrow(new NoSuchElementException("Geolocalización no encontrada")).when(geolocalizacionService).delete(id);
+        doThrow(new NoSuchElementException("Geolocalización no encontrada")).when(cordenadasService).delete(id);
 
         // Act & Assert
         mockMvc.perform(delete(BASE_URL + "/{id}", id))
@@ -216,7 +216,7 @@ public class GeolocalizacionControllerTest {
     public void eliminarGeolocalizacionTest_BadRequest_DependencyError() throws Exception {
         // Arrange
         final String errorMessage = "No se puede eliminar la geolocalización porque está asociada a una Dirección.";
-        doThrow(new IllegalStateException(errorMessage)).when(geolocalizacionService).delete(id);
+        doThrow(new IllegalStateException(errorMessage)).when(cordenadasService).delete(id);
 
         // Act & Assert
         mockMvc.perform(delete(BASE_URL + "/{id}", id))

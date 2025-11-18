@@ -11,7 +11,7 @@ import java.util.NoSuchElementException;
 
 /**
  * Servicio para la gestión integral de la entidad Direccion.
- * Maneja operaciones CRUD y valida las relaciones con Comuna y Geolocalizacion.
+ * Maneja operaciones CRUD y valida las relaciones con Comuna y Cordenadas.
  */
 @Service
 public class DireccionService {
@@ -56,7 +56,7 @@ public class DireccionService {
         try {
             return direccionRepository.save(direccion);
         } catch (DataIntegrityViolationException e) {
-            // Error de integridad: puede ser por clave foránea (Comuna/Geolocalizacion no existe) o datos inválidos.
+            // Error de integridad: puede ser por clave foránea (Comuna/Cordenadas no existe) o datos inválidos.
             throw new IllegalArgumentException("Error de integridad de datos. Verifique que la Comuna y Geolocalización asociadas existan y que los campos obligatorios estén completos.", e);
         }
     }
@@ -88,7 +88,7 @@ public class DireccionService {
 
         // Actualiza las relaciones
         antiguaDireccion.setComuna(direccion.getComuna());
-        antiguaDireccion.setGeolocalizacion(direccion.getGeolocalizacion());
+        antiguaDireccion.setCordenadas(direccion.getCordenadas());
 
         try {
             return direccionRepository.save(antiguaDireccion);
@@ -132,7 +132,7 @@ public class DireccionService {
             throw new IllegalArgumentException("La dirección debe estar asociada a una Comuna válida.");
         }
 
-        if (direccion.getGeolocalizacion() == null) {
+        if (direccion.getCordenadas() == null) {
             throw new IllegalArgumentException("La dirección debe estar asociada a una Geolocalización válida (Lat/Lng).");
         }
 

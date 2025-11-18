@@ -2,11 +2,11 @@ package com.SAFE_Rescue.API_Geolocalizacion;
 
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Comuna;
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Direccion;
-import com.SAFE_Rescue.API_Geolocalizacion.modelo.Geolocalizacion;
+import com.SAFE_Rescue.API_Geolocalizacion.modelo.Cordenadas;
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Region;
 import com.SAFE_Rescue.API_Geolocalizacion.repositoy.ComunaRepository;
+import com.SAFE_Rescue.API_Geolocalizacion.repositoy.CordenadasRepository;
 import com.SAFE_Rescue.API_Geolocalizacion.repositoy.DireccionRepository;
-import com.SAFE_Rescue.API_Geolocalizacion.repositoy.GeolocalizacionRepository;
 import com.SAFE_Rescue.API_Geolocalizacion.repositoy.RegionRepository;
 import net.datafaker.Faker;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +28,7 @@ public class DataLoader implements CommandLineRunner {
     // --- REPOSITORIOS DE GEOLOCALIZACIÓN ---
     @Autowired private RegionRepository regionRepository;
     @Autowired private ComunaRepository comunaRepository;
-    @Autowired private GeolocalizacionRepository geolocalizacionRepository;
+    @Autowired private CordenadasRepository cordenadasRepository;
     @Autowired private DireccionRepository direccionRepository;
 
     private final Faker faker = new Faker(new Locale("es"));
@@ -69,7 +69,7 @@ public class DataLoader implements CommandLineRunner {
         System.out.println("-> Limpiando datos existentes...");
         // Borrar dependientes primero
         direccionRepository.deleteAllInBatch();
-        geolocalizacionRepository.deleteAllInBatch();
+        cordenadasRepository.deleteAllInBatch();
         comunaRepository.deleteAllInBatch();
         regionRepository.deleteAllInBatch();
         // Borrar entidades base al final
@@ -146,20 +146,20 @@ public class DataLoader implements CommandLineRunner {
             // 1. Seleccionar una Comuna al azar
             Comuna comunaSeleccionada = comunasRM.get(faker.random().nextInt(comunasRM.size()));
 
-            // 2. Crear Geolocalizacion (Estado Transient)
-            Geolocalizacion geolocalizacion = new Geolocalizacion();
+            // 2. Crear Cordenadas (Estado Transient)
+            Cordenadas cordenadas = new Cordenadas();
 
             // Latitud: Rango de Santiago central (-33.3 a -33.5)
             // Longitud: Rango de Santiago central (-70.5 a -70.8)
-            geolocalizacion.setLatitud(
+            cordenadas.setLatitud(
                     (float) faker.number().randomDouble(6,(long) -33.5,(long) -33.3)
             );
 
-            geolocalizacion.setLongitud(
+            cordenadas.setLongitud(
                     (float) faker.number().randomDouble(6,(long) -70.8,(long) -70.5)
             );
 
-            // NOTA: ¡No se llama a geolocalizacionRepository.save()!
+            // NOTA: ¡No se llama a cordenadasRepository.save()!
             // Esto evita el error "detached entity passed to persist".
 
             // 3. Crear Direccion
@@ -177,10 +177,10 @@ public class DataLoader implements CommandLineRunner {
 
             direccion.setComuna(comunaSeleccionada);
             // Establecer la relación
-            direccion.setGeolocalizacion(geolocalizacion);
+            direccion.setCordenadas(cordenadas);
 
             // 4. Guardar SOLO la Direccion. Si Direccion tiene CascadeType.PERSIST,
-            // la Geolocalizacion se guardará automáticamente.
+            // la Cordenadas se guardará automáticamente.
             direcciones.add(direccionRepository.save(direccion));
         }
 

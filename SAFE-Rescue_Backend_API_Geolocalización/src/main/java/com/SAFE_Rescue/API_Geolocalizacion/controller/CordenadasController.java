@@ -1,7 +1,7 @@
 package com.SAFE_Rescue.API_Geolocalizacion.controller;
 
-import com.SAFE_Rescue.API_Geolocalizacion.modelo.Geolocalizacion;
-import com.SAFE_Rescue.API_Geolocalizacion.service.GeolocalizacionService; // 👈 Servicio correcto
+import com.SAFE_Rescue.API_Geolocalizacion.modelo.Cordenadas;
+import com.SAFE_Rescue.API_Geolocalizacion.service.CordenadasService; // 👈 Servicio correcto
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -26,11 +26,11 @@ import java.util.NoSuchElementException;
 @RequestMapping("/api-geolocalizacion/v1/localizaciones")
 // Tag adaptado
 @Tag(name = "Geolocalizaciones", description = "Operaciones de CRUD relacionadas con coordenadas de Geolocalización")
-public class GeolocalizacionController {
+public class CordenadasController {
 
     // Servicio inyectado adaptado
     @Autowired
-    private GeolocalizacionService geolocalizacionService;
+    private CordenadasService cordenadasService;
 
     // --- OPERACIONES CRUD BÁSICAS ---
 
@@ -43,11 +43,11 @@ public class GeolocalizacionController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lista de geolocalizaciones obtenida exitosamente.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Geolocalizacion.class))), // Esquema correcto
+                            schema = @Schema(implementation = Cordenadas.class))), // Esquema correcto
             @ApiResponse(responseCode = "204", description = "No hay geolocalizaciones registradas.")
     })
-    public ResponseEntity<List<Geolocalizacion>> listar() {
-        List<Geolocalizacion> geolocalizaciones = geolocalizacionService.findAll();
+    public ResponseEntity<List<Cordenadas>> listar() {
+        List<Cordenadas> geolocalizaciones = cordenadasService.findAll();
         if (geolocalizaciones.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
@@ -64,23 +64,23 @@ public class GeolocalizacionController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Geolocalización encontrada.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Geolocalizacion.class))), // Esquema correcto
+                            schema = @Schema(implementation = Cordenadas.class))), // Esquema correcto
             @ApiResponse(responseCode = "404", description = "Geolocalización no encontrada.")
     })
     public ResponseEntity<?> buscarGeolocalizacion(@Parameter(description = "ID de la geolocalización a buscar", required = true)
                                                    @PathVariable int id) {
-        Geolocalizacion geolocalizacion;
+        Cordenadas cordenadas;
         try {
-            geolocalizacion = geolocalizacionService.findById(id);
+            cordenadas = cordenadasService.findById(id);
         } catch (NoSuchElementException e) {
             return new ResponseEntity<>("Geolocalización no encontrada", HttpStatus.NOT_FOUND);
         }
-        return ResponseEntity.ok(geolocalizacion);
+        return ResponseEntity.ok(cordenadas);
     }
 
     /**
      * Crea una nueva geolocalización.
-     * @param geolocalizacion Datos de la geolocalización a crear
+     * @param cordenadas Datos de la geolocalización a crear
      * @return ResponseEntity con mensaje de confirmación o error
      */
     @PostMapping
@@ -91,9 +91,9 @@ public class GeolocalizacionController {
             @ApiResponse(responseCode = "500", description = "Error interno del servidor.")
     })
     public ResponseEntity<String> agregarGeolocalizacion(@RequestBody @Parameter(description = "Datos de la geolocalización a crear", required = true)
-                                                         Geolocalizacion geolocalizacion) {
+                                                         Cordenadas cordenadas) {
         try {
-            geolocalizacionService.save(geolocalizacion);
+            cordenadasService.save(cordenadas);
             return ResponseEntity.status(HttpStatus.CREATED).body("Geolocalización creada con éxito.");
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -105,7 +105,7 @@ public class GeolocalizacionController {
     /**
      * Actualiza una geolocalización existente.
      * @param id ID de la geolocalización a actualizar
-     * @param geolocalizacion Datos actualizados de la geolocalización
+     * @param cordenadas Datos actualizados de la geolocalización
      * @return ResponseEntity con mensaje de confirmación o error
      */
     @PutMapping("/{id}")
@@ -119,9 +119,9 @@ public class GeolocalizacionController {
     public ResponseEntity<String> actualizarGeolocalizacion(@Parameter(description = "ID de la geolocalización a actualizar", required = true)
                                                             @PathVariable Integer id,
                                                             @RequestBody @Parameter(description = "Datos actualizados de la geolocalización", required = true)
-                                                            Geolocalizacion geolocalizacion) {
+                                                            Cordenadas cordenadas) {
         try {
-            geolocalizacionService.update(geolocalizacion, id);
+            cordenadasService.update(cordenadas, id);
             return ResponseEntity.ok("Geolocalización actualizada con éxito");
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Geolocalización no encontrada");
@@ -148,7 +148,7 @@ public class GeolocalizacionController {
     public ResponseEntity<String> eliminarGeolocalizacion(@Parameter(description = "ID de la geolocalización a eliminar", required = true)
                                                           @PathVariable Integer id) {
         try {
-            geolocalizacionService.delete(id);
+            cordenadasService.delete(id);
             return ResponseEntity.ok("Geolocalización eliminada con éxito.");
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Geolocalización no encontrada");

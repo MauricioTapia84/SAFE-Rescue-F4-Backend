@@ -58,6 +58,6 @@ public class DireccionDTO  {
      * Coordenadas geográficas de la dirección.
      */
     @Schema(description = "Coordenadas de Latitud y Longitud de la dirección.")
-    private GeolocalizacionDTO geolocalizacion;
+    private CordenadasDTO geolocalizacion;
 
 }

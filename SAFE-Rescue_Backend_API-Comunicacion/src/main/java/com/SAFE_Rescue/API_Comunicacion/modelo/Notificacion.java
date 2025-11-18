@@ -46,16 +46,6 @@ public class Notificacion implements Serializable {
     @Schema(description = "Descripción detallada de la notificación", required = true, example = "Nuevo mensaje en chat grupal")
     private String detalle;
 
-    // --- Relaciones Many-to-One ---
-
-    /**
-     * Relación con la Conversacion asociada a esta notificación.
-     * Hacemos nullable = true para permitir notificaciones de sistema (sin conversación).
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_conversacion", nullable = true) // <-- CAMBIO CLAVE: AHORA ES OPCIONAL
-    @Schema(description = "La conversación asociada (opcional para notificaciones de sistema)")
-    private Conversacion conversacion;
 
     // --- Mapeo de IDs (asumiendo que idUsuarioReceptor e idEstado son IDs de otras entidades) ---
 

@@ -1,10 +1,19 @@
+❚❙❘ VERSIÓN 0.0.8
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se elimina historial de mesnaje de api de comunicacion
+├─• Se elimina conversacion de notificaciones
+├─• Se cambia el nombre de entidad a geolocalizacion por coordenadas en la api de geolocalizacion
+├─• Se añade la logica de la api de donaciones
+└─• Se hacen las pruebas unitarias de donaciones
+
+
 ❚❙❘ VERSIÓN 0.0.7
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Se crean controladores para api comunicaciones
 ├─• Se corrige la lógica de la api de comunicaciones
 ├─• Se crea el dataloader de comunicaciones
 ├─• Se realizan los test para los controladores y service de comunicaciones
-└─• Se elimino pais de la entidad geolocalizacion
+└─• Se elimino pais de la entidad cordenadas
 
 
 ❚❙❘ VERSIÓN 0.0.6

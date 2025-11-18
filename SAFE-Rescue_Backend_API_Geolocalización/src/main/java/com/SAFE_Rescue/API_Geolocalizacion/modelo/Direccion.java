@@ -56,5 +56,5 @@ public class Direccion {
 
     @OneToOne(cascade = CascadeType.PERSIST, optional = false)
     @JoinColumn(name = "id_geolocalizacion", referencedColumnName = "id_geolocalizacion")
-    private Geolocalizacion geolocalizacion;
+    private Cordenadas cordenadas;
 }

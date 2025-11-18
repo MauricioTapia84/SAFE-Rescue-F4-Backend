@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 @Data
 @Entity
 @Table(name = "geolocalizacion")
-public class Geolocalizacion {
+public class Cordenadas {
 
     @Id
     @Column(name = "id_geolocalizacion")
