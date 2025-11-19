@@ -12,7 +12,7 @@ SAFE Rescue es una aplicación diseñada para la gestión eficiente y rápida de
 
 ## Últimos cambios
 
-### ❚❙❘ VERSIÓN 0.0.9
+### ❚❙❘ VERSIÓN 0.0.9.1
 
 > <br>• Se implementa en perfiles logica para autentificacion
 > <br>• Se añade configuraciones para seguridad, usto de token y dtos para la validacion
@@ -20,6 +20,9 @@ SAFE Rescue es una aplicación diseñada para la gestión eficiente y rápida de
 > <br>• Se implementan las pruebas unitarias de autetificacion
 > <br>•
 > <br>>>> Corregir pruebas unitarias para el controllador de autentificación
+> <br>•
+> <br>• Se corrigen problemas de conexion entre apis utilizando un token interno
+> <br>• Se implementa lógica en api de perfiles para validar el token interno para comunicacion entre microservicios
 > <br>
 
 ---

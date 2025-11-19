@@ -44,7 +44,6 @@ public class AuthService {
         Usuario usuario = usuarioOpt.get();
 
         // 2. Verificar la contraseña
-        // ⭐ IMPORTANTE: Debes usar un PasswordEncoder (ej: BCrypt) para comparar el hash
         if (!passwordEncoder.matches(contrasena, usuario.getContrasenia())) {
             throw new InvalidCredentialsException("Credenciales inválidas.");
         }
@@ -75,7 +74,7 @@ public class AuthService {
      */
     public Usuario registerNewUser(Usuario nuevoUsuario) {
         // 1. Lógica de verificación (ej: RUN/Email no duplicados)
-        if (usuarioRepository.existsByRut(nuevoUsuario.getRun())) {
+        if (usuarioRepository.existsByRun(nuevoUsuario.getRun())) {
             throw new UserAlreadyExistsException("El RUN ya se encuentra registrado.");
         }
 

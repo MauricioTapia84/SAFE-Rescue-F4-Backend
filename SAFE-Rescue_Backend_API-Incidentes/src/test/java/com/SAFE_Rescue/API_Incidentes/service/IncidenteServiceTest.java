@@ -73,9 +73,9 @@ public class IncidenteServiceTest {
         tipoIncidente = new TipoIncidente(2, "Incendio");
 
         // Usuario que reporta (ID 1)
-        usuarioReporta = new UsuarioDTO(1,"20000000","2","Jose","Nogales","Benites",LocalDate.now(),"111119999","correo@correo.cl",estadoDTO.getIdEstado(),1,1);
+        usuarioReporta = new UsuarioDTO(1,"20000000","2","Jose","Nogales","Benites",LocalDateTime.now(),"111119999","correo@correo.cl",estadoDTO.getIdEstado(),1,1);
         // Usuario asignado (ID 10)
-        usuarioAsignado = new UsuarioDTO(10,"30000000","3","Ana","Gomez","Perez",LocalDate.now(),"222223333","ana@correo.cl",estadoDTO.getIdEstado(),2,2);
+        usuarioAsignado = new UsuarioDTO(10,"30000000","3","Ana","Gomez","Perez",LocalDateTime.now(),"222223333","ana@correo.cl",estadoDTO.getIdEstado(),2,2);
 
 
         // Crear objeto Incidente con datos simulados
