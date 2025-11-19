@@ -1,3 +1,12 @@
+❚❙❘ VERSIÓN 0.0.9
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se implementa en perfiles logica para autentificacion
+├─• Se añade configuraciones para seguridad, usto de token y dtos para la validacion
+├─• Se corrigen client de otras apis
+└─• Se implementan las pruebas unitarias de autetificacion
+
+->>> Corregir pruebas unitarias para el controllador de autentificación
+
 ❚❙❘ VERSIÓN 0.0.8.1
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Se corrige la refactorizacion de cambio de nombre en api de geolocalizacion

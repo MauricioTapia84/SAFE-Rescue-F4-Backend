@@ -1,7 +1,7 @@
 package com.SAFE_Rescue.API_Perfiles.service;
 
 import com.SAFE_Rescue.API_Perfiles.modelo.TipoEquipo;
-import com.SAFE_Rescue.API_Perfiles.repositoy.TipoEquipoRepository;
+import com.SAFE_Rescue.API_Perfiles.repository.TipoEquipoRepository;
 import net.datafaker.Faker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

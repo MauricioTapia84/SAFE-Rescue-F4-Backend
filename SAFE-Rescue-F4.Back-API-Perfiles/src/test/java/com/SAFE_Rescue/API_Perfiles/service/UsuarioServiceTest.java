@@ -2,10 +2,10 @@ package com.SAFE_Rescue.API_Perfiles.service;
 
 import com.SAFE_Rescue.API_Perfiles.config.EstadoClient;
 import com.SAFE_Rescue.API_Perfiles.config.FotoClient;
-import com.SAFE_Rescue.API_Perfiles.modelo.EstadoDTO;
+import com.SAFE_Rescue.API_Perfiles.dto.EstadoDTO;
 import com.SAFE_Rescue.API_Perfiles.modelo.TipoUsuario;
 import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
-import com.SAFE_Rescue.API_Perfiles.repositoy.UsuarioRepository;
+import com.SAFE_Rescue.API_Perfiles.repository.UsuarioRepository;
 import net.datafaker.Faker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,7 +16,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;

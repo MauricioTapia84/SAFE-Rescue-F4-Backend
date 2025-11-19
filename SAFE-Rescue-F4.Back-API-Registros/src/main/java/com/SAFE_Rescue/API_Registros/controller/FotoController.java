@@ -76,22 +76,36 @@ public class FotoController {
     /**
      * Crea una nueva foto.
      * @param foto Datos de la foto a crear.
-     * @return ResponseEntity con mensaje de confirmación o error.
+     * @return ResponseEntity con la foto creada o un DTO de error/éxito.
      */
-    @PostMapping
+    @PostMapping // CAMBIAR TIPO DE RETORNO Y LÓGICA
     @Operation(summary = "Crear una nueva foto", description = "Crea una nueva foto en el sistema.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Foto creada con éxito."),
-            @ApiResponse(responseCode = "400", description = "Error en la solicitud, la URL ya existe o los datos son inválidos."),
-            @ApiResponse(responseCode = "500", description = "Error interno del servidor.")
+            @ApiResponse(responseCode = "201", description = "Foto creada con éxito.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Foto.class))), // o UploadResponseDTO
+            @ApiResponse(responseCode = "400", description = "Error en la solicitud...")
     })
-    public ResponseEntity<String> agregarFoto(@RequestBody @Parameter(description = "Datos de la foto a crear", required = true)
-                                              Foto foto) {
+    public ResponseEntity<?> agregarFoto(@RequestBody @Parameter(description = "Datos de la foto a crear", required = true)
+                                         Foto foto) {
         try {
-            fotoService.save(foto);
-            return ResponseEntity.status(HttpStatus.CREATED).body("Foto creada con éxito.");
+            // 1. Guardar y obtener el objeto Foto completo con el ID generado
+            Foto fotoGuardada = fotoService.save(foto);
+
+            // 2. Devolver el objeto Foto guardado con HTTP 201
+            return ResponseEntity.status(HttpStatus.CREATED).body(fotoGuardada);
+
+            // Si usaras un DTO, podrías devolver:
+            // return ResponseEntity.status(HttpStatus.CREATED).body(new UploadResponseDTO(true, "Foto creada con éxito.", fotoGuardada));
+
         } catch (RuntimeException e) {
+            // Para mantener la estructura de tu FE, puedes devolver un objeto de error
+            // Opción 1 (Simple): Devolver un String con el error y el código 400
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+
+            // Opción 2 (Mejor): Devolver un DTO de Error estandarizado
+            // return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponseDTO(e.getMessage()));
+
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor.");
         }

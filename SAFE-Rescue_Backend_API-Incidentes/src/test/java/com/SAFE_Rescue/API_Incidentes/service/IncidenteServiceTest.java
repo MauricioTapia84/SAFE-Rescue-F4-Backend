@@ -110,9 +110,9 @@ public class IncidenteServiceTest {
         when(tipoIncidenteService.findById(anyInt())).thenReturn(tipoIncidente);
 
         // 1. Mockear la validación del Ciudadano (id=1)
-        when(usuarioClient.findById(incidente.getIdCiudadano())).thenReturn(usuarioReporta);
+        when(usuarioClient.findById(incidente.getIdCiudadano())).thenReturn(Optional.ofNullable(usuarioReporta));
         // 2. Mockear la validación del Usuario Asignado (id=10)
-        when(usuarioClient.findById(incidente.getIdUsuarioAsignado())).thenReturn(usuarioAsignado);
+        when(usuarioClient.findById(incidente.getIdUsuarioAsignado())).thenReturn(Optional.ofNullable(usuarioAsignado));
 
         when(estadoClient.findById(anyInt())).thenReturn(estadoDTO);
         when(geolocalizacionClient.findById(anyInt())).thenReturn(new DireccionDTO());
@@ -138,7 +138,7 @@ public class IncidenteServiceTest {
         when(geolocalizacionClient.findById(anyInt())).thenReturn(new DireccionDTO());
 
         // Mockear findById: Ciudadano OK (1)
-        when(usuarioClient.findById(incidente.getIdCiudadano())).thenReturn(usuarioReporta);
+        when(usuarioClient.findById(incidente.getIdCiudadano())).thenReturn(Optional.ofNullable(usuarioReporta));
         // Mockear findById: Usuario Asignado NOT FOUND (10) -> Falla la validación
         when(usuarioClient.findById(incidente.getIdUsuarioAsignado())).thenReturn(null);
 
@@ -158,7 +158,7 @@ public class IncidenteServiceTest {
 
         when(tipoIncidenteService.findById(anyInt())).thenReturn(tipoIncidente);
         // 1. Mockear la validación del Ciudadano (id=1)
-        when(usuarioClient.findById(incidente.getIdCiudadano())).thenReturn(usuarioReporta);
+        when(usuarioClient.findById(incidente.getIdCiudadano())).thenReturn(Optional.ofNullable(usuarioReporta));
         // La validación del Usuario Asignado NO debería ser llamada
 
         when(estadoClient.findById(anyInt())).thenReturn(estadoDTO);
@@ -180,8 +180,8 @@ public class IncidenteServiceTest {
     public void save_shouldThrowException_whenDireccionNotFound() {
         // Arrange: Mocks de dependencias exitosos, excepto Dirección
         when(tipoIncidenteService.findById(anyInt())).thenReturn(tipoIncidente);
-        when(usuarioClient.findById(incidente.getIdCiudadano())).thenReturn(usuarioReporta);
-        when(usuarioClient.findById(incidente.getIdUsuarioAsignado())).thenReturn(usuarioAsignado);
+        when(usuarioClient.findById(incidente.getIdCiudadano())).thenReturn(Optional.ofNullable(usuarioReporta));
+        when(usuarioClient.findById(incidente.getIdUsuarioAsignado())).thenReturn(Optional.ofNullable(usuarioAsignado));
         when(estadoClient.findById(anyInt())).thenReturn(estadoDTO);
 
         // Simular que GeolocalizacionClient falla (devuelve null)
@@ -215,8 +215,8 @@ public class IncidenteServiceTest {
         when(tipoIncidenteRepository.findById(anyInt())).thenReturn(Optional.of(tipoIncidente));
 
         // Mocks para las referencias de usuario que vienen en el incidente de entrada (ambos existen)
-        when(usuarioClient.findById(incidente.getIdCiudadano())).thenReturn(usuarioReporta);
-        when(usuarioClient.findById(incidente.getIdUsuarioAsignado())).thenReturn(usuarioAsignado);
+        when(usuarioClient.findById(incidente.getIdCiudadano())).thenReturn(Optional.ofNullable(usuarioReporta));
+        when(usuarioClient.findById(incidente.getIdUsuarioAsignado())).thenReturn(Optional.ofNullable(usuarioAsignado));
 
         when(estadoClient.findById(anyInt())).thenReturn(estadoDTO);
         when(geolocalizacionClient.findById(anyInt())).thenReturn(new DireccionDTO());

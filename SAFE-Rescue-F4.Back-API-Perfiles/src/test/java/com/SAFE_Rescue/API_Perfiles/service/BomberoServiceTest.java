@@ -4,7 +4,7 @@ import com.SAFE_Rescue.API_Perfiles.config.EstadoClient;
 import com.SAFE_Rescue.API_Perfiles.modelo.Bombero;
 import com.SAFE_Rescue.API_Perfiles.modelo.Equipo;
 import com.SAFE_Rescue.API_Perfiles.modelo.TipoUsuario;
-import com.SAFE_Rescue.API_Perfiles.repositoy.BomberoRepository;
+import com.SAFE_Rescue.API_Perfiles.repository.BomberoRepository;
 import net.datafaker.Faker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,7 +14,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;

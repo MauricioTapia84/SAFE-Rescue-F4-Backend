@@ -3,7 +3,7 @@ package com.SAFE_Rescue.API_Perfiles.service;
 import com.SAFE_Rescue.API_Perfiles.modelo.Equipo;
 import com.SAFE_Rescue.API_Perfiles.modelo.HistorialUsuario;
 import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
-import com.SAFE_Rescue.API_Perfiles.repositoy.HistorialUsuarioRepository;
+import com.SAFE_Rescue.API_Perfiles.repository.HistorialUsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

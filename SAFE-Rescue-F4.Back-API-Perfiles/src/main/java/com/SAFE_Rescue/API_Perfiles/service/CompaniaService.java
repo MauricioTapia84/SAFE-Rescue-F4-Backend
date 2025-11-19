@@ -2,7 +2,7 @@ package com.SAFE_Rescue.API_Perfiles.service;
 
 import com.SAFE_Rescue.API_Perfiles.config.GeolocalizacionClient;
 import com.SAFE_Rescue.API_Perfiles.modelo.Compania;
-import com.SAFE_Rescue.API_Perfiles.repositoy.CompaniaRepository;
+import com.SAFE_Rescue.API_Perfiles.repository.CompaniaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;

@@ -1,8 +1,7 @@
 package com.SAFE_Rescue.API_Perfiles.service;
 
 import com.SAFE_Rescue.API_Perfiles.modelo.Bombero;
-import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
-import com.SAFE_Rescue.API_Perfiles.repositoy.BomberoRepository;
+import com.SAFE_Rescue.API_Perfiles.repository.BomberoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;

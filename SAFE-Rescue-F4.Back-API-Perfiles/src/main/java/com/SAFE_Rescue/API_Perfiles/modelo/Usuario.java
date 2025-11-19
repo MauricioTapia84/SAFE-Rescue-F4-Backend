@@ -1,6 +1,7 @@
 package com.SAFE_Rescue.API_Perfiles.modelo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -58,6 +59,7 @@ public class Usuario {
     @Schema(description = "Nombre del usuario", example = "Juan", required = true)
     @NotBlank(message = "El nombre es obligatorio")
     @Size(max = 50, message = "El nombre no puede exceder los 50 caracteres")
+    @Size(min = 2, message = "El nombre debe tener al menos 2 caracteres")
     private String nombre;
 
     /**
@@ -67,6 +69,7 @@ public class Usuario {
     @Schema(description = "Apellido paterno del usuario", example = "Pérez", required = true)
     @NotBlank(message = "El apellido paterno es obligatorio")
     @Size(max = 50, message = "El apellido paterno no puede exceder los 50 caracteres")
+    @JsonProperty("apaterno")
     private String aPaterno;
 
     /**
@@ -76,6 +79,7 @@ public class Usuario {
     @Schema(description = "Apellido materno del usuario", example = "González", required = true)
     @NotBlank(message = "El apellido materno es obligatorio")
     @Size(max = 50, message = "El apellido materno no puede exceder los 50 caracteres")
+    @JsonProperty("amaterno")
     private String aMaterno;
 
     /**
@@ -83,9 +87,10 @@ public class Usuario {
      */
     @Column(name = "fecha_registro", nullable = false)
     @Schema(description = "Fecha de registro del usuario", example = "2022-01-01", required = true)
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss") // Ejemplo
     @NotNull(message = "La fecha de registro es obligatoria")
     private LocalDateTime fechaRegistro;
+
 
     /**
      * Teléfono disponible del usuario.

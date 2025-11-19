@@ -3,7 +3,7 @@ package com.SAFE_Rescue.API_Perfiles.service;
 import com.SAFE_Rescue.API_Perfiles.config.EstadoClient; // NUEVA INYECCIÓN
 import com.SAFE_Rescue.API_Perfiles.config.FotoClient;   // NUEVA INYECCIÓN
 import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
-import com.SAFE_Rescue.API_Perfiles.repositoy.UsuarioRepository;
+import com.SAFE_Rescue.API_Perfiles.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;

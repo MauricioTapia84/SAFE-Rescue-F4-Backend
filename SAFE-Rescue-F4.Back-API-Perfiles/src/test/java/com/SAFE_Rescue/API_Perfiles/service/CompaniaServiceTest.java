@@ -2,10 +2,10 @@ package com.SAFE_Rescue.API_Perfiles.service;
 
 import com.SAFE_Rescue.API_Perfiles.config.GeolocalizacionClient;
 import com.SAFE_Rescue.API_Perfiles.modelo.Compania;
-import com.SAFE_Rescue.API_Perfiles.modelo.ComunaDTO;
-import com.SAFE_Rescue.API_Perfiles.modelo.CoordenadasDTO;
-import com.SAFE_Rescue.API_Perfiles.modelo.DireccionDTO;
-import com.SAFE_Rescue.API_Perfiles.repositoy.CompaniaRepository;
+import com.SAFE_Rescue.API_Perfiles.dto.ComunaDTO;
+import com.SAFE_Rescue.API_Perfiles.dto.CoordenadasDTO;
+import com.SAFE_Rescue.API_Perfiles.dto.DireccionDTO;
+import com.SAFE_Rescue.API_Perfiles.repository.CompaniaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

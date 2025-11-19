@@ -30,4 +30,11 @@ public class TipoUsuario {
     @NotBlank(message = "El nombre del tipo de usuario es obligatorio") // Sugerencia: Validación
     @Size(max = 50, message = "El nombre no puede exceder los 50 caracteres") // Sugerencia: Validación
     private String nombre;
+
+    public String getNombreUpperCased() {
+        if (this.nombre == null) {
+            return null;
+        }
+        return this.nombre.toUpperCase(); // Retorna "BOMBERO"
+    }
 }

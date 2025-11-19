@@ -1,6 +1,6 @@
 package com.SAFE_Rescue.API_Perfiles.config;
 
-import com.SAFE_Rescue.API_Perfiles.modelo.EstadoDTO;
+import com.SAFE_Rescue.API_Perfiles.dto.EstadoDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;

@@ -1,9 +1,9 @@
 package com.SAFE_Rescue.API_Perfiles.service;
 
 import com.SAFE_Rescue.API_Perfiles.config.GeolocalizacionClient;
-import com.SAFE_Rescue.API_Perfiles.modelo.DireccionDTO;
+import com.SAFE_Rescue.API_Perfiles.dto.DireccionDTO;
 import com.SAFE_Rescue.API_Perfiles.modelo.Ciudadano;
-import com.SAFE_Rescue.API_Perfiles.repositoy.CiudadanoRepository;
+import com.SAFE_Rescue.API_Perfiles.repository.CiudadanoRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

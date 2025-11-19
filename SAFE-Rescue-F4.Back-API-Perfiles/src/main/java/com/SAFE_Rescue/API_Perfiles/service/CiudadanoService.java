@@ -1,10 +1,9 @@
 package com.SAFE_Rescue.API_Perfiles.service;
 
 import com.SAFE_Rescue.API_Perfiles.config.GeolocalizacionClient;
-import com.SAFE_Rescue.API_Perfiles.modelo.DireccionDTO;
+import com.SAFE_Rescue.API_Perfiles.dto.DireccionDTO;
 import com.SAFE_Rescue.API_Perfiles.modelo.Ciudadano;
-import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
-import com.SAFE_Rescue.API_Perfiles.repositoy.CiudadanoRepository;
+import com.SAFE_Rescue.API_Perfiles.repository.CiudadanoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;

@@ -1,7 +1,7 @@
 package com.SAFE_Rescue.API_Perfiles.service;
 
 import com.SAFE_Rescue.API_Perfiles.modelo.*;
-import com.SAFE_Rescue.API_Perfiles.repositoy.EquipoRepository;
+import com.SAFE_Rescue.API_Perfiles.repository.EquipoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataIntegrityViolationException;
