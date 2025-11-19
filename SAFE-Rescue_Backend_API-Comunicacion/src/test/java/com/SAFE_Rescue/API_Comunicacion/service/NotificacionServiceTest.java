@@ -4,7 +4,7 @@ import com.SAFE_Rescue.API_Comunicacion.config.EstadoClient;
 import com.SAFE_Rescue.API_Comunicacion.config.UsuarioClient;
 import com.SAFE_Rescue.API_Comunicacion.modelo.Conversacion;
 import com.SAFE_Rescue.API_Comunicacion.modelo.Notificacion;
-import com.SAFE_Rescue.API_Comunicacion.modelo.UsuarioDTO; // Importación necesaria para el mock
+import com.SAFE_Rescue.API_Comunicacion.dto.UsuarioDTO; // Importación necesaria para el mock
 import com.SAFE_Rescue.API_Comunicacion.repository.NotificacionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

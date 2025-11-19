@@ -60,7 +60,6 @@ public class AuthControllerTest {
     @MockitoBean
     private AuthService authService;
 
-    // ⭐ CRÍTICO: Este es el servicio llamado en AuthController.register()
     @MockitoBean
     private UsuarioService usuarioService;
 
@@ -80,7 +79,7 @@ public class AuthControllerTest {
     void setUp() {
         // Datos de Login
         loginRequest = new LoginRequestDTO();
-        loginRequest.setNombreUsuario("testuser");
+        loginRequest.setCorreo("testuser@testear.cl");
         loginRequest.setContrasena("password123");
 
         // Objeto de Usuario Válido.
@@ -114,7 +113,7 @@ public class AuthControllerTest {
     @Test
     void login_Success_Returns200AndToken() throws Exception {
         when(authService.authenticateAndGenerateToken(
-                eq(loginRequest.getNombreUsuario()),
+                eq(loginRequest.getCorreo()),
                 eq(loginRequest.getContrasena())))
                 .thenReturn(authResponse);
 

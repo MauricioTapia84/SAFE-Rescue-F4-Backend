@@ -1,6 +1,6 @@
 package com.SAFE_Rescue.API_Incidentes.config;
 
-import com.SAFE_Rescue.API_Incidentes.modelo.FotoDTO;
+import com.SAFE_Rescue.API_Incidentes.dto.FotoDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpStatus;

@@ -1,5 +1,6 @@
 package com.SAFE_Rescue.API_Incidentes.service;
 
+import com.SAFE_Rescue.API_Incidentes.dto.DireccionDTO;
 import com.SAFE_Rescue.API_Incidentes.modelo.*;
 import com.SAFE_Rescue.API_Incidentes.repository.*;
 import com.SAFE_Rescue.API_Incidentes.config.*;

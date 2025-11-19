@@ -3,9 +3,9 @@ package com.SAFE_Rescue.API_Comunicacion.service;
 import com.SAFE_Rescue.API_Comunicacion.config.EstadoClient;
 import com.SAFE_Rescue.API_Comunicacion.config.UsuarioClient;
 import com.SAFE_Rescue.API_Comunicacion.modelo.Conversacion;
-import com.SAFE_Rescue.API_Comunicacion.modelo.EstadoDTO;
+import com.SAFE_Rescue.API_Comunicacion.dto.EstadoDTO;
 import com.SAFE_Rescue.API_Comunicacion.modelo.Mensaje;
-import com.SAFE_Rescue.API_Comunicacion.modelo.UsuarioDTO;
+import com.SAFE_Rescue.API_Comunicacion.dto.UsuarioDTO;
 import com.SAFE_Rescue.API_Comunicacion.repository.ConversacionRepository;
 import com.SAFE_Rescue.API_Comunicacion.repository.MensajeRepository;
 

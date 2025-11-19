@@ -2,7 +2,7 @@ package com.SAFE_Rescue.API_Comunicacion.controller;
 
 import com.SAFE_Rescue.API_Comunicacion.modelo.Conversacion;
 import com.SAFE_Rescue.API_Comunicacion.modelo.Mensaje;
-import com.SAFE_Rescue.API_Comunicacion.modelo.MensajeCreacionDTO;
+import com.SAFE_Rescue.API_Comunicacion.dto.MensajeCreacionDTO;
 import com.SAFE_Rescue.API_Comunicacion.service.MensajeService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;

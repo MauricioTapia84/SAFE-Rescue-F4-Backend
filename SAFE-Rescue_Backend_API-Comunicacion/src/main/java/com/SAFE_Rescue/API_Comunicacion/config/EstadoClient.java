@@ -1,6 +1,6 @@
 package com.SAFE_Rescue.API_Comunicacion.config;
 
-import com.SAFE_Rescue.API_Comunicacion.modelo.EstadoDTO;
+import com.SAFE_Rescue.API_Comunicacion.dto.EstadoDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;

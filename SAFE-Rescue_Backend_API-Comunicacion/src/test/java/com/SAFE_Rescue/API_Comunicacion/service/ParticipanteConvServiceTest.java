@@ -3,7 +3,7 @@ package com.SAFE_Rescue.API_Comunicacion.service;
 import com.SAFE_Rescue.API_Comunicacion.config.UsuarioClient;
 import com.SAFE_Rescue.API_Comunicacion.modelo.Conversacion;
 import com.SAFE_Rescue.API_Comunicacion.modelo.ParticipanteConversacion;
-import com.SAFE_Rescue.API_Comunicacion.modelo.UsuarioDTO;
+import com.SAFE_Rescue.API_Comunicacion.dto.UsuarioDTO;
 import com.SAFE_Rescue.API_Comunicacion.repository.ParticipanteConversacionRepository;
 
 import org.junit.jupiter.api.BeforeEach;

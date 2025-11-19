@@ -1,3 +1,9 @@
+❚❙❘ VERSIÓN 0.0.9.1
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se corrigen problemas de conexion entre apis utilizando un token interno
+└─• Se implementa lógica en api de perfiles para validar el token interno para comunicacion entre microservicios
+
+
 ❚❙❘ VERSIÓN 0.0.9
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Se implementa en perfiles logica para autentificacion

@@ -150,7 +150,7 @@ public class AuthServiceTest {
         nuevoUsuario.setContrasenia(CONTRASENA_RAW);
 
         // Configuración de Mocks: el RUN no existe, se cifra y se guarda
-        when(usuarioRepository.existsByRut("11111111-1")).thenReturn(false);
+        when(usuarioRepository.existsByRun("11111111-1")).thenReturn(false);
         when(passwordEncoder.encode(CONTRASENA_RAW)).thenReturn(CONTRASENA_HASH);
         when(usuarioRepository.save(nuevoUsuario)).thenReturn(nuevoUsuario);
 
@@ -172,7 +172,7 @@ public class AuthServiceTest {
         nuevoUsuario.setRun("11111111-1");
 
         // Configuración de Mocks: el RUN ya existe
-        when(usuarioRepository.existsByRut("11111111-1")).thenReturn(true);
+        when(usuarioRepository.existsByRun("11111111-1")).thenReturn(true);
 
         // Verificación de la excepción
         assertThrows(UserAlreadyExistsException.class, () -> {

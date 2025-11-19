@@ -1,4 +1,4 @@
-package com.SAFE_Rescue.API_Comunicacion.modelo;
+package com.SAFE_Rescue.API_Comunicacion.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

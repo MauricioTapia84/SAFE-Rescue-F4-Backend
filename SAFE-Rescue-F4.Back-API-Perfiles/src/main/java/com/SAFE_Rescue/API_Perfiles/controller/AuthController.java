@@ -38,7 +38,7 @@ public class AuthController {
     public ResponseEntity<AuthResponseDTO> login(@RequestBody LoginRequestDTO request) {
 
         AuthResponseDTO response = authService.authenticateAndGenerateToken(
-                request.getNombreUsuario(),
+                request.getCorreo(),
                 request.getContrasena()
         );
 

@@ -33,6 +33,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
+        // Si ya hay autenticación (establecida por el filtro S2S), no hagas nada.
+        if (SecurityContextHolder.getContext().getAuthentication() != null &&
+                SecurityContextHolder.getContext().getAuthentication().isAuthenticated()) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         final String authHeader = request.getHeader("Authorization");
         String jwt = null;
         String userId = null; // Usaremos el ID del token como 'username'

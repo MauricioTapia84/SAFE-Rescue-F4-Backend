@@ -1,6 +1,6 @@
 package com.SAFE_Rescue.API_Comunicacion.controller;
 
-import com.SAFE_Rescue.API_Comunicacion.modelo.MensajeCreacionDTO;
+import com.SAFE_Rescue.API_Comunicacion.dto.MensajeCreacionDTO;
 import com.SAFE_Rescue.API_Comunicacion.modelo.Mensaje;
 import com.SAFE_Rescue.API_Comunicacion.service.MensajeService;
 

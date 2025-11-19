@@ -2,7 +2,7 @@ package com.SAFE_Rescue.API_Comunicacion.controller;
 
 import com.SAFE_Rescue.API_Comunicacion.modelo.Conversacion;
 import com.SAFE_Rescue.API_Comunicacion.modelo.Notificacion;
-import com.SAFE_Rescue.API_Comunicacion.modelo.NotificacionCreacionDTO;
+import com.SAFE_Rescue.API_Comunicacion.dto.NotificacionCreacionDTO;
 import com.SAFE_Rescue.API_Comunicacion.service.ConversacionService;
 import com.SAFE_Rescue.API_Comunicacion.service.NotificacionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,7 +19,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 

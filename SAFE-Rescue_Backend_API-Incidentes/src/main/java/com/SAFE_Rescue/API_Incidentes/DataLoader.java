@@ -1,6 +1,9 @@
 package com.SAFE_Rescue.API_Incidentes;
 
 import com.SAFE_Rescue.API_Incidentes.config.*;
+import com.SAFE_Rescue.API_Incidentes.dto.DireccionDTO;
+import com.SAFE_Rescue.API_Incidentes.dto.EstadoDTO;
+import com.SAFE_Rescue.API_Incidentes.dto.UsuarioDTO;
 import com.SAFE_Rescue.API_Incidentes.modelo.*;
 import com.SAFE_Rescue.API_Incidentes.repository.*;
 import net.datafaker.Faker;
@@ -10,7 +13,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;

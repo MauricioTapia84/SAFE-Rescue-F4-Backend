@@ -1,6 +1,6 @@
 package com.SAFE_Rescue.API_Incidentes.config;
 
-import com.SAFE_Rescue.API_Incidentes.modelo.DireccionDTO;
+import com.SAFE_Rescue.API_Incidentes.dto.DireccionDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;

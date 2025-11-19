@@ -4,6 +4,8 @@ import com.SAFE_Rescue.API_Perfiles.dto.AuthResponseDTO;
 import com.SAFE_Rescue.API_Perfiles.exception.InvalidCredentialsException;
 import com.SAFE_Rescue.API_Perfiles.exception.UserAlreadyExistsException;
 import com.SAFE_Rescue.API_Perfiles.exception.UserNotFoundException;
+import com.SAFE_Rescue.API_Perfiles.modelo.Bombero;
+import com.SAFE_Rescue.API_Perfiles.modelo.Ciudadano;
 import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
 import com.SAFE_Rescue.API_Perfiles.repository.UsuarioRepository;
 import com.SAFE_Rescue.API_Perfiles.util.JwtUtil; // ⭐ NECESITAS ESTA CLASE UTILITARIA
@@ -34,7 +36,7 @@ public class AuthService {
      */
     public AuthResponseDTO authenticateAndGenerateToken(String nombreUsuario, String contrasena) {
 
-        // 1. Buscar el usuario por nombreUsuario o email
+        // 1. Buscar usuario base
         Optional<Usuario> usuarioOpt = usuarioRepository.findByNombreUsuarioOrEmail(nombreUsuario, nombreUsuario);
 
         if (usuarioOpt.isEmpty()) {
@@ -43,27 +45,36 @@ public class AuthService {
 
         Usuario usuario = usuarioOpt.get();
 
-        // 2. Verificar la contraseña
-        // ⭐ IMPORTANTE: Debes usar un PasswordEncoder (ej: BCrypt) para comparar el hash
+        // 2. Verificar contraseña
         if (!passwordEncoder.matches(contrasena, usuario.getContrasenia())) {
             throw new InvalidCredentialsException("Credenciales inválidas.");
         }
 
-        // 3. Verificar estado (opcional, ej: si la cuenta está activa)
-        // if (!usuario.isActivo()) {
-        //     throw new UserNotActiveException("La cuenta del usuario no está activa.");
-        // }
+        // 3. DETERMINAR TIPO DE PERFIL - Consultar subclases
+        String tipoPerfil;
+        Object userData;
 
-        // 4. Generar el Token JWT
-        // Los claims deben incluir información clave para autorización, como el tipo de perfil.
-        String token = jwtUtil.generateToken(usuario.getIdUsuario(), usuario.getTipoUsuario().getNombreUpperCased());
+        Optional<Ciudadano> ciudadanoOpt = usuarioRepository.findCiudadanoById(usuario.getIdUsuario());
+        Optional<Bombero> bomberoOpt = usuarioRepository.findBomberoById(usuario.getIdUsuario());
 
-        // 5. Construir la respuesta
+        if (ciudadanoOpt.isPresent()) {
+            tipoPerfil = "CIUDADANO";
+            userData = ciudadanoOpt.get();
+        } else if (bomberoOpt.isPresent()) {
+            tipoPerfil = "BOMBERO";
+            userData = bomberoOpt.get();
+        } else {
+            throw new RuntimeException("Tipo de perfil no determinado para el usuario");
+        }
+
+        // 4. Generar token
+        String token = jwtUtil.generateToken(usuario.getIdUsuario(), tipoPerfil);
+
+        // 5. Construir respuesta
         AuthResponseDTO response = new AuthResponseDTO();
         response.setToken(token);
-        // Retornamos el objeto Usuario, confiando en que Jackson lo serializará
-        // correctamente (incluyendo los campos de Bombero/Ciudadano por herencia).
-        response.setUserData(usuario);
+        response.setTipoPerfil(tipoPerfil);
+        response.setUserData(userData);
 
         return response;
     }
@@ -75,7 +86,7 @@ public class AuthService {
      */
     public Usuario registerNewUser(Usuario nuevoUsuario) {
         // 1. Lógica de verificación (ej: RUN/Email no duplicados)
-        if (usuarioRepository.existsByRut(nuevoUsuario.getRun())) {
+        if (usuarioRepository.existsByRun(nuevoUsuario.getRun())) {
             throw new UserAlreadyExistsException("El RUN ya se encuentra registrado.");
         }
 

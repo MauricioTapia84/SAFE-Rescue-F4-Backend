@@ -127,7 +127,7 @@ public class DonacionServiceTest {
     void save_Success() {
         // Arrange
         // Simular que el Donante existe (API externa)
-        when(usuarioClient.findById(DONANTE_ID_EXISTENTE)).thenReturn(new UsuarioDTO());
+        when(usuarioClient.findById(DONANTE_ID_EXISTENTE)).thenReturn(Optional.of(new UsuarioDTO()));
         // Simular el guardado en el repositorio (devuelve la misma entidad con ID)
         when(donacionRepository.save(any(Donacion.class))).thenReturn(donacionValida);
 
@@ -215,7 +215,7 @@ public class DonacionServiceTest {
         // 1. Simular Donación existente
         when(donacionRepository.findById(DONACION_ID_EXISTENTE)).thenReturn(Optional.of(donacionValida));
         // 2. Simular que el nuevo Donante existe
-        when(usuarioClient.findById(nuevoDonanteId)).thenReturn(new UsuarioDTO());
+        when(usuarioClient.findById(nuevoDonanteId)).thenReturn(Optional.of(new UsuarioDTO()));
         // 3. Simular el guardado
         when(donacionRepository.save(any(Donacion.class))).thenAnswer(i -> i.getArguments()[0]);
 
