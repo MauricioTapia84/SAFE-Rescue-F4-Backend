@@ -88,7 +88,7 @@ public class DireccionService {
 
         // Actualiza las relaciones
         antiguaDireccion.setComuna(direccion.getComuna());
-        antiguaDireccion.setCordenadas(direccion.getCordenadas());
+        antiguaDireccion.setCoordenadas(direccion.getCoordenadas());
 
         try {
             return direccionRepository.save(antiguaDireccion);
@@ -132,7 +132,7 @@ public class DireccionService {
             throw new IllegalArgumentException("La dirección debe estar asociada a una Comuna válida.");
         }
 
-        if (direccion.getCordenadas() == null) {
+        if (direccion.getCoordenadas() == null) {
             throw new IllegalArgumentException("La dirección debe estar asociada a una Geolocalización válida (Lat/Lng).");
         }
 

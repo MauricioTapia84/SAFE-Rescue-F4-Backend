@@ -1,3 +1,8 @@
+❚❙❘ VERSIÓN 0.0.8.1
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se corrige la refactorizacion de cambio de nombre en api de geolocalizacion
+└─• Se corrige el cambio de nombre en otras apis para mantener coincidencias
+
 ❚❙❘ VERSIÓN 0.0.8
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Se elimina historial de mesnaje de api de comunicacion

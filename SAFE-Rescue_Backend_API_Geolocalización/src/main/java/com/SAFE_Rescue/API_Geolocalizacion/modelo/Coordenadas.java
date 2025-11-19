@@ -16,17 +16,17 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 @Entity
-@Table(name = "geolocalizacion")
-public class Cordenadas {
+@Table(name = "coordenadas") // Cambiado para coincidir con el nombre de la entidad
+public class Coordenadas { // Corregido el nombre (tenía "Cordenadas")
 
     @Id
-    @Column(name = "id_geolocalizacion")
+    @Column(name = "id_coordenadas") // Cambiado para ser consistente
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Schema(description = "Identificador único de la geolocalización", example = "1")
-    private Integer idGeolocalizacion;
+    @Schema(description = "Identificador único de las coordenadas", example = "1") // Actualizada descripción
+    private Integer idCoordenadas; // Cambiado para ser consistente
 
     // Latitud: Rango de -90 a 90
-    @Column(nullable = false) //
+    @Column(nullable = false)
     @Schema(description = "Coordenada latitud (eje Y)", example = "-33.4489", required = true)
     @DecimalMin("-90.0")
     @DecimalMax("90.0")

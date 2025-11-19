@@ -6,23 +6,23 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * @class CordenadasDTO
+ * @class CoordenadasDTO
  * @brief DTO que representa las coordenadas geográficas (Latitud y Longitud) de una ubicación.
  */
 @Schema(description = "DTO que contiene las coordenadas geográficas de un punto.")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CordenadasDTO {
+public class CoordenadasDTO { // Cambiado de CordenadasDTO a CoordenadasDTO
 
     /**
-     * @property idGeolocalizacion
-     * @brief Identificador opcional de la geolocalización.
+     * @property idCoordenadas
+     * @brief Identificador opcional de las coordenadas.
      * @details Podría ser usado para referenciar un registro si esta información
      * fuera persistente, aunque su uso en un DTO anidado suele ser para transporte
      * de datos de coordenadas.
      */
-    private Integer idGeolocalizacion;
+    private Integer idCoordenadas; // Cambiado de idGeolocalizacion a idCoordenadas
 
     /**
      * Latitud de la ubicación.

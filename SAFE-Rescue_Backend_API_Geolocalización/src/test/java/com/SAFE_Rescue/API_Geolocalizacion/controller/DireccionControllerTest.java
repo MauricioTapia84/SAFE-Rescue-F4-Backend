@@ -1,7 +1,7 @@
 package com.SAFE_Rescue.API_Geolocalizacion.controller;
 
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Comuna;
-import com.SAFE_Rescue.API_Geolocalizacion.modelo.Cordenadas;
+import com.SAFE_Rescue.API_Geolocalizacion.modelo.Coordenadas;
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Direccion;
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Region;
 import com.SAFE_Rescue.API_Geolocalizacion.service.DireccionService;
@@ -44,7 +44,7 @@ public class DireccionControllerTest {
     private Direccion direccion;
     private Integer id;
     private Comuna comuna;
-    private Cordenadas cordenadas;
+    private Coordenadas cordenadas;
 
     @BeforeEach
     public void setUp() {
@@ -56,8 +56,8 @@ public class DireccionControllerTest {
         comuna = new Comuna(1, "Santiago","7500000", region);
 
         // 2. Crear dependencia Cordenadas
-        cordenadas = new Cordenadas();
-        cordenadas.setIdGeolocalizacion(101);
+        cordenadas = new Coordenadas();
+        cordenadas.setIdCoordenadas(101);
         cordenadas.setLatitud((float) faker.number().randomDouble(6, -34, -33)); // Latitud de Santiago
         cordenadas.setLongitud((float) faker.number().randomDouble(6, -71, -70)); // Longitud de Santiago
 
@@ -67,7 +67,7 @@ public class DireccionControllerTest {
         direccion.setCalle(faker.address().streetName());
         direccion.setNumero(faker.address().buildingNumber());
         direccion.setComuna(comuna);
-        direccion.setCordenadas(cordenadas);
+        direccion.setCoordenadas(cordenadas);
     }
 
     // --- Pruebas de operaciones exitosas (Happy Path) ---
@@ -97,7 +97,7 @@ public class DireccionControllerTest {
                 .andExpect(jsonPath("$.calle").value(direccion.getCalle()))
                 // Verifica que las dependencias se serialicen correctamente
                 .andExpect(jsonPath("$.comuna.nombre").value(direccion.getComuna().getNombre()))
-                .andExpect(jsonPath("$.cordenadas.idGeolocalizacion").value(direccion.getCordenadas().getIdGeolocalizacion()));
+                .andExpect(jsonPath("$.cordenadas.idGeolocalizacion").value(direccion.getCoordenadas().getIdCoordenadas()));
 
         verify(direccionService, times(1)).findById(id);
     }
@@ -126,7 +126,7 @@ public class DireccionControllerTest {
         updatedDireccion.setCalle("Calle Nueva");
         updatedDireccion.setNumero("9999");
         updatedDireccion.setComuna(comuna);
-        updatedDireccion.setCordenadas(cordenadas);
+        updatedDireccion.setCoordenadas(cordenadas);
 
         // CORRECCIÓN: Usar when().thenReturn() ya que direccionService.update() devuelve una entidad.
         when(direccionService.update(any(Direccion.class), eq(id))).thenReturn(updatedDireccion);

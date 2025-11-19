@@ -54,7 +54,7 @@ public class Direccion {
     private Comuna comuna;
 
 
-    @OneToOne(cascade = CascadeType.PERSIST, optional = false)
-    @JoinColumn(name = "id_geolocalizacion", referencedColumnName = "id_geolocalizacion")
-    private Cordenadas cordenadas;
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "id_coordenadas")
+    private Coordenadas coordenadas;
 }

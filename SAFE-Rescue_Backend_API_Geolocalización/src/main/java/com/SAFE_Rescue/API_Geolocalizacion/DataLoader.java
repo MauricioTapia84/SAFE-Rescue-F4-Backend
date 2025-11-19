@@ -2,10 +2,10 @@ package com.SAFE_Rescue.API_Geolocalizacion;
 
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Comuna;
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Direccion;
-import com.SAFE_Rescue.API_Geolocalizacion.modelo.Cordenadas;
+import com.SAFE_Rescue.API_Geolocalizacion.modelo.Coordenadas; // Actualizado
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Region;
 import com.SAFE_Rescue.API_Geolocalizacion.repositoy.ComunaRepository;
-import com.SAFE_Rescue.API_Geolocalizacion.repositoy.CordenadasRepository;
+import com.SAFE_Rescue.API_Geolocalizacion.repositoy.CoordenadasRepository;
 import com.SAFE_Rescue.API_Geolocalizacion.repositoy.DireccionRepository;
 import com.SAFE_Rescue.API_Geolocalizacion.repositoy.RegionRepository;
 import net.datafaker.Faker;
@@ -13,30 +13,30 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional; // Importante para la limpieza
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
 /**
- * Clase encargada de cargar datos de prueba para las entidades de Geolocalización
+ * Clase encargada de cargar datos de prueba para las entidades de Coordenadas
  * al iniciar la aplicación en el perfil "dev".
  */
 @Profile("dev")
 @Component
 public class DataLoader implements CommandLineRunner {
 
-    // --- REPOSITORIOS DE GEOLOCALIZACIÓN ---
+    // --- REPOSITORIOS DE COORDENADAS --- // Comentario actualizado
     @Autowired private RegionRepository regionRepository;
     @Autowired private ComunaRepository comunaRepository;
-    @Autowired private CordenadasRepository cordenadasRepository;
+    @Autowired private CoordenadasRepository coordenadasRepository;
     @Autowired private DireccionRepository direccionRepository;
 
     private final Faker faker = new Faker(new Locale("es"));
 
     @Override
-    @Transactional // Agregamos @Transactional aquí para que la limpieza funcione correctamente
+    @Transactional
     public void run(String... args) {
-        System.out.println("Cargando datos de prueba de Geolocalización...");
+        System.out.println("Cargando datos de prueba de Coordenadas..."); // Mensaje actualizado
 
         try {
             // 0. LIMPIEZA DE DATOS (Para evitar Duplicate Entry)
@@ -53,10 +53,10 @@ public class DataLoader implements CommandLineRunner {
 
             List<Comuna> comunasRM = crearComunasRegionMetropolitana(regionMetropolitana);
 
-            // 2. CREAR GEOLOCALIZACIONES Y DIRECCIONES EN SANTIAGO
-            crearDireccionesYGeolocalizaciones(comunasRM);
+            // 2. CREAR COORDENADAS Y DIRECCIONES EN SANTIAGO // Comentario actualizado
+            crearDireccionesYCoordenadas(comunasRM); // Nombre del método actualizado
 
-            System.out.println("Carga de datos de Geolocalización finalizada con éxito.");
+            System.out.println("Carga de datos de Coordenadas finalizada con éxito."); // Mensaje actualizado
         } catch (Exception e) {
             System.err.println("Un error inesperado ocurrió durante la carga de datos:");
             e.printStackTrace();
@@ -69,7 +69,7 @@ public class DataLoader implements CommandLineRunner {
         System.out.println("-> Limpiando datos existentes...");
         // Borrar dependientes primero
         direccionRepository.deleteAllInBatch();
-        cordenadasRepository.deleteAllInBatch();
+        coordenadasRepository.deleteAllInBatch();
         comunaRepository.deleteAllInBatch();
         regionRepository.deleteAllInBatch();
         // Borrar entidades base al final
@@ -111,7 +111,6 @@ public class DataLoader implements CommandLineRunner {
         return regiones;
     }
 
-    // ... (El método crearComunasRegionMetropolitana se mantiene igual, ya que está correcto)
     private List<Comuna> crearComunasRegionMetropolitana(Region regionMetropolitana) {
         // Comunas de la Región Metropolitana (RM)
         List<String> comunasRM = Arrays.asList(
@@ -135,9 +134,9 @@ public class DataLoader implements CommandLineRunner {
     }
 
     /**
-     * Crea direcciones y asigna geolocalizaciones únicas a cada una.
+     * Crea direcciones y asigna coordenadas únicas a cada una. // Comentario actualizado
      */
-    private List<Direccion> crearDireccionesYGeolocalizaciones(List<Comuna> comunasRM) {
+    private List<Direccion> crearDireccionesYCoordenadas(List<Comuna> comunasRM) { // Nombre del método actualizado
         List<Direccion> direcciones = new ArrayList<>();
         final int NUM_DIRECCIONES = 15;
 
@@ -146,20 +145,20 @@ public class DataLoader implements CommandLineRunner {
             // 1. Seleccionar una Comuna al azar
             Comuna comunaSeleccionada = comunasRM.get(faker.random().nextInt(comunasRM.size()));
 
-            // 2. Crear Cordenadas (Estado Transient)
-            Cordenadas cordenadas = new Cordenadas();
+            // 2. Crear Coordenadas (Estado Transient) // Comentario actualizado
+            Coordenadas coordenadas = new Coordenadas(); // Variable actualizada
 
             // Latitud: Rango de Santiago central (-33.3 a -33.5)
             // Longitud: Rango de Santiago central (-70.5 a -70.8)
-            cordenadas.setLatitud(
+            coordenadas.setLatitud( // Variable actualizada
                     (float) faker.number().randomDouble(6,(long) -33.5,(long) -33.3)
             );
 
-            cordenadas.setLongitud(
+            coordenadas.setLongitud( // Variable actualizada
                     (float) faker.number().randomDouble(6,(long) -70.8,(long) -70.5)
             );
 
-            // NOTA: ¡No se llama a cordenadasRepository.save()!
+            // NOTA: ¡No se llama a coordenadasRepository.save()!
             // Esto evita el error "detached entity passed to persist".
 
             // 3. Crear Direccion
@@ -177,14 +176,14 @@ public class DataLoader implements CommandLineRunner {
 
             direccion.setComuna(comunaSeleccionada);
             // Establecer la relación
-            direccion.setCordenadas(cordenadas);
+            direccion.setCoordenadas(coordenadas); // Método actualizado
 
             // 4. Guardar SOLO la Direccion. Si Direccion tiene CascadeType.PERSIST,
-            // la Cordenadas se guardará automáticamente.
+            // las Coordenadas se guardarán automáticamente. // Comentario actualizado
             direcciones.add(direccionRepository.save(direccion));
         }
 
-        System.out.println("-> Creadas " + direcciones.size() + " direcciones y geolocalizaciones en Santiago.");
+        System.out.println("-> Creadas " + direcciones.size() + " direcciones y coordenadas en Santiago."); // Mensaje actualizado
         return direcciones;
     }
 }

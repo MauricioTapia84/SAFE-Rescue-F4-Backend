@@ -233,7 +233,7 @@ public class IncidenteControllerTest {
         mockMvc.perform(post(BASE_URL + "/{incidenteId}/asignar-usuario-asignado/{usuarioAsignadoId}", idExistente, relatedId)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().string("Usuario Asignado al Incidente exitosamente"));
+                .andExpect(content().string("Usuario responsable asignado al Incidente exitosamente"));
 
         verify(incidenteService, times(1)).asignarUsuarioAsignado(idExistente, relatedId);
     }
@@ -259,7 +259,7 @@ public class IncidenteControllerTest {
         mockMvc.perform(post(BASE_URL + "/{incidenteId}/asignar-ciudadano/{ciudadanoId}", idExistente, relatedId)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().string("UsuarioDTO asignado al Incidente exitosamente"));
+                .andExpect(content().string("Ciudadano asignado al Incidente exitosamente"));
 
         verify(incidenteService, times(1)).asignarCiudadano(idExistente, relatedId);
     }
@@ -375,7 +375,7 @@ public class IncidenteControllerTest {
         mockMvc.perform(post(BASE_URL + "/{incidenteId}/asignar-direccion/{direccionId}", idExistente, relatedId)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().string("DireccionDTO asignada al incidente exitosamente"));
+                .andExpect(content().string("Dirección asignada al incidente exitosamente"));
 
         verify(incidenteService, times(1)).asignarDireccion(idExistente, relatedId);
     }

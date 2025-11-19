@@ -1,7 +1,7 @@
 package com.SAFE_Rescue.API_Geolocalizacion.service;
 
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Comuna;
-import com.SAFE_Rescue.API_Geolocalizacion.modelo.Cordenadas;
+import com.SAFE_Rescue.API_Geolocalizacion.modelo.Coordenadas;
 import com.SAFE_Rescue.API_Geolocalizacion.modelo.Direccion;
 import com.SAFE_Rescue.API_Geolocalizacion.repositoy.DireccionRepository;
 import net.datafaker.Faker;
@@ -31,7 +31,7 @@ public class DireccionServiceTest {
 
     private Direccion direccion;
     private Comuna comuna;
-    private Cordenadas cordenadas;
+    private Coordenadas cordenadas;
     private Faker faker;
     private Integer id;
 
@@ -45,8 +45,8 @@ public class DireccionServiceTest {
         comuna.setIdComuna(10);
         comuna.setNombre("Maipú");
 
-        cordenadas = new Cordenadas();
-        cordenadas.setIdGeolocalizacion(20);
+        cordenadas = new Coordenadas();
+        cordenadas.setIdCoordenadas(20);
         cordenadas.setLatitud((float) faker.number().randomDouble(6, (long) -33.5,(long) -33.4));
         cordenadas.setLongitud((float) faker.number().randomDouble(6,(long) -70.7,(long) -70.6));
 
@@ -57,7 +57,7 @@ public class DireccionServiceTest {
         direccion.setNumero("1234");
         direccion.setComplemento("Depto 501");
         direccion.setComuna(comuna);
-        direccion.setCordenadas(cordenadas);
+        direccion.setCoordenadas(cordenadas);
     }
 
     // --- Pruebas de operaciones exitosas (Happy Path) ---
@@ -116,7 +116,7 @@ public class DireccionServiceTest {
         direccionConNuevosDatos.setCalle(nuevaCalle);
         direccionConNuevosDatos.setNumero(nuevoNumero);
         direccionConNuevosDatos.setComuna(comuna); // Mantener dependencias válidas
-        direccionConNuevosDatos.setCordenadas(cordenadas);
+        direccionConNuevosDatos.setCoordenadas(cordenadas);
 
         when(direccionRepository.findById(id)).thenReturn(Optional.of(direccion));
 
@@ -125,7 +125,7 @@ public class DireccionServiceTest {
         direccionModificada.setCalle(nuevaCalle);
         direccionModificada.setNumero(nuevoNumero);
         direccionModificada.setComuna(comuna);
-        direccionModificada.setCordenadas(cordenadas);
+        direccionModificada.setCoordenadas(cordenadas);
 
         when(direccionRepository.save(any(Direccion.class))).thenReturn(direccionModificada);
 
@@ -199,7 +199,7 @@ public class DireccionServiceTest {
     @Test
     public void save_shouldThrowException_whenGeolocalizacionIsNull() {
         // Arrange
-        direccion.setCordenadas(null);
+        direccion.setCoordenadas(null);
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> direccionService.save(direccion));
