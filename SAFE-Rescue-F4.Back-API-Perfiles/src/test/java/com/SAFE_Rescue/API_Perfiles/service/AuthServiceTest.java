@@ -68,7 +68,7 @@ public class AuthServiceTest {
     @Test
     void authenticateAndGenerateToken_Success() {
         // Configuración de Mocks para un login exitoso
-        when(usuarioRepository.findByNombreUsuarioOrEmail(USUARIO_EMAIL, USUARIO_EMAIL))
+        when(usuarioRepository.findByCorreo(USUARIO_EMAIL))
                 .thenReturn(Optional.of(usuarioPrueba));
         when(passwordEncoder.matches(CONTRASENA_RAW, CONTRASENA_HASH))
                 .thenReturn(true);
@@ -81,10 +81,10 @@ public class AuthServiceTest {
         // Verificación
         assertNotNull(response);
         assertEquals(MOCK_JWT, response.getToken(), "El token generado debe coincidir.");
-        assertEquals(usuarioPrueba.getIdUsuario(), response.getUserData().getIdUsuario(), "Los datos del usuario deben ser correctos.");
+        assertEquals(usuarioPrueba.getIdUsuario(), response.getUserData(), "Los datos del usuario deben ser correctos.");
 
         // Verificar que las llamadas críticas se realizaron
-        verify(usuarioRepository, times(1)).findByNombreUsuarioOrEmail(anyString(), anyString());
+        verify(usuarioRepository, times(1)).findByCorreo(anyString());
         verify(passwordEncoder, times(1)).matches(anyString(), anyString());
         verify(jwtUtil, times(1)).generateToken(anyInt(), anyString());
     }
@@ -92,7 +92,7 @@ public class AuthServiceTest {
     @Test
     void authenticateAndGenerateToken_UserNotFound() {
         // Configuración de Mocks: el repositorio no encuentra al usuario
-        when(usuarioRepository.findByNombreUsuarioOrEmail(USUARIO_EMAIL, USUARIO_EMAIL))
+        when(usuarioRepository.findByCorreo(USUARIO_EMAIL))
                 .thenReturn(Optional.empty());
 
         // Verificación de la excepción
@@ -108,7 +108,7 @@ public class AuthServiceTest {
     @Test
     void authenticateAndGenerateToken_InvalidPassword() {
         // Configuración de Mocks: usuario encontrado, pero contraseña incorrecta
-        when(usuarioRepository.findByNombreUsuarioOrEmail(USUARIO_EMAIL, USUARIO_EMAIL))
+        when(usuarioRepository.findByCorreo(USUARIO_EMAIL))
                 .thenReturn(Optional.of(usuarioPrueba));
         when(passwordEncoder.matches(CONTRASENA_RAW, CONTRASENA_HASH))
                 .thenReturn(false); // Falla la verificación de contraseña

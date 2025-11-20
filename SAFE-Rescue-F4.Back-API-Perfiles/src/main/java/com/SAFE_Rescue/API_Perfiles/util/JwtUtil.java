@@ -13,10 +13,7 @@ import java.util.Map;
 @Component
 public class JwtUtil {
 
-    // Se recomienda obtener esta clave desde application.properties (ej: @Value("${jwt.secret}"))
-    private final String SECRET_STRING = "EstaClaveDebeSerLargaDeMasDe256BitsParaHS256";
     private final Key signingKey = Keys.secretKeyFor(SignatureAlgorithm.HS256); // O usar la cadena de arriba:
-    // private final Key signingKey = Keys.hmacShaKeyFor(SECRET_STRING.getBytes());
 
     // Tiempo de vida del token en milisegundos (10 horas)
     private final long JWT_TOKEN_VALIDITY = 1000 * 60 * 60 * 10;

@@ -8,11 +8,12 @@ import com.SAFE_Rescue.API_Perfiles.modelo.Bombero;
 import com.SAFE_Rescue.API_Perfiles.modelo.Ciudadano;
 import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
 import com.SAFE_Rescue.API_Perfiles.repository.UsuarioRepository;
-import com.SAFE_Rescue.API_Perfiles.util.JwtUtil; // ⭐ NECESITAS ESTA CLASE UTILITARIA
+import com.SAFE_Rescue.API_Perfiles.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder; // ⭐ NECESITAS UN ENCODER
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -22,53 +23,90 @@ public class AuthService {
     private UsuarioRepository usuarioRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder; // Para comparar contraseñas hash
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private JwtUtil jwtUtil; // Para generar el token
+    private JwtUtil jwtUtil;
 
-    /**
-     * Autentica un usuario, verifica la contraseña y genera un Token JWT.
-     * @param nombreUsuario Nombre de usuario o email para la autenticación.
-     * @param contrasena Contraseña sin cifrar proporcionada por el usuario.
-     * @return AuthResponseDTO conteniendo el Token JWT y los datos del usuario.
-     * @throws InvalidCredentialsException Si el usuario no existe o la contraseña es incorrecta.
-     */
-    public AuthResponseDTO authenticateAndGenerateToken(String nombreUsuario, String contrasena) {
+    public AuthResponseDTO authenticateAndGenerateToken(String correo, String contrasena) {
+        System.out.println(" ========== INICIO AUTENTICACIÓN ==========");
+        System.out.println(" Correo recibido: " + correo);
+        System.out.println(" Contraseña recibida: " + (contrasena != null ? "***" : "null"));
 
-        // 1. Buscar usuario base
-        Optional<Usuario> usuarioOpt = usuarioRepository.findByNombreUsuarioOrEmail(nombreUsuario, nombreUsuario);
+        // 1. Buscar usuario por correo
+        System.out.println(" Buscando usuario con correo: '" + correo + "'");
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByCorreo(correo);
 
         if (usuarioOpt.isEmpty()) {
+            System.out.println(" USUARIO NO ENCONTRADO con correo: '" + correo + "'");
+
+            // Debug: mostrar todos los correos existentes en la BD
+            System.out.println(" LISTA DE CORREOS EXISTENTES EN BD:");
+            try {
+                List<Usuario> todosUsuarios = usuarioRepository.findAll();
+                if (todosUsuarios.isEmpty()) {
+                    System.out.println("   ️ No hay usuarios en la base de datos");
+                } else {
+                    todosUsuarios.forEach(u ->
+                            System.out.println("   - '" + u.getCorreo() + "' (ID: " + u.getIdUsuario() + ")")
+                    );
+                }
+            } catch (Exception e) {
+                System.out.println("    Error al obtener lista de usuarios: " + e.getMessage());
+            }
+
             throw new UserNotFoundException("Usuario no encontrado.");
         }
 
         Usuario usuario = usuarioOpt.get();
+        System.out.println(" USUARIO ENCONTRADO:");
+        System.out.println("   ID: " + usuario.getIdUsuario());
+        System.out.println("   Nombre: " + usuario.getNombre());
+        System.out.println("   Correo: " + usuario.getCorreo());
+        System.out.println("   RUN: " + usuario.getRun());
 
         // 2. Verificar la contraseña
-        if (!passwordEncoder.matches(contrasena, usuario.getContrasenia())) {
+        System.out.println("   VERIFICANDO CONTRASEÑA...");
+        System.out.println("   Contraseña proporcionada: " + (contrasena != null ? "***" : "null"));
+        System.out.println("   Contraseña en BD (hash): " + usuario.getContrasenia());
+
+        boolean passwordMatches = passwordEncoder.matches(contrasena, usuario.getContrasenia());
+        System.out.println("   ¿Contraseña coincide?: " + passwordMatches);
+
+        if (!passwordMatches) {
+            System.out.println(" CONTRASEÑA INCORRECTA para usuario: " + usuario.getCorreo());
             throw new InvalidCredentialsException("Credenciales inválidas.");
         }
+        System.out.println(" CONTRASEÑA VÁLIDA");
 
-        // 3. DETERMINAR TIPO DE PERFIL - Consultar subclases
+        // 3. Determinar tipo de perfil
+        System.out.println("👤 DETERMINANDO TIPO DE PERFIL...");
         String tipoPerfil;
         Object userData;
 
         Optional<Ciudadano> ciudadanoOpt = usuarioRepository.findCiudadanoById(usuario.getIdUsuario());
         Optional<Bombero> bomberoOpt = usuarioRepository.findBomberoById(usuario.getIdUsuario());
 
+        System.out.println("   ¿Es ciudadano?: " + ciudadanoOpt.isPresent());
+        System.out.println("   ¿Es bombero?: " + bomberoOpt.isPresent());
+
         if (ciudadanoOpt.isPresent()) {
             tipoPerfil = "CIUDADANO";
             userData = ciudadanoOpt.get();
+            System.out.println(" TIPO: CIUDADANO");
         } else if (bomberoOpt.isPresent()) {
             tipoPerfil = "BOMBERO";
             userData = bomberoOpt.get();
+            System.out.println(" TIPO: BOMBERO");
         } else {
+            System.out.println(" TIPO DE PERFIL NO DETERMINADO");
             throw new RuntimeException("Tipo de perfil no determinado para el usuario");
         }
 
         // 4. Generar token
+        System.out.println(" GENERANDO TOKEN JWT...");
         String token = jwtUtil.generateToken(usuario.getIdUsuario(), tipoPerfil);
+        System.out.println(" TOKEN GENERADO: " + (token != null ? "***" : "null"));
 
         // 5. Construir respuesta
         AuthResponseDTO response = new AuthResponseDTO();
@@ -76,25 +114,41 @@ public class AuthService {
         response.setTipoPerfil(tipoPerfil);
         response.setUserData(userData);
 
+        System.out.println(" ========== AUTENTICACIÓN EXITOSA ==========");
+        System.out.println("   Usuario: " + usuario.getNombre());
+        System.out.println("   Tipo: " + tipoPerfil);
+        System.out.println("   Token generado: " + (token != null ? "SÍ" : "NO"));
+
         return response;
     }
 
-    /**
-     * Método de servicio para la lógica de registro.
-     * @param nuevoUsuario La entidad Usuario a registrar.
-     * @return El usuario guardado.
-     */
     public Usuario registerNewUser(Usuario nuevoUsuario) {
-        // 1. Lógica de verificación (ej: RUN/Email no duplicados)
+        System.out.println(" ========== INICIO REGISTRO ==========");
+        System.out.println(" Registrando usuario: " + nuevoUsuario.getNombre());
+        System.out.println(" Correo: " + nuevoUsuario.getCorreo());
+        System.out.println(" RUN: " + nuevoUsuario.getRun());
+
+        // 1. Verificar RUN duplicado
+        System.out.println(" Verificando RUN duplicado: " + nuevoUsuario.getRun());
         if (usuarioRepository.existsByRun(nuevoUsuario.getRun())) {
+            System.out.println(" RUN YA REGISTRADO: " + nuevoUsuario.getRun());
             throw new UserAlreadyExistsException("El RUN ya se encuentra registrado.");
         }
+        System.out.println(" RUN DISPONIBLE");
 
-        // 2. Cifrar la contraseña antes de guardar
+        // 2. Cifrar contraseña
+        System.out.println(" CIFRANDO CONTRASEÑA...");
         String encodedPassword = passwordEncoder.encode(nuevoUsuario.getContrasenia());
         nuevoUsuario.setContrasenia(encodedPassword);
+        System.out.println(" CONTRASEÑA CIFRADA");
 
-        // 3. Guardar en la DB
-        return usuarioRepository.save(nuevoUsuario);
+        // 3. Guardar en BD
+        System.out.println(" GUARDANDO USUARIO EN BD...");
+        Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
+        System.out.println(" ========== REGISTRO EXITOSO ==========");
+        System.out.println("   Usuario ID: " + usuarioGuardado.getIdUsuario());
+        System.out.println("   Nombre: " + usuarioGuardado.getNombre());
+
+        return usuarioGuardado;
     }
 }

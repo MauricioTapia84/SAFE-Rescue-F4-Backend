@@ -11,6 +11,7 @@ import net.datafaker.Faker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
@@ -34,6 +35,9 @@ public class DataLoader implements CommandLineRunner {
     @Autowired private TipoEquipoRepository tipoEquipoRepository;
     @Autowired private EquipoRepository equipoRepository;
     @Autowired private CompaniaRepository companiaRepository;
+
+    // PasswordEncoder para hashear contraseñas
+    @Autowired private PasswordEncoder passwordEncoder;
 
     // CLIENTES DEDICADOS PARA APIS EXTERNAS
     // ------------------------------------
@@ -213,21 +217,46 @@ public class DataLoader implements CommandLineRunner {
 
         int estadoDTOSize = (estadoDTOS != null) ? estadoDTOS.size() : 0;
 
+        // Obtener direcciones para asignar a ciudadanos
+        List<DireccionDTO> direccionDTOS = geolocalizacionClient.getAllDirecciones();
+        int direccionDTOSize = (direccionDTOS != null) ? direccionDTOS.size() : 0;
+
         for (TipoUsuario tipo : tiposUsuario) {
             int cantidad = 2;
             for (int i = 0; i < cantidad; i++) {
                 Usuario usuario;
 
-                if (tipo.getNombre().equalsIgnoreCase(BOMBERO_TIPO) || tipo.getNombre().equalsIgnoreCase(OPERADOR_TIPO)) {
+                if (tipo.getNombre().equalsIgnoreCase("Ciudadano")) {
+                    // ⬅️ Crear como Ciudadano específicamente
+                    Ciudadano ciudadano = new Ciudadano();
+                    usuario = ciudadano; // Asignar a la variable usuario
+
+                    // ⬅️ ASIGNAR ID_DIRECCION OBLIGATORIO PARA CIUDADANO
+                    if (direccionDTOSize > 0) {
+                        DireccionDTO direccionDTO = direccionDTOS.get(i % direccionDTOSize);
+                        Integer direccionId = direccionDTO.getIdDireccion();
+                        if (direccionId == null) {
+                            direccionId = 200 + i; // Fallback
+                        }
+                        ciudadano.setIdDireccion(direccionId); // ⬅️ Usar la variable ciudadano
+                        System.out.println("👤 Creando CIUDADANO: con idDireccion: " + direccionId);
+                    } else {
+                        ciudadano.setIdDireccion(200 + i); // ⬅️ Usar la variable ciudadano
+                        System.out.println("👤 Creando CIUDADANO: con idDireccion fallback: " + (200 + i));
+                    }
+
+                } else if (tipo.getNombre().equalsIgnoreCase(BOMBERO_TIPO) || tipo.getNombre().equalsIgnoreCase(OPERADOR_TIPO)) {
                     usuario = new Bombero();
+                    System.out.println("👤 Creando BOMBERO");
                     if (!equipos.isEmpty()) {
                         ((Bombero) usuario).setEquipo(equipos.get(faker.random().nextInt(equipos.size())));
                     }
                 } else {
-                    usuario = new Usuario();
+                    usuario = new Usuario(); // Usuario base para otros tipos (Jefe, Administrador)
+                    System.out.println("👤 Creando USUARIO BASE");
                 }
 
-                // Asignar atributos base
+                // Asignar atributos base (estos están en Usuario, funcionan para todos)
                 usuario.setRun(crearRunUnico());
                 usuario.setDv(calcularDv(usuario.getRun()));
                 usuario.setNombre(faker.name().firstName());
@@ -239,7 +268,13 @@ public class DataLoader implements CommandLineRunner {
 
                 usuario.setTelefono(crearTelefonoUnico());
                 usuario.setCorreo(crearCorreoUnico());
-                usuario.setContrasenia("password123");
+
+                // 🔐 CONTRASEÑA HASHEADAS
+                String rawPassword = "password123";
+                String hashedPassword = passwordEncoder.encode(rawPassword);
+                usuario.setContrasenia(hashedPassword);
+                System.out.println("🔐 Contraseña hasheada para " + usuario.getCorreo() + ": " + rawPassword + " -> " + hashedPassword);
+
                 usuario.setIntentosFallidos(0);
                 usuario.setRazonBaneo(null);
                 usuario.setDiasBaneo(null);
@@ -248,20 +283,19 @@ public class DataLoader implements CommandLineRunner {
                 // CLAVE FORÁNEA LÓGICA: ID del Estado
                 if (estadoDTOSize > 0) {
                     EstadoDTO estadoDTO = estadoDTOS.get(faker.random().nextInt(estadoDTOSize));
-                    // Usamos getId() que es el método de IHasId implementado por EstadoDTO.
                     usuario.setIdEstado(estadoDTO.getIdEstado() != null ? estadoDTO.getIdEstado() : 1);
                 } else {
                     usuario.setIdEstado(1);
                 }
 
-                String fotoUrl = faker.internet().url();
                 Integer fotoId = fotoClient.getRandomExistingFotoId();
-
                 usuario.setIdFoto(fotoId);
 
-                // Persistir con el repositorio correcto
+                // Persistir según el tipo
                 if (usuario instanceof Bombero) {
                     bomberoRepository.save((Bombero) usuario);
+                } else if (usuario instanceof Ciudadano) {
+                    usuarioRepository.save(usuario); // Ciudadano se guarda en la tabla usuario
                 } else {
                     usuarioRepository.save(usuario);
                 }

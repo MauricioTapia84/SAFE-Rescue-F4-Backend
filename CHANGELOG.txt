@@ -1,3 +1,11 @@
+❚❙❘ VERSIÓN 0.0.9.2
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se corrigen problemas de conexion del auth controller
+├─• Se hashean las contraseñas del dataloader
+├─• Se implementa un cors config que permite aplicar metodos de los endpoints en el front
+└─• Se implementas log para control de errores y trazabilidad del proceso de inicio de sesion
+
+
 ❚❙❘ VERSIÓN 0.0.9.1
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Se corrigen problemas de conexion entre apis utilizando un token interno

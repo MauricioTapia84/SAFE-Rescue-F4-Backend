@@ -17,16 +17,7 @@ import java.util.Optional;
 public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
 
 
-    /**
-     * Usa JPQL explícito para buscar el usuario por su campo 'nombre' (como nombre de usuario)
-     * O por su campo 'correo' (email), ya que el campo 'nombreUsuario' no existe.
-     * La firma del método se mantiene para compatibilidad con el AuthService.
-     */
-    @Query("SELECT u FROM Usuario u WHERE u.nombre = :nombreUsuario OR u.correo = :email")
-    Optional<Usuario> findByNombreUsuarioOrEmail(
-            @Param("nombreUsuario") String nombreUsuario,
-            @Param("email") String email
-    );
+    Optional<Usuario> findByCorreo(String correo);
 
     // NUEVO: Cargar usuario con subclase específica
     @Query("SELECT u FROM Usuario u LEFT JOIN FETCH u.tipoUsuario WHERE u.idUsuario = :id")

@@ -5,18 +5,23 @@ import com.SAFE_Rescue.API_Perfiles.dto.LoginRequestDTO;
 import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
 import com.SAFE_Rescue.API_Perfiles.service.AuthService; // Nuevo Servicio de Autenticación
 import com.SAFE_Rescue.API_Perfiles.service.UsuarioService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api-perfiles/v1/auth") // Ruta dedicada a la seguridad
@@ -29,20 +34,39 @@ public class AuthController {
     @Autowired
     private UsuarioService usuarioService; // También puedes usar el servicio de usuario aquí si el registro es simple
 
+    public AuthController() {
+        System.out.println(" AuthController instanciado!");
+    }
+
+    // Endpoint de prueba SIMPLE
+    @GetMapping("/test")
+    public String test() {
+        System.out.println(" /test endpoint llamado!");
+        return "AuthController funciona!";
+    }
+
+
     @PostMapping("/login")
-    @Operation(summary = "Inicio de Sesión", description = "Autentica un usuario y genera un Token JWT.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Login exitoso. Devuelve token y perfil inicial."),
-            @ApiResponse(responseCode = "401", description = "Credenciales inválidas.")
-    })
-    public ResponseEntity<AuthResponseDTO> login(@RequestBody LoginRequestDTO request) {
+    public ResponseEntity<AuthResponseDTO> login(HttpServletRequest httpRequest) {
+        try {
+            // Leer el cuerpo manualmente
+            String body = httpRequest.getReader().lines().collect(Collectors.joining());
+            System.out.println(" Cuerpo RAW recibido: " + body);
 
-        AuthResponseDTO response = authService.authenticateAndGenerateToken(
-                request.getCorreo(),
-                request.getContrasena()
-        );
+            ObjectMapper objectMapper = new ObjectMapper();
+            LoginRequestDTO request = objectMapper.readValue(body, LoginRequestDTO.class);
 
-        return ResponseEntity.ok(response);
+            System.out.println(" Objeto deserializado: " + request);
+
+            AuthResponseDTO response = authService.authenticateAndGenerateToken(
+                    request.getCorreo(),
+                    request.getContrasena()
+            );
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.out.println("Error deserializando: " + e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
     }
 
 

@@ -16,7 +16,7 @@ import java.util.List;
  * sólo expone la funcionalidad de consulta (GET).
  */
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api-perfiles/v1")
 @Tag(name = "Historial de Perfiles", description = "Endpoints para consultar el registro de auditoría de cambios de estado de Usuarios y Equipos")
 public class HistorialUsuarioController {
 
