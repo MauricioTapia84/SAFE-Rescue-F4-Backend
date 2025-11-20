@@ -45,7 +45,7 @@ public class AuthService {
 
         Usuario usuario = usuarioOpt.get();
 
-        // 2. Verificar contraseña
+        // 2. Verificar la contraseña
         if (!passwordEncoder.matches(contrasena, usuario.getContrasenia())) {
             throw new InvalidCredentialsException("Credenciales inválidas.");
         }

@@ -16,6 +16,12 @@ import java.util.Optional;
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
 
+
+    /**
+     * Usa JPQL explícito para buscar el usuario por su campo 'nombre' (como nombre de usuario)
+     * O por su campo 'correo' (email), ya que el campo 'nombreUsuario' no existe.
+     * La firma del método se mantiene para compatibilidad con el AuthService.
+     */
     @Query("SELECT u FROM Usuario u WHERE u.nombre = :nombreUsuario OR u.correo = :email")
     Optional<Usuario> findByNombreUsuarioOrEmail(
             @Param("nombreUsuario") String nombreUsuario,
@@ -35,4 +41,5 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
     Optional<Bombero> findBomberoById(@Param("id") Integer id);
 
     boolean existsByRun(String run);
+
 }
