@@ -84,17 +84,17 @@ public class CoordenadasController { // Cambiado de CordenadasController a Coord
      * @return ResponseEntity con mensaje de confirmación o error
      */
     @PostMapping
-    @Operation(summary = "Crear nuevas coordenadas", description = "Crea nuevas coordenadas (Lat/Lng) en el sistema") // Descripción actualizada
+    @Operation(summary = "Crear nuevas coordenadas", description = "Crea nuevas coordenadas (Lat/Lng) en el sistema")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Coordenadas creadas con éxito."), // Descripción actualizada
+            @ApiResponse(responseCode = "201", description = "Coordenadas creadas con éxito."),
             @ApiResponse(responseCode = "400", description = "Error en la solicitud (ej: Latitud/Longitud fuera de rango)."),
             @ApiResponse(responseCode = "500", description = "Error interno del servidor.")
     })
-    public ResponseEntity<String> agregarCoordenadas(@RequestBody @Parameter(description = "Datos de las coordenadas a crear", required = true) // Nombre y descripción actualizados
-                                                     Coordenadas coordenadas) { // Parámetro actualizado
+    public ResponseEntity<?> agregarCoordenadas(@RequestBody @Parameter(description = "Datos de las coordenadas a crear", required = true)
+                                                Coordenadas coordenadas) {
         try {
-            coordenadasService.save(coordenadas); // Servicio actualizado
-            return ResponseEntity.status(HttpStatus.CREATED).body("Coordenadas creadas con éxito."); // Mensaje actualizado
+            Coordenadas nuevasCoordenadas = coordenadasService.save(coordenadas);
+            return ResponseEntity.status(HttpStatus.CREATED).body(nuevasCoordenadas);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {

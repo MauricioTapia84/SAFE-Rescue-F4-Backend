@@ -1,3 +1,10 @@
+❚❙❘ VERSIÓN 0.0.9.3
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se hicieron modificaciones en los controladores de 3 microservicios: Registros, Geolocalizacion e Incidentes.
+├─• Se hicieron cambios en algunos POST y GET de los 3 microservicios modificados.
+├─• Se ajustó la versión de Java del pom.xml de la versión 17 a la 22.
+└─• Se ajustó la versión de Java del modulo de los proyectos de a la última versión disponible.
+
 ❚❙❘ VERSIÓN 0.0.9.2
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Se corrigen problemas de conexion del auth controller

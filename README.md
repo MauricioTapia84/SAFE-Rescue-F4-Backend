@@ -12,22 +12,26 @@ SAFE Rescue es una aplicación diseñada para la gestión eficiente y rápida de
 
 ## Últimos cambios
 
-### ❚❙❘ VERSIÓN 0.0.9.2
-
+### ❚❙❘ VERSIÓN 0.0.9.3
+> #### ❚❙❘ 0.0.9
 > <br>• Se implementa en perfiles logica para autentificacion
 > <br>• Se añade configuraciones para seguridad, usto de token y dtos para la validacion
 > <br>• Se corrigen client de otras apis
 > <br>• Se implementan las pruebas unitarias de autetificacion
-> <br>•
 > <br>>>> Corregir pruebas unitarias para el controllador de autentificación
-> <br>•
+> #### ❚❙❘ 0.0.9.1
 > <br>• Se corrigen problemas de conexion entre apis utilizando un token interno
 > <br>• Se implementa lógica en api de perfiles para validar el token interno para comunicacion entre microservicios
-> <br>•
-> <br>• Se corrigen problemas de conexion del auth controller****
+> #### ❚❙❘ 0.0.9.2
+> <br>• Se corrigen problemas de conexion del auth controller
 > <br>• Se hashean las contraseñas del dataloader
 > <br>• Se implementa un cors config que permite aplicar metodos de los endpoints en el front
 > <br>• Se implementas log para control de errores y trazabilidad del proceso de inicio de sesion
+> #### ❚❙❘ 0.0.9.3
+> <br>• Se hicieron modificaciones en los controladores de 3 microservicios: Registros, Geolocalizacion e Incidentes.
+> <br>• Se hicieron cambios en algunos POST y GET de los 3 microservicios modificados.
+> <br>• Se ajustó la versión de Java del pom.xml de la versión 17 a la 22.
+> <br>• Se ajustó la versión de Java del modulo de los proyectos de a la última versión disponible.
 > <br>
 
 ---

@@ -80,6 +80,10 @@ public class DireccionController {
      * @param direccion Datos de la dirección a crear
      * @return ResponseEntity con mensaje de confirmación o error
      */
+    /**
+     * Crea una nueva dirección.
+     * MODIFICADO: Ahora devuelve el objeto Direccion creado (con ID) en lugar de un String.
+     */
     @PostMapping
     @Operation(summary = "Crear una nueva dirección", description = "Crea una nueva dirección en el sistema")
     @ApiResponses(value = {
@@ -87,11 +91,16 @@ public class DireccionController {
             @ApiResponse(responseCode = "400", description = "Error en la solicitud (ej: Comuna o Geolocalización no existen, o datos incompletos)."),
             @ApiResponse(responseCode = "500", description = "Error interno del servidor.")
     })
-    public ResponseEntity<String> agregarDireccion(@RequestBody @Parameter(description = "Datos de la dirección a crear", required = true)
-                                                   Direccion direccion) {
+    // Cambiamos ResponseEntity<String> a ResponseEntity<?> para permitir devolver el objeto JSON
+    public ResponseEntity<?> agregarDireccion(@RequestBody @Parameter(description = "Datos de la dirección a crear", required = true)
+                                              Direccion direccion) {
         try {
-            direccionService.save(direccion);
-            return ResponseEntity.status(HttpStatus.CREATED).body("Dirección creada con éxito.");
+            // 1. Guardamos y CAPTURAMOS el objeto retornado por el servicio (que ya tiene el ID generado)
+            Direccion nuevaDireccion = direccionService.save(direccion);
+
+            // 2. Devolvemos el objeto completo en el body. El frontend leerá nuevaDireccion.getId()
+            return ResponseEntity.status(HttpStatus.CREATED).body(nuevaDireccion);
+
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {

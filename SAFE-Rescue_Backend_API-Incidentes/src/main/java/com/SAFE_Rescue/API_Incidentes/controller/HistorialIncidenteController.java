@@ -19,7 +19,7 @@ import java.util.List;
  * sólo expone la funcionalidad de consulta (GET).
  */
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api-incidentes/v1")
 @Tag(name = "Historial de Incidentes", description = "Endpoints para consultar el registro de auditoría de cambios de estado de un Incidente.")
 public class HistorialIncidenteController {
 

@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -73,18 +74,24 @@ public class IncidenteController {
 
     /**
      * Crea un nuevo incidente.
-     * @param incidente Datos del incidente a crear
-     * @return ResponseEntity con mensaje de confirmación o error
+     * MODIFICADO: Ahora devuelve el objeto Incidente creado (con ID) en lugar de un String.
      */
-    @Operation(summary = "Crear nuevo incidente", description = "Registra un nuevo incidente en el sistema. Requiere IDs válidos para TipoIncidente, Estado, Ciudadano y Dirección. El Usuario Asignado es opcional.")
-    @ApiResponse(responseCode = "201", description = "Incidente creado con éxito.")
-    @ApiResponse(responseCode = "400", description = "Error de validación o ID de referencia no encontrado.")
-    @ApiResponse(responseCode = "500", description = "Error interno del servidor.")
     @PostMapping
-    public ResponseEntity<String> agregarIncidente(@RequestBody Incidente incidente) {
+    @Operation(summary = "Crear nuevo incidente", description = "Registra un nuevo incidente en el sistema. Requiere IDs válidos para TipoIncidente, Estado, Ciudadano y Dirección. El Usuario Asignado es opcional.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Incidente creado con éxito."),
+            @ApiResponse(responseCode = "400", description = "Error de validación o ID de referencia no encontrado."),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor.")
+    })
+    // Cambiamos ResponseEntity<String> a ResponseEntity<?>
+    public ResponseEntity<?> agregarIncidente(@RequestBody Incidente incidente) {
         try {
-            incidenteService.save(incidente);
-            return ResponseEntity.status(HttpStatus.CREATED).body("Incidente creado con éxito.");
+            // 1. Guardamos y CAPTURAMOS el objeto
+            Incidente nuevoIncidente = incidenteService.save(incidente);
+
+            // 2. Devolvemos el objeto completo (con su ID)
+            return ResponseEntity.status(HttpStatus.CREATED).body(nuevoIncidente);
+
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {

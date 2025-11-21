@@ -13,7 +13,7 @@
 	<name>API-Comunicacion</name>
 	<description>API-Comunicacion</description>
 	<properties>
-		<java.version>17</java.version>
+		<java.version>22</java.version>
 	</properties>
 	<dependencies><dependency>
 		<groupId>org.springframework.boot</groupId>
