@@ -39,8 +39,11 @@ public class DataLoader implements CommandLineRunner {
         System.out.println("Cargando datos de prueba de Coordenadas..."); // Mensaje actualizado
 
         try {
-            // 0. LIMPIEZA DE DATOS (Para evitar Duplicate Entry)
-            limpiarDatosExistentes();
+
+            if (existenDatosDePrueba()) {
+                System.out.println("Los datos de prueba ya existen. Saltando carga inicial.");
+                return;
+            }
 
             // 1. GENERAR DATOS GEOGRÁFICOS
             List<Region> regiones = crearRegiones();
@@ -63,17 +66,19 @@ public class DataLoader implements CommandLineRunner {
         }
     }
 
-    // --- NUEVO MÉTODO PARA LIMPIEZA DE DATOS ---
-    // El orden inverso es necesario para las restricciones de clave externa.
-    private void limpiarDatosExistentes() {
-        System.out.println("-> Limpiando datos existentes...");
-        // Borrar dependientes primero
-        direccionRepository.deleteAllInBatch();
-        coordenadasRepository.deleteAllInBatch();
-        comunaRepository.deleteAllInBatch();
-        regionRepository.deleteAllInBatch();
-        // Borrar entidades base al final
-        System.out.println("-> Limpieza completada.");
+    /**
+     * Verifica si ya existen datos de prueba en la base de datos
+     */
+    private boolean existenDatosDePrueba() {
+        // Verificar si ya existen regiones (puedes cambiar este criterio según necesites)
+        long countRegiones = regionRepository.count();
+        long countDirecciones = direccionRepository.count();
+
+        System.out.println("Regiones existentes: " + countRegiones);
+        System.out.println("Direcciones existentes: " + countDirecciones);
+
+        // Si ya hay más de 10 regiones (las de Chile) y algunas direcciones, asumimos que los datos ya están cargados
+        return countRegiones >= 10 && countDirecciones > 0;
     }
 
     // --- MÉTODOS PARA CREAR ENTIDADES GEOGRÁFICAS ---

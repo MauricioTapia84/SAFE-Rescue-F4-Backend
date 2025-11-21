@@ -2,6 +2,7 @@ package com.SAFE_Rescue.API_Perfiles.config;
 
 import com.SAFE_Rescue.API_Perfiles.dto.DireccionDTO;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -62,41 +63,41 @@ public class GeolocalizacionClient {
      * @return El DireccionDTO persistido, incluyendo el ID asignado si fue una creación.
      */
     public DireccionDTO guardarDireccion(DireccionDTO direccionDTO) {
-        // Declaramos el tipo correcto: RequestHeadersSpec. Este objeto ya tiene el body
-        // y está listo para llamar a .retrieve().
         WebClient.RequestHeadersSpec<?> requestSpec;
 
-        // La URL de destino será la base de la colección
         final String uriPath = "";
 
         if (direccionDTO.getIdDireccion() == null) {
-            // CREACIÓN: Usar POST
             requestSpec = this.webClient.post()
                     .uri(uriPath)
-                    .bodyValue(direccionDTO); // Retorna RequestHeadersSpec
+                    .header("Content-Type", "application/json") // ⚠️ Asegurar content-type
+                    .bodyValue(direccionDTO);
         } else {
-            // ACTUALIZACIÓN: Usar PUT
             requestSpec = this.webClient.put()
                     .uri(uriPath)
-                    .bodyValue(direccionDTO); // Retorna RequestHeadersSpec
+                    .header("Content-Type", "application/json")
+                    .bodyValue(direccionDTO);
         }
 
         try {
             return requestSpec.retrieve()
-                    // Manejo de errores 4xx/5xx del servicio externo
                     .onStatus(
                             status -> status.isError(),
                             response -> response.bodyToMono(String.class)
                                     .map(body -> new IllegalStateException("Error al guardar dirección en MS-Cordenadas. Código: " + response.statusCode() + ", Mensaje: " + body))
                     )
                     .bodyToMono(DireccionDTO.class)
-                    .block(); // Bloqueamos la ejecución para el servicio síncrono
+                    .block();
 
         } catch (WebClientResponseException e) {
-            // Captura errores específicos lanzados por onStatus o problemas de conexión
+            // ⚠️ MANEJAR DIFERENTES TIPOS DE CONTENIDO
+            if (e.getStatusCode() == HttpStatus.CREATED || e.getStatusCode() == HttpStatus.OK) {
+                // Si la respuesta es exitosa pero el contenido no es JSON, intentar parsear de otra forma
+                System.out.println(" ⚠️ Respuesta exitosa pero contenido no JSON: " + e.getResponseBodyAsString());
+                throw new IllegalStateException("El servicio de geolocalización devolvió una respuesta inesperada: " + e.getResponseBodyAsString());
+            }
             throw new IllegalStateException("Fallo de comunicación con MS-Cordenadas: " + e.getMessage(), e);
         } catch (Exception e) {
-            // Fallo general (ej. error de deserialización, timeout)
             throw new IllegalStateException("Error inesperado al intentar guardar la dirección: " + e.getMessage(), e);
         }
     }

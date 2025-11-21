@@ -12,26 +12,31 @@ SAFE Rescue es una aplicación diseñada para la gestión eficiente y rápida de
 
 ## Últimos cambios
 
-### ❚❙❘ VERSIÓN 0.0.9.3
+### ❚❙❘ VERSIÓN 0.0.9.4
 > #### ❚❙❘ 0.0.9
-> <br>• Se implementa en perfiles logica para autentificacion
-> <br>• Se añade configuraciones para seguridad, usto de token y dtos para la validacion
+> <br>• Se implementa en perfiles lógica para autentificación
+> <br>• Se añade configuraciones para seguridad, uso de token y dtos para la validación
 > <br>• Se corrigen client de otras apis
-> <br>• Se implementan las pruebas unitarias de autetificacion
+> <br>• Se implementan las pruebas unitarias de autentificación
 > <br>>>> Corregir pruebas unitarias para el controllador de autentificación
 > #### ❚❙❘ 0.0.9.1
-> <br>• Se corrigen problemas de conexion entre apis utilizando un token interno
-> <br>• Se implementa lógica en api de perfiles para validar el token interno para comunicacion entre microservicios
+> <br>• Se corrigen problemas de conexión entre apis utilizando un token interno
+> <br>• Se implementa lógica en api de perfiles para validar el token interno para comunicación entre microservicios
 > #### ❚❙❘ 0.0.9.2
-> <br>• Se corrigen problemas de conexion del auth controller
+> <br>• Se corrigen problemas de conexión del auth controller
 > <br>• Se hashean las contraseñas del dataloader
-> <br>• Se implementa un cors config que permite aplicar metodos de los endpoints en el front
+> <br>• Se implementa un cors config que permite aplicar métodos de los endpoints en el front
 > <br>• Se implementas log para control de errores y trazabilidad del proceso de inicio de sesion
 > #### ❚❙❘ 0.0.9.3
 > <br>• Se hicieron modificaciones en los controladores de 3 microservicios: Registros, Geolocalizacion e Incidentes.
 > <br>• Se hicieron cambios en algunos POST y GET de los 3 microservicios modificados.
 > <br>• Se ajustó la versión de Java del pom.xml de la versión 17 a la 22.
 > <br>• Se ajustó la versión de Java del modulo de los proyectos de a la última versión disponible.
+> #### ❚❙❘ 0.0.9.4
+> <br>• Se hicieron modificaciones en la lógica de inicio de sesión y registro
+> <br>• Se crean DTOs para inicio de sesión y registro
+> <br>• Se ajustó el dataloader de geolocalización para que no fuera borrando y creando IDs adicionales cada vez que se iniciaba
+> <br>• Se creo y ajusto los corsconfig para dar acceso al backend desde el front
 > <br>
 
 ---

@@ -2,84 +2,96 @@ package com.SAFE_Rescue.API_Perfiles.controller;
 
 import com.SAFE_Rescue.API_Perfiles.dto.AuthResponseDTO;
 import com.SAFE_Rescue.API_Perfiles.dto.LoginRequestDTO;
-import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
-import com.SAFE_Rescue.API_Perfiles.service.AuthService; // Nuevo Servicio de Autenticación
-import com.SAFE_Rescue.API_Perfiles.service.UsuarioService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.SAFE_Rescue.API_Perfiles.dto.RegistroRequestDTO;
+import com.SAFE_Rescue.API_Perfiles.exception.UserAlreadyExistsException;
+import com.SAFE_Rescue.API_Perfiles.modelo.Ciudadano;
+import com.SAFE_Rescue.API_Perfiles.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.stream.Collectors;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api-perfiles/v1/auth") // Ruta dedicada a la seguridad
+@RequestMapping("/api-perfiles/v1/auth")
 @Tag(name = "Autenticación", description = "Gestión de Login, Registro y Generación de Tokens")
 public class AuthController {
 
     @Autowired
-    private AuthService authService; // Inyectar el nuevo servicio de autenticación
-
-    @Autowired
-    private UsuarioService usuarioService; // También puedes usar el servicio de usuario aquí si el registro es simple
+    private AuthService authService;
 
     public AuthController() {
-        System.out.println(" AuthController instanciado!");
+        System.out.println(" ✅ AuthController instanciado!");
     }
 
-    // Endpoint de prueba SIMPLE
     @GetMapping("/test")
+    @Operation(summary = "Endpoint de prueba", description = "Verifica que el controlador esté funcionando")
     public String test() {
-        System.out.println(" /test endpoint llamado!");
-        return "AuthController funciona!";
+        return "AuthController funciona correctamente!";
     }
-
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDTO> login(HttpServletRequest httpRequest) {
+    @Operation(summary = "Iniciar sesión", description = "Autentica un usuario y genera token JWT")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Login exitoso"),
+            @ApiResponse(responseCode = "401", description = "Credenciales inválidas"),
+            @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
+    })
+    public ResponseEntity<AuthResponseDTO> login(@RequestBody @Valid LoginRequestDTO request) {
         try {
-            // Leer el cuerpo manualmente
-            String body = httpRequest.getReader().lines().collect(Collectors.joining());
-            System.out.println(" Cuerpo RAW recibido: " + body);
-
-            ObjectMapper objectMapper = new ObjectMapper();
-            LoginRequestDTO request = objectMapper.readValue(body, LoginRequestDTO.class);
-
-            System.out.println(" Objeto deserializado: " + request);
+            System.out.println(" 🔐 Intento de login para: " + request.getCorreo());
 
             AuthResponseDTO response = authService.authenticateAndGenerateToken(
                     request.getCorreo(),
                     request.getContrasena()
             );
+
+            System.out.println(" ✅ Login exitoso para: " + request.getCorreo());
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
-            System.out.println("Error deserializando: " + e.getMessage());
-            return ResponseEntity.badRequest().build();
+            System.err.println(" ❌ Error en login: " + e.getMessage());
+
+            // Puedes personalizar las respuestas según el tipo de error
+            if (e.getMessage().contains("no encontrado")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            } else if (e.getMessage().contains("Credenciales inválidas")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            }
         }
     }
 
-
-    @PostMapping("/register")
-    @Operation(summary = "Registro de Nuevo Usuario", description = "Registra un nuevo Usuario (Bombero o Ciudadano).")
+    @PostMapping("/register-ciudadano")
+    @Operation(summary = "Registro Completo de Ciudadano", description = "Registra un nuevo Usuario y Ciudadano con dirección.")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Registro exitoso. Devuelve el Usuario creado."),
-            @ApiResponse(responseCode = "400", description = "Error de validación o usuario existente.")
+            @ApiResponse(responseCode = "201", description = "Registro exitoso"),
+            @ApiResponse(responseCode = "400", description = "Error de validación"),
+            @ApiResponse(responseCode = "409", description = "Usuario ya existe"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
-    public ResponseEntity<Usuario> register(@RequestBody @Valid Usuario usuario) {
-        // NOTA: En un caso real, aquí usarías un DTO de registro, no la entidad Usuario
-        // para manejar las contraseñas sin hashear y los campos de discriminación (tipoPerfil).
-        Usuario nuevoUsuario = usuarioService.save(usuario);
-        return ResponseEntity.status(HttpStatus.CREATED).body(nuevoUsuario);
+    public ResponseEntity<?> registerCiudadano(@RequestBody @Valid RegistroRequestDTO request) {
+        try {
+            System.out.println(" 👤 Registrando nuevo ciudadano: " + request.getCorreo());
+
+            Ciudadano nuevoCiudadano = authService.registerNewCiudadano(request);
+
+            System.out.println(" ✅ Ciudadano registrado exitosamente - ID: " + nuevoCiudadano.getIdUsuario());
+            return ResponseEntity.status(HttpStatus.CREATED).body(nuevoCiudadano);
+
+        } catch (UserAlreadyExistsException e) {
+            System.err.println(" ❌ Usuario ya existe: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+
+        } catch (Exception e) {
+            System.err.println(" ❌ Error en registro: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error interno del servidor: " + e.getMessage());
+        }
     }
 }

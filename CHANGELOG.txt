@@ -1,3 +1,10 @@
+❚❙❘ VERSIÓN 0.0.9.4
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se hicieron modificaciones en la lógica de inicio de sesión y registro
+├─• Se crean DTOs para inicio de sesión y registro
+├─• Se ajustó el dataloader de geolocalización para que no fuera borrando y creando IDs adicionales cada vez que se iniciaba
+└─• Se creo y ajusto los corsconfig para dar acceso al backend desde el front
+
 ❚❙❘ VERSIÓN 0.0.9.3
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Se hicieron modificaciones en los controladores de 3 microservicios: Registros, Geolocalizacion e Incidentes.
