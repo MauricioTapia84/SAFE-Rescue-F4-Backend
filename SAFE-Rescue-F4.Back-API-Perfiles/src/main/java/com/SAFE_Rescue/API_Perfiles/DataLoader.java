@@ -51,6 +51,8 @@ public class DataLoader implements CommandLineRunner {
     private final Set<String> uniqueRuns = new HashSet<>();
     private final Set<String> uniqueTelefonos = new HashSet<>();
     private final Set<String> uniqueCorreos = new HashSet<>();
+    // Set para evitar duplicados de nombre de usuario
+    private final Set<String> uniqueNombresUsuario = new HashSet<>();
 
     private static final String BOMBERO_TIPO = "Bombero en Terreno";
     private static final String OPERADOR_TIPO = "Operador de Sala";
@@ -162,22 +164,17 @@ public class DataLoader implements CommandLineRunner {
 
             if (direccionDTOSize > 0) {
                 DireccionDTO direccionDTO = direccionDTOS.get(i % direccionDTOSize);
-
-                // AJUSTE: Usar getId() para acceder al ID mapeado (idDireccion)
                 direccionId = direccionDTO.getIdDireccion();
 
-                // Si el ID del DTO es nulo (después de la corrección de DTO, esto no debería pasar)
                 if (direccionId == null) {
                     direccionId = 100 + i;
                     System.err.println("WARN: DireccionDTO del microservicio retornó ID nulo. Usando ID de fallback: " + direccionId);
                 }
             } else {
-                // Si la lista de DTOs está vacía (API down), usar IDs simulados.
                 direccionId = 100 + i;
             }
 
             compania.setIdDireccion(direccionId);
-
             companias.add(companiaRepository.save(compania));
         }
         return companias;
@@ -198,7 +195,6 @@ public class DataLoader implements CommandLineRunner {
 
             if (estadoDTOSize > 0) {
                 EstadoDTO estadoDTO = estadoDTOS.get(faker.random().nextInt(estadoDTOSize));
-                // Usamos getId() que es el método de IHasId implementado por EstadoDTO.
                 equipo.setIdEstado(estadoDTO.getIdEstado() != null ? estadoDTO.getIdEstado() : 1);
             } else {
                 equipo.setIdEstado(1);
@@ -227,21 +223,19 @@ public class DataLoader implements CommandLineRunner {
                 Usuario usuario;
 
                 if (tipo.getNombre().equalsIgnoreCase("Ciudadano")) {
-                    // ⬅️ Crear como Ciudadano específicamente
                     Ciudadano ciudadano = new Ciudadano();
-                    usuario = ciudadano; // Asignar a la variable usuario
+                    usuario = ciudadano;
 
-                    // ⬅️ ASIGNAR ID_DIRECCION OBLIGATORIO PARA CIUDADANO
                     if (direccionDTOSize > 0) {
                         DireccionDTO direccionDTO = direccionDTOS.get(i % direccionDTOSize);
                         Integer direccionId = direccionDTO.getIdDireccion();
                         if (direccionId == null) {
                             direccionId = 200 + i; // Fallback
                         }
-                        ciudadano.setIdDireccion(direccionId); // ⬅️ Usar la variable ciudadano
+                        ciudadano.setIdDireccion(direccionId);
                         System.out.println("👤 Creando CIUDADANO: con idDireccion: " + direccionId);
                     } else {
-                        ciudadano.setIdDireccion(200 + i); // ⬅️ Usar la variable ciudadano
+                        ciudadano.setIdDireccion(200 + i);
                         System.out.println("👤 Creando CIUDADANO: con idDireccion fallback: " + (200 + i));
                     }
 
@@ -252,16 +246,20 @@ public class DataLoader implements CommandLineRunner {
                         ((Bombero) usuario).setEquipo(equipos.get(faker.random().nextInt(equipos.size())));
                     }
                 } else {
-                    usuario = new Usuario(); // Usuario base para otros tipos (Jefe, Administrador)
+                    usuario = new Usuario();
                     System.out.println("👤 Creando USUARIO BASE");
                 }
 
-                // Asignar atributos base (estos están en Usuario, funcionan para todos)
+                // Asignar atributos base
                 usuario.setRun(crearRunUnico());
                 usuario.setDv(calcularDv(usuario.getRun()));
                 usuario.setNombre(faker.name().firstName());
                 usuario.setAPaterno(faker.name().lastName());
                 usuario.setAMaterno(faker.name().lastName());
+
+                // --- NUEVO: ASIGNAR NOMBRE DE USUARIO GENERADO ---
+                usuario.setNombreUsuario(crearNombreUsuarioUnico(usuario.getNombre()));
+                // ------------------------------------------------
 
                 Date pastDate = Date.from(faker.timeAndDate().past(5, TimeUnit.DAYS));
                 usuario.setFechaRegistro(pastDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate().atStartOfDay());
@@ -295,7 +293,7 @@ public class DataLoader implements CommandLineRunner {
                 if (usuario instanceof Bombero) {
                     bomberoRepository.save((Bombero) usuario);
                 } else if (usuario instanceof Ciudadano) {
-                    usuarioRepository.save(usuario); // Ciudadano se guarda en la tabla usuario
+                    usuarioRepository.save(usuario);
                 } else {
                     usuarioRepository.save(usuario);
                 }
@@ -304,7 +302,7 @@ public class DataLoader implements CommandLineRunner {
     }
 
 
-    // --- Métodos de utilidad (Mantenidos) ---
+    // --- Métodos de utilidad ---
 
     private String crearRunUnico() {
         String run;
@@ -328,6 +326,28 @@ public class DataLoader implements CommandLineRunner {
             correo = faker.internet().emailAddress();
         } while (!uniqueCorreos.add(correo));
         return correo;
+    }
+
+    // --- NUEVO MÉTODO PARA NOMBRE DE USUARIO ÚNICO ---
+    private String crearNombreUsuarioUnico(String baseName) {
+        String nombreUsuario;
+        String safeBase = baseName.replaceAll("[^a-zA-Z0-9]", ""); // Solo letras y números
+        if (safeBase.length() < 3) safeBase = "User"; // Evitar nombres muy cortos
+
+        do {
+            // Genera algo como "Juan482" o "Maria12"
+            nombreUsuario = safeBase + faker.number().digits(3);
+
+            // Validar longitud (entre 5 y 20)
+            if (nombreUsuario.length() > 20) {
+                nombreUsuario = nombreUsuario.substring(0, 20);
+            } else if (nombreUsuario.length() < 5) {
+                nombreUsuario = nombreUsuario + faker.number().digits(5 - nombreUsuario.length());
+            }
+
+        } while (!uniqueNombresUsuario.add(nombreUsuario));
+
+        return nombreUsuario;
     }
 
     private String calcularDv(String runStr) {

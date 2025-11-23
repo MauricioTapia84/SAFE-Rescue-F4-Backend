@@ -34,6 +34,17 @@ public class Usuario {
     @Schema(description = "Identificador único del usuario", example = "1")
     private Integer idUsuario;
 
+    // --- NUEVO CAMPO: NOMBRE DE USUARIO ---
+    /**
+     * Nombre de usuario (Nick) único.
+     */
+    @Column(name = "nombre_usuario", length = 20, unique = true)
+    @Schema(description = "Nombre de usuario único", example = "Bombero01")
+    @Size(min = 5, max = 20, message = "El nombre de usuario debe tener entre 5 y 20 caracteres")
+    @Pattern(regexp = "^[a-zA-Z0-9]+$", message = "El nombre de usuario solo debe contener letras y números")
+    private String nombreUsuario;
+    // --------------------------------------
+
     /**
      * Run del usuario.
      */

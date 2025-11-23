@@ -10,85 +10,74 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * Entidad que registra un Incidente reportado en el sistema, centralizando la información
- * de ubicación, persona, tipo y estado mediante claves foráneas lógicas (IDs).
- */
 @Entity
-@Table(name = "incidente") // Nombre de la tabla en la base de datos
-@NoArgsConstructor // Genera constructor sin argumentos
-@AllArgsConstructor // Genera constructor con todos los argumentos
-@Data // Genera getters, setters, toString, equals y hashCode
+@Table(name = "incidente")
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
 public class Incidente {
 
-    /**
-     * Identificador único autoincremental del incidente.
-     */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // Auto-incremental
-    private Integer idIncidente; // Cambiado a Integer para coincidir con el patrón de Usuario
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer idIncidente;
 
     @Column(length = 50, nullable = false)
-    @NotBlank(message = "El título del incidente es obligatorio.") // Validación de aplicación
-    @Size(max = 50, message = "El título no puede exceder los 50 caracteres.") // Validación de aplicación
+    @NotBlank(message = "El título del incidente es obligatorio.")
+    @Size(max = 50, message = "El título no puede exceder los 50 caracteres.")
     private String titulo;
 
     @Column(length = 400, nullable = true)
-    @Size(max = 400, message = "El detalle no puede exceder los 400 caracteres.") // Validación de aplicación
+    @Size(max = 400, message = "El detalle no puede exceder los 400 caracteres.")
     private String detalle;
 
-    /**
-     * Fecha y hora exacta en que se creó el registro de incidente.
-     */
     @Column(name = "fecha_incidente", nullable = false)
-    @NotNull(message = "La fecha de registro es obligatoria.") // Validación de aplicación
+    @NotNull(message = "La fecha de registro es obligatoria.")
     @Schema(description = "Fecha y hora en que se registró el incidente", example = "2025-09-09T10:30:00")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss") // Incluye fecha y hora
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime fechaRegistro;
 
-    // --- CLAVE FORÁNEA JPA (ASUMIDO: Es una entidad local como TipoUsuario en el ejemplo) ---
+    // --- NUEVO CAMPO (Soluciona el error setFechaUltimaActualizacion) ---
+    @Column(name = "fecha_ultima_actualizacion")
+    @Schema(description = "Fecha de la última modificación del incidente", example = "2025-09-09T12:00:00")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime fechaUltimaActualizacion;
+    // --------------------------------------------------------------------
 
-    /**
-     * Tipo de incidente (Relación JPA si es una entidad local).
-     */
+    // Campos de texto para persistencia visual
+    @Column(length = 100, nullable = true)
+    private String region;
+
+    @Column(length = 100, nullable = true)
+    private String comuna;
+
+    @Column(length = 200, nullable = true)
+    private String direccion;
+
+    // Relaciones y FKs
     @ManyToOne
     @JoinColumn(name = "tipo_incidente_id", referencedColumnName = "idTipoIncidente", nullable = false)
     @NotNull(message = "El tipo de incidente es obligatorio.")
     private TipoIncidente tipoIncidente;
 
-    // --- CLAVES FORÁNEAS LÓGICAS (Microservicios/DTOs) ---
-
-    /**
-     * ID de la Dirección/Ubicación del incidente (Referencia lógica).
-     */
-    @Column(name = "ubicacion_id", nullable = false) // Mapeo al nombre de columna original
+    @Column(name = "ubicacion_id", nullable = false)
     @NotNull(message = "La ID de la ubicación del incidente es obligatoria.")
-    @Schema(description = "ID de la Ubicación (Clave foránea lógica)", required = true, example = "5")
-    private Integer idDireccion; // Reemplaza DireccionDTO
+    private Integer idDireccion;
 
-    /**
-     * ID del Usuario que reporta el incidente (Referencia lógica al ciudadano).
-     */
-    @Column(name = "ciudadano_id", nullable = false) // Mapeo al nombre de columna original
+    @Column(name = "ciudadano_id", nullable = false)
     @NotNull(message = "La ID del ciudadano que reporta es obligatoria.")
-    @Schema(description = "ID del Ciudadano (Clave foránea lógica)", required = true, example = "10")
-    private Integer idCiudadano; // Reemplaza UsuarioDTO
+    private Integer idCiudadano;
 
-    /**
-     * ID del Estado actual del incidente (Referencia lógica).
-     */
-    @Column(name = "estado_incidente_id", nullable = false) // Mapeo al nombre de columna original
+    @Column(name = "estado_incidente_id", nullable = false)
     @NotNull(message = "La ID del estado del incidente es obligatoria.")
-    @Schema(description = "ID del Estado del Incidente (Clave foránea lógica)", required = true, example = "1")
-    private Integer idEstadoIncidente; // Reemplaza EstadoDTO
+    private Integer idEstadoIncidente;
 
-    /**
-     * ID del Usuario responsable/asignado al incidente (Referencia lógica).
-     */
-    @Column(name = "usuario_asignado_id", nullable = true) // Nuevo nombre de columna
-    @Schema(description = "ID del Usuario responsable/asignado (Clave foránea lógica)", required = false, example = "15")
-    private Integer idUsuarioAsignado; // Cambiado de 'UsuarioDto' y representa al usuario.
+    @Column(name = "usuario_asignado_id", nullable = true)
+    private Integer idUsuarioAsignado;
+
+    @PreUpdate
+    protected void onUpdate() {
+        fechaUltimaActualizacion = LocalDateTime.now();
+    }
 }

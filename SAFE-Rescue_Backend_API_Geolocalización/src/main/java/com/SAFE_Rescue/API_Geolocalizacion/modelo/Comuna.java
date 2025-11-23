@@ -1,6 +1,5 @@
 package com.SAFE_Rescue.API_Geolocalizacion.modelo;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
@@ -39,8 +38,9 @@ public class Comuna {
 
     // --- Relación a Región (ManyToOne: Muchas Comunas a Una Región) ---
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JsonBackReference
+    // MODIFICADO: Se eliminó @JsonBackReference para que el JSON incluya la región
+    // Se cambió FetchType a EAGER para asegurar la carga de los datos
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_region", nullable = false) // Clave foránea a la entidad Region
     @Schema(description = "Región a la que pertenece la comuna", required = true)
     private Region region;

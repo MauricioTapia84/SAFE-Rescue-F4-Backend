@@ -1,9 +1,19 @@
+❚❙❘ VERSIÓN 0.0.10
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se modificaron diversos archivos, entre: Controller, Services y Repository.
+├─• Se agregó el dato de nombreUsuario a la entidad Usuario de la base de datos.
+├─• Se modificó en general la entidad Comuna para poder agregarle una relación con la entidad Región.
+├─• Se ajustó la lógica para un correcto funcionamiento en Kotlin y la Web React.
+└─• El sistema de incidente es perfectamente funcional.
+
+>>> Se intentó cargar el historial de incidentes desde el front hacia el back, la idea se descartó por ser una mala práctica.
+
 ❚❙❘ VERSIÓN 0.0.9.4
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
-├─• Se hicieron modificaciones en la lógica de inicio de sesión y registro
-├─• Se crean DTOs para inicio de sesión y registro
-├─• Se ajustó el dataloader de geolocalización para que no fuera borrando y creando IDs adicionales cada vez que se iniciaba
-└─• Se creo y ajusto los corsconfig para dar acceso al backend desde el front
+├─• Se hicieron modificaciones en la lógica de inicio de sesión y registro.
+├─• Se crean DTOs para inicio de sesión y registro.
+├─• Se ajustó el dataloader de geolocalización para que no fuera borrando y creando IDs adicionales cada vez que se iniciaba.
+└─• Se creo y ajusto los corsconfig para dar acceso al backend desde el front.
 
 ❚❙❘ VERSIÓN 0.0.9.3
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
@@ -14,45 +24,45 @@
 
 ❚❙❘ VERSIÓN 0.0.9.2
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
-├─• Se corrigen problemas de conexion del auth controller
-├─• Se hashean las contraseñas del dataloader
-├─• Se implementa un cors config que permite aplicar metodos de los endpoints en el front
-└─• Se implementas log para control de errores y trazabilidad del proceso de inicio de sesion
+├─• Se corrigen problemas de conexion del auth controller.
+├─• Se hashean las contraseñas del dataloader.
+├─• Se implementa un cors config que permite aplicar metodos de los endpoints en el front.
+└─• Se implementas log para control de errores y trazabilidad del proceso de inicio de sesion.
 
 
 ❚❙❘ VERSIÓN 0.0.9.1
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
-├─• Se corrigen problemas de conexion entre apis utilizando un token interno
-└─• Se implementa lógica en api de perfiles para validar el token interno para comunicacion entre microservicios
+├─• Se corrigen problemas de conexion entre APIs utilizando un token interno.
+└─• Se implementa lógica en API de perfiles para validar el token interno para comunicacion entre microservicios.
 
 
 ❚❙❘ VERSIÓN 0.0.9
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
-├─• Se implementa en perfiles logica para autentificacion
-├─• Se añade configuraciones para seguridad, usto de token y dtos para la validacion
-├─• Se corrigen client de otras apis
-└─• Se implementan las pruebas unitarias de autetificacion
+├─• Se implementa en perfiles logica para autentificacion.
+├─• Se añade configuraciones para seguridad, usto de token y dtos para la validacion.
+├─• Se corrigen client de otras APIs.
+└─• Se implementan las pruebas unitarias de autetificacion.
 
 ->>> Corregir pruebas unitarias para el controllador de autentificación
 
 ❚❙❘ VERSIÓN 0.0.8.1
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
-├─• Se corrige la refactorizacion de cambio de nombre en api de geolocalizacion
-└─• Se corrige el cambio de nombre en otras apis para mantener coincidencias
+├─• Se corrige la refactorizacion de cambio de nombre en API de geolocalizacion
+└─• Se corrige el cambio de nombre en otras APIs para mantener coincidencias
 
 ❚❙❘ VERSIÓN 0.0.8
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
-├─• Se elimina historial de mesnaje de api de comunicacion
+├─• Se elimina historial de mesnaje de API de comunicacion
 ├─• Se elimina conversacion de notificaciones
-├─• Se cambia el nombre de entidad a geolocalizacion por coordenadas en la api de geolocalizacion
-├─• Se añade la logica de la api de donaciones
+├─• Se cambia el nombre de entidad a geolocalizacion por coordenadas en la API de geolocalizacion
+├─• Se añade la logica de la API de donaciones
 └─• Se hacen las pruebas unitarias de donaciones
 
 
 ❚❙❘ VERSIÓN 0.0.7
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
-├─• Se crean controladores para api comunicaciones
-├─• Se corrige la lógica de la api de comunicaciones
+├─• Se crean controladores para API comunicaciones
+├─• Se corrige la lógica de la API de comunicaciones
 ├─• Se crea el dataloader de comunicaciones
 ├─• Se realizan los test para los controladores y service de comunicaciones
 └─• Se elimino pais de la entidad cordenadas
@@ -73,8 +83,8 @@
 
 ❚❙❘ VERSIÓN 0.0.5
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
-├─• Se terminar pruebas unitarias de api incidentes
-├─• Se añaden historialUsuario y ciudadano a api perfiles, con sus repositorios, service y controlladores
+├─• Se terminar pruebas unitarias de API incidentes
+├─• Se añaden historialUsuario y ciudadano a API perfiles, con sus repositorios, service y controlladores
 ├─• Se implementan test de compania, ciudadano, historialUsuario
 ├─• Se corrigen problemas de fechas
 └─• Se prueba dataloader que se ejecute correctamente
@@ -85,20 +95,20 @@
 
 ❚❙❘ VERSIÓN 0.0.4
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
-├─• Corrección de errores de web client de la api perfiles
-├─• Corrección de test de Api perfiles
-├─• Implementación de test de Api Registros
-├─• Se corrige el dataloader de Api perfiles
-├─• Se implementa la lógica y web client de la api de Incidentes
+├─• Corrección de errores de web client de la API perfiles
+├─• Corrección de test de API perfiles
+├─• Implementación de test de API Registros
+├─• Se corrige el dataloader de API perfiles
+├─• Se implementa la lógica y web client de la API de Incidentes
 └─• Se inician las pruebas unitarias de incidentes
 
-->>> Terminar pruebas unitarias de api de incidentes
+->>> Terminar pruebas unitarias de API de incidentes
 
 
 ❚❙❘ VERSIÓN 0.0.3
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Se solucionan problemas de Web client
-├─• Se separan los clientes consumidos desde otras apis del webclient para mejorar la estructura
+├─• Se separan los clientes consumidos desde otras APIs del webclient para mejorar la estructura
 ├─• Se corrigen incongruencias en las direcciones de los clientes
 └─• Se agrega un formato para las id de lso dto
 
@@ -120,7 +130,7 @@
 
 ❚❙❘ VERSIÓN 0.0.1
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
-├─• Creación inicial del repositorio con todas las carpetas de las APIS
+├─• Creación inicial del repositorio con todas las carpetas de las APIs
 ├─• Se configuran las conexiones a la base de datos
 ├─• Se Actualizan y agregan las dependencias necesarias
 ├─• Se Implementa la estructura y contenido (Service,Modelo,Controller,Repository)

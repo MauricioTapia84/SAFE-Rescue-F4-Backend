@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -15,6 +16,13 @@ import lombok.Data;
  */
 @Data
 public class RegistroRequestDTO {
+
+    // --- NUEVO CAMPO: NOMBRE DE USUARIO ---
+    @NotBlank(message = "El nombre de usuario es obligatorio")
+    @Size(min = 5, max = 20, message = "El nombre de usuario debe tener entre 5 y 20 caracteres")
+    @Pattern(regexp = "^[a-zA-Z0-9]+$", message = "El nombre de usuario solo debe contener letras y números")
+    private String nombreUsuario;
+    // --------------------------------------
 
     // Datos del usuario
     @NotBlank(message = "El Run es obligatorio")

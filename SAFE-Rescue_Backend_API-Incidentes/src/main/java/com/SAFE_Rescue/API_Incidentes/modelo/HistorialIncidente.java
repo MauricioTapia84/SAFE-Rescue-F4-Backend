@@ -1,6 +1,7 @@
 package com.SAFE_Rescue.API_Incidentes.modelo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties; // <--- IMPORTANTE
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -15,7 +16,7 @@ import java.time.LocalDateTime;
  * Se mapea a la tabla "historial_incidente".
  */
 @Entity
-@Table(name = "historial_incidente") // Cambiado para reflejar el alcance de Incidentes
+@Table(name = "historial_incidente")
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
@@ -39,10 +40,11 @@ public class HistorialIncidente {
      * Relación Muchos-a-Uno con la entidad {@code Incidente}.
      * Indica a qué incidente pertenece este registro de historial.
      */
-    // Asumo que la entidad Incidente está definida en este paquete
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_incidente", nullable = false) // Ahora apunta a la clave del Incidente
+    @JoinColumn(name = "id_incidente", nullable = false)
     @Schema(description = "Incidente al que se le aplicó el cambio de estado")
+    // SOLUCIÓN AL ERROR 500: Ignorar los campos del proxy de Hibernate al serializar
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Incidente incidente;
 
 

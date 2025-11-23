@@ -60,10 +60,25 @@ public class UsuarioController {
             @Parameter(description = "ID del usuario a buscar", required = true)
             @PathVariable Integer id) {
 
-        // Asumiendo que findById lanza NoSuchElementException (capturado por Global Handler 404)
         Usuario usuario = usuarioService.findById(id);
         return ResponseEntity.ok(usuario);
     }
+
+    // --- NUEVO ENDPOINT: BUSCAR POR NOMBRE DE USUARIO ---
+    @GetMapping("/buscar/{username}")
+    @Operation(summary = "Buscar usuario por nombre de usuario", description = "Obtiene los datos de un usuario dado su nick")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Usuario encontrado"),
+            @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
+    })
+    public ResponseEntity<Usuario> buscarPorNombreUsuario(
+            @Parameter(description = "Nombre de usuario (Nick)", required = true)
+            @PathVariable String username) {
+
+        Usuario usuario = usuarioService.findByNombreUsuario(username);
+        return ResponseEntity.ok(usuario);
+    }
+    // ---------------------------------------------------
 
     @PostMapping
     @Operation(summary = "Crear un nuevo usuario", description = "Crea un nuevo usuario en el sistema")
@@ -74,7 +89,7 @@ public class UsuarioController {
             @ApiResponse(responseCode = "400", description = "Error en la solicitud (Validación, RUN/Correo existente, TipoUsuario/Estado no existe).")
     })
     public ResponseEntity<Usuario> agregarUsuario(
-            @RequestBody @Valid // Dispara las validaciones de Usuario.java
+            @RequestBody @Valid
             @Parameter(description = "Datos del usuario a crear", required = true)
             Usuario usuario) {
 
@@ -94,7 +109,7 @@ public class UsuarioController {
     public ResponseEntity<Usuario> actualizarUsuario(
             @Parameter(description = "ID del usuario a actualizar", required = true)
             @PathVariable Integer id,
-            @RequestBody @Valid // Dispara las validaciones
+            @RequestBody @Valid
             @Parameter(description = "Datos actualizados del usuario", required = true)
             Usuario usuario) {
 
@@ -124,17 +139,16 @@ public class UsuarioController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Foto subida y usuario retornado con éxito.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Usuario.class))), // Retornamos el Usuario
+                            schema = @Schema(implementation = Usuario.class))),
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado."),
             @ApiResponse(responseCode = "500", description = "Error al comunicarse con el servicio de fotos o al actualizar la DB.")
     })
-    public ResponseEntity<Usuario> subirFotoUsuario( // ¡Cambiamos el tipo de retorno a Usuario!
-                                                     @Parameter(description = "ID del usuario al que se asociará la foto", required = true)
-                                                     @PathVariable Integer id,
-                                                     @Parameter(description = "Archivo de imagen a subir", required = true)
-                                                     @RequestParam("foto") MultipartFile archivo) {
+    public ResponseEntity<Usuario> subirFotoUsuario(
+            @Parameter(description = "ID del usuario al que se asociará la foto", required = true)
+            @PathVariable Integer id,
+            @Parameter(description = "Archivo de imagen a subir", required = true)
+            @RequestParam("foto") MultipartFile archivo) {
 
-        // Asumimos que el servicio se modifica para devolver el objeto Usuario actualizado
         Usuario usuarioActualizado = usuarioService.subirYActualizarFotoUsuario(id, archivo);
         return ResponseEntity.ok(usuarioActualizado);
     }

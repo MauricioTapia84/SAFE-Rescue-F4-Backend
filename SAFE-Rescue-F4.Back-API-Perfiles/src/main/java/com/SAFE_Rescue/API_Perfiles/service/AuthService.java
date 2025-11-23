@@ -80,6 +80,8 @@ public class AuthService {
         Ciudadano ciudadano = new Ciudadano();
 
         // Usar el método setUsuarioData con todos los parámetros necesarios
+        // NOTA: Si Usuario.java no tiene setUsuarioData actualizado con nombreUsuario,
+        // lo asignamos manualmente justo después.
         ciudadano.setUsuarioData(
                 request.getRun(),
                 request.getDv(),
@@ -93,6 +95,10 @@ public class AuthService {
                 LocalDateTime.now(),
                 ID_ESTADO_ACTIVO
         );
+
+        // --- NUEVO CAMPO: Asignar Nombre de Usuario ---
+        ciudadano.setNombreUsuario(request.getNombreUsuario());
+        // ----------------------------------------------
 
         // Campo específico de Ciudadano
         ciudadano.setIdDireccion(idDireccion);
@@ -243,5 +249,4 @@ public class AuthService {
 
         return response;
     }
-
 }

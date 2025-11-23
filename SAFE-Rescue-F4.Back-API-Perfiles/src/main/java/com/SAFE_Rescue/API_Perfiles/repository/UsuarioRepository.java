@@ -1,8 +1,7 @@
 package com.SAFE_Rescue.API_Perfiles.repository;
 
 import com.SAFE_Rescue.API_Perfiles.modelo.Bombero;
-import com.SAFE_Rescue.API_Perfiles.modelo.Ciudadano;
-import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
+import com.SAFE_Rescue.API_Perfiles.modelo.Ciudadano;import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -30,6 +29,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
     // NUEVO: Buscar Bombero específico
     @Query("SELECT b FROM Bombero b WHERE b.idUsuario = :id")
     Optional<Bombero> findBomberoById(@Param("id") Integer id);
+
+    // Búsqueda por Nombre de Usuario (Nick)
+    Optional<Usuario> findByNombreUsuario(String nombreUsuario);
 
     boolean existsByRun(String run);
 
