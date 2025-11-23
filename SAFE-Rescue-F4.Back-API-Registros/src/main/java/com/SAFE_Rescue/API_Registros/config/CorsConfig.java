@@ -1,4 +1,4 @@
-package com.SAFE_Rescue.API_Perfiles.config;
+package com.SAFE_Rescue.API_Registros.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;

@@ -9,10 +9,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -28,11 +32,135 @@ public class FotoController {
     @Autowired
     private FotoService fotoService;
 
-    // OPERACIONES CRUD BÁSICAS
+    @PostMapping("/upload")
+    @Operation(summary = "Subir una foto", description = "Sube una foto en formato multipart/form-data")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Foto subida exitosamente.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Foto.class))),
+            @ApiResponse(responseCode = "400", description = "Error al subir la foto."),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor.")
+    })
+    public ResponseEntity<?> uploadFoto(
+            @RequestParam("file") @Parameter(description = "Archivo de foto", required = true)
+            MultipartFile file) {
+        try {
+            System.out.println(" [FotoController] Recibiendo upload de foto: " + file.getOriginalFilename());
+            System.out.println("   Tamaño: " + file.getSize() + " bytes");
+
+            if (file.isEmpty()) {
+                System.err.println(" Archivo vacío");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("El archivo está vacío");
+            }
+
+            //  Validar tamaño (máximo 5MB)
+            long maxSize = 5 * 1024 * 1024; // 5MB
+            if (file.getSize() > maxSize) {
+                System.err.println(" Archivo demasiado grande: " + file.getSize() + " bytes");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("El archivo no debe superar 5MB. Tamaño actual: " + (file.getSize() / 1024 / 1024) + "MB");
+            }
+
+            // Convertir archivo a bytes
+            byte[] fotoBytes = file.getBytes();
+            String filename = file.getOriginalFilename();
+
+            //  Determinar el tipo MIME
+            String contentType = determineContentTypeWithTika(fotoBytes, filename);
+
+            System.out.println("   Content-Type determinado: " + contentType);
+
+            if (contentType == null) {
+                System.err.println(" Tipo de archivo no soportado: " + filename);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Solo se aceptan imágenes (JPG, PNG, GIF, WebP, BMP, SVG)");
+            }
+
+            //  Guardar archivo en el sistema de archivos
+            String savedFilePath = fotoService.guardarArchivoFisico(fotoBytes, filename);
+            System.out.println("   Archivo guardado en: " + savedFilePath);
+
+            //  Crear objeto Foto SIN los bytes (solo metadatos y URL)
+            Foto foto = new Foto();
+            foto.setUrl(savedFilePath);                // Ruta del archivo
+            foto.setDatos(null);                       // NO guardar bytes en BD
+            foto.setTipo(contentType);
+            foto.setTamanio((int) file.getSize());
+            foto.setFechaSubida(LocalDateTime.now());
+            foto.setDescripcion("Foto de perfil");
+
+            // Guardar metadatos en la BD
+            Foto fotoGuardada = fotoService.save(foto);
+
+            System.out.println(" [FotoController] Foto guardada - ID: " + fotoGuardada.getIdFoto());
+            System.out.println("   URL: " + fotoGuardada.getUrl());
+            System.out.println("   Tipo: " + fotoGuardada.getTipo());
+            System.out.println("   Tamaño: " + fotoGuardada.getTamanio() + " bytes");
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(fotoGuardada);
+
+        } catch (IOException e) {
+            System.err.println(" Error al leer archivo: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al procesar el archivo: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println(" Error al subir foto: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error interno del servidor: " + e.getMessage());
+        }
+    }
+
+    //  Método mejorado: Usa Tika primero, luego fallback a extensión
+    private String determineContentTypeWithTika(byte[] fileBytes, String filename) {
+        try {
+            Tika tika = new Tika();
+            String detectedType = tika.detect(fileBytes);
+
+            System.out.println("   MIME type detectado por Tika: " + detectedType);
+
+            // Validar que sea una imagen
+            if (detectedType != null && detectedType.startsWith("image/")) {
+                return detectedType;
+            }
+        } catch (Exception e) {
+            System.out.println(" Tika no disponible, usando detección por extensión");
+        }
+
+        // Fallback: Determinar por extensión
+        return determineContentTypeByExtension(filename);
+    }
+
+    //  Método auxiliar: Determinar tipo MIME desde extensión
+    private String determineContentTypeByExtension(String filename) {
+        if (filename == null) {
+            return null;
+        }
+
+        String lowerFilename = filename.toLowerCase();
+
+        if (lowerFilename.endsWith(".jpg") || lowerFilename.endsWith(".jpeg")) {
+            return "image/jpeg";
+        } else if (lowerFilename.endsWith(".png")) {
+            return "image/png";
+        } else if (lowerFilename.endsWith(".gif")) {
+            return "image/gif";
+        } else if (lowerFilename.endsWith(".webp")) {
+            return "image/webp";
+        } else if (lowerFilename.endsWith(".bmp")) {
+            return "image/bmp";
+        } else if (lowerFilename.endsWith(".svg")) {
+            return "image/svg+xml";
+        }
+
+        return null;
+    }
+
+    // ================== OPERACIONES CRUD BÁSICAS ==================
 
     /**
      * Obtiene todas las fotos registradas en el sistema.
-     * @return ResponseEntity con lista de fotos o estado NO_CONTENT si no hay registros.
      */
     @GetMapping
     @Operation(summary = "Obtener todas las fotos", description = "Obtiene una lista con todas las fotos.")
@@ -52,8 +180,6 @@ public class FotoController {
 
     /**
      * Busca una foto por su ID.
-     * @param id ID de la foto a buscar.
-     * @return ResponseEntity con la foto encontrada o un mensaje de error.
      */
     @GetMapping("/{id}")
     @Operation(summary = "Obtener una foto por su ID", description = "Obtiene una foto al buscarla por su ID.")
@@ -74,38 +200,23 @@ public class FotoController {
     }
 
     /**
-     * Crea una nueva foto.
-     * @param foto Datos de la foto a crear.
-     * @return ResponseEntity con la foto creada o un DTO de error/éxito.
+     * Crea una nueva foto (JSON).
      */
-    @PostMapping // CAMBIAR TIPO DE RETORNO Y LÓGICA
-    @Operation(summary = "Crear una nueva foto", description = "Crea una nueva foto en el sistema.")
+    @PostMapping
+    @Operation(summary = "Crear una nueva foto", description = "Crea una nueva foto en el sistema (JSON).")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Foto creada con éxito.",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Foto.class))), // o UploadResponseDTO
+                            schema = @Schema(implementation = Foto.class))),
             @ApiResponse(responseCode = "400", description = "Error en la solicitud...")
     })
     public ResponseEntity<?> agregarFoto(@RequestBody @Parameter(description = "Datos de la foto a crear", required = true)
                                          Foto foto) {
         try {
-            // 1. Guardar y obtener el objeto Foto completo con el ID generado
             Foto fotoGuardada = fotoService.save(foto);
-
-            // 2. Devolver el objeto Foto guardado con HTTP 201
             return ResponseEntity.status(HttpStatus.CREATED).body(fotoGuardada);
-
-            // Si usaras un DTO, podrías devolver:
-            // return ResponseEntity.status(HttpStatus.CREATED).body(new UploadResponseDTO(true, "Foto creada con éxito.", fotoGuardada));
-
         } catch (RuntimeException e) {
-            // Para mantener la estructura de tu FE, puedes devolver un objeto de error
-            // Opción 1 (Simple): Devolver un String con el error y el código 400
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-
-            // Opción 2 (Mejor): Devolver un DTO de Error estandarizado
-            // return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponseDTO(e.getMessage()));
-
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor.");
         }
@@ -113,16 +224,13 @@ public class FotoController {
 
     /**
      * Actualiza una foto existente.
-     * @param id ID de la foto a actualizar.
-     * @param foto Datos actualizados de la foto.
-     * @return ResponseEntity con mensaje de confirmación o error.
      */
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar una foto existente", description = "Actualiza los datos de una foto por su ID.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Foto actualizada con éxito."),
             @ApiResponse(responseCode = "404", description = "Foto no encontrada."),
-            @ApiResponse(responseCode = "400", description = "Error en la solicitud, la URL ya existe o los datos son inválidos."),
+            @ApiResponse(responseCode = "400", description = "Error en la solicitud."),
             @ApiResponse(responseCode = "500", description = "Error interno del servidor.")
     })
     public ResponseEntity<String> actualizarFoto(@Parameter(description = "ID de la foto a actualizar", required = true)
@@ -143,8 +251,6 @@ public class FotoController {
 
     /**
      * Elimina una foto del sistema.
-     * @param id ID de la foto a eliminar.
-     * @return ResponseEntity con mensaje de confirmación.
      */
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar una foto", description = "Elimina una foto del sistema por su ID.")

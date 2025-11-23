@@ -47,43 +47,70 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // 🔥 AGREGAR ESTA LÍNEA
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Rutas públicas
+                        //  Rutas públicas
                         .requestMatchers("/api-perfiles/v1/auth/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
 
-                        // ** CRÍTICO CORREGIDO: Permitir acceso a ADMIN y ROLE_SERVICE **
-                        // Nota: El filtro S2S establece la autoridad como SimpleGrantedAuthority("ROLE_SERVICE"),
-                        // pero la regla hasAuthority() la verifica como "ROLE_SERVICE".
+                        //  OBTENER USUARIOS - S2S (ROLE_SERVICE) O ADMIN
                         .requestMatchers(HttpMethod.GET, "/api-perfiles/v1/usuarios")
                         .hasAnyAuthority("ADMIN", "ROLE_SERVICE")
 
-                        // Si Incidentes llama a /usuarios/{id}, también debe tener permiso
+                        //  OBTENER CIUDADANOS - S2S (ROLE_SERVICE) O ADMIN
+                        .requestMatchers(HttpMethod.GET, "/api-perfiles/v1/ciudadanos/**")
+                        .hasAnyAuthority("ADMIN", "ROLE_SERVICE")
+
+                        //  OBTENER BOMBEROS - S2S (ROLE_SERVICE) O ADMIN
+                        .requestMatchers(HttpMethod.GET, "/api-perfiles/v1/bomberos/**")
+                        .hasAnyAuthority("ADMIN", "ROLE_SERVICE")
+
+                        //  ACTUALIZAR CIUDADANOS - S2S (ROLE_SERVICE) O ADMIN
+                        .requestMatchers(HttpMethod.PUT, "/api-perfiles/v1/ciudadanos/**")
+                        .hasAnyAuthority("ADMIN", "ROLE_SERVICE")
+
+                        //  ACTUALIZAR BOMBEROS - S2S (ROLE_SERVICE) O ADMIN
+                        .requestMatchers(HttpMethod.PUT, "/api-perfiles/v1/bomberos/**")
+                        .hasAnyAuthority("ADMIN", "ROLE_SERVICE")
+
+                        //  OBTENER USUARIO POR ID - S2S (ROLE_SERVICE) O ADMIN
                         .requestMatchers(HttpMethod.GET, "/api-perfiles/v1/usuarios/{id}")
                         .hasAnyAuthority("ADMIN", "ROLE_SERVICE")
 
-                        // Opcional: Si mantienes la ruta /s2s para ser más explícito
+                        //  RUTAS S2S EXPLÍCITAS
                         .requestMatchers("/api-perfiles/v1/perfiles/s2s/**")
                         .hasAuthority("ROLE_SERVICE")
 
-                        // Las demás rutas requieren autenticación (token JWT o SERVICE)
+                        //  FOTO DE USUARIO - CUALQUIER USUARIO AUTENTICADO (JWT O S2S)
+                        // Los usuarios pueden modificar su propia foto
+                        .requestMatchers(HttpMethod.POST, "/api-perfiles/v1/usuarios/{id}/subir-foto")
+                        .authenticated()  //  Cualquier usuario autenticado
+
+                        .requestMatchers(HttpMethod.DELETE, "/api-perfiles/v1/usuarios/{id}/foto")
+                        .authenticated()  //  Cualquier usuario autenticado
+
+                        .requestMatchers(HttpMethod.GET, "/api-perfiles/v1/usuarios/{id}/foto")
+                        .authenticated()  //  Agregar GET también
+
+                        //  ACTUALIZAR USUARIO - CUALQUIER USUARIO AUTENTICADO PUEDE ACTUALIZAR SU PERFIL
+                        .requestMatchers(HttpMethod.PUT, "/api-perfiles/v1/usuarios/{id}")
+                        .authenticated()
+
+                        //  Las demás rutas requieren autenticación
                         .anyRequest().authenticated()
                 )
-                // El filtro S2S se añade primero
+                //  Orden importante: Primero S2S, luego JWT
                 .addFilterBefore(serviceAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                // Luego el filtro JWT
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // 🔥 AGREGAR ESTE MÉTODO PARA CORS
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));  // Permite cualquier origen en desarrollo
+        configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

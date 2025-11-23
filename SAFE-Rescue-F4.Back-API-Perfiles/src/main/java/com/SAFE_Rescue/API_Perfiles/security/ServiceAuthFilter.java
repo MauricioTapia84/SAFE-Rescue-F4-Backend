@@ -25,7 +25,7 @@ public class ServiceAuthFilter extends OncePerRequestFilter {
     @Value("${service.auth.secret}")
     private String systemAuthSecret;
 
-    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String BEARER_PREFIX = "Bearer";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,

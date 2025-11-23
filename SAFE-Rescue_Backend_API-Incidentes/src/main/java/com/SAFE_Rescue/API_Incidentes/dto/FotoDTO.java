@@ -1,45 +1,35 @@
 package com.SAFE_Rescue.API_Incidentes.dto;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-/**
- * @class FotoDTO
- * @brief DTO (Data Transfer Object) para representar la entidad Foto,
- * que reside en el API de Fotos. Usado para deserializar la respuesta del WebClient.
- */
-@Schema(description = "DTO que contiene la metadata de una fotografía de incidente.")
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
 public class FotoDTO {
 
-    /**
-     * Identificador único de la foto.
-     */
-    @Schema(description = "Identificador único de la foto", example = "1")
+    @JsonProperty("idFoto")
     private Integer idFoto;
 
-    /**
-     * URL de acceso a la foto.
-     */
-    @Schema(description = "URL de la foto del usuario", example = "http://api-fotos.com/fotos/user123.jpg")
+    @JsonProperty("url")
     private String url;
 
-    /**
-     * Fecha y hora en que se subió la Foto.
-     */
-    @Schema(description = "Fecha y hora en que se subió la Foto", example = "2025-09-09T10:30:00")
+    @JsonProperty("datos")
+    private byte[] datos;
+
+    @JsonProperty("tipo")
+    private String tipo;
+
+    @JsonProperty("tamanio")
+    private Integer tamanio;
+
+    @JsonProperty("fechaSubida")
     private LocalDateTime fechaSubida;
 
-    /**
-     * Descripción proporcionada para la foto.
-     */
-    @Schema(description = "Descripción de la foto", example = "Fotografía de incidente.")
+    @JsonProperty("descripcion")
     private String descripcion;
-
 }

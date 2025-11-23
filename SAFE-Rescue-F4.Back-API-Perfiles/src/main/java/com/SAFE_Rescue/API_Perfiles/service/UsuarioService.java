@@ -167,22 +167,48 @@ public class UsuarioService {
         }
     }
 
-    public Usuario subirYActualizarFotoUsuario(Integer id, MultipartFile archivo) {
-        String fotoIdString = fotoClient.uploadFoto(archivo);
+    public Usuario subirYActualizarFotoUsuario(int idUsuario, MultipartFile fotoBinaria) {
+        System.out.println(" [UsuarioService] Subiendo foto para userId: " + idUsuario);
+        System.out.println("   Nombre archivo: " + fotoBinaria.getOriginalFilename());
+        System.out.println("   Tamaño: " + fotoBinaria.getSize() + " bytes");
 
-        Integer idFoto;
         try {
-            idFoto = Integer.parseInt(fotoIdString);
-        } catch (NumberFormatException e) {
-            throw new RuntimeException("La API externa de fotos no devolvió un ID de foto válido.", e);
+            // 1. Obtener usuario
+            System.out.println(" Buscando usuario con ID: " + idUsuario);
+            Usuario usuario = usuarioRepository.findById(idUsuario)
+                    .orElseThrow(() -> {
+                        System.err.println(" Usuario no encontrado con ID: " + idUsuario);
+                        return new RuntimeException("Usuario no encontrado con ID: " + idUsuario);
+                    });
+            System.out.println(" Usuario encontrado: " + usuario.getNombre());
+
+            // 2. Subir foto a API de Registros
+            System.out.println(" Subiendo foto a API de Registros...");
+            byte[] fotobytes = fotoBinaria.getBytes();
+
+            //  Obtener ID de la foto
+            Integer idFotoGuardada = fotoClient.uploadFoto(fotobytes, fotoBinaria.getOriginalFilename());
+
+            System.out.println(" Foto subida exitosamente - ID: " + idFotoGuardada);
+
+            // 3. Actualizar usuario con el ID de la foto
+            System.out.println(" Actualizando usuario con ID de foto: " + idFotoGuardada);
+            usuario.setIdFoto(idFotoGuardada);
+            Usuario usuarioActualizado = usuarioRepository.save(usuario);
+
+            System.out.println(" Usuario actualizado con foto - ID: " + idFotoGuardada);
+            System.out.println("═══════════════════════════════════════════");
+
+            //  RETORNAR el usuario actualizado
+            return usuarioActualizado;
+
         } catch (RuntimeException e) {
-            throw new RuntimeException("Error al subir la foto a la API externa.", e);
+            System.err.println(" Error RuntimeException: " + e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            System.err.println(" Error general en subirYActualizarFotoUsuario: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Error al subir la foto: " + e.getMessage(), e);
         }
-
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Usuario no encontrado con ID: " + id));
-
-        usuario.setIdFoto(idFoto);
-        return usuarioRepository.save(usuario);
     }
 }

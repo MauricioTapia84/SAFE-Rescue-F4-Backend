@@ -49,6 +49,16 @@ public class Foto {
     @Schema(description = "URL de la foto del usuario", example = "http://api-fotos.com/fotos/user123.jpg")
     private String url;
 
+    @Lob
+    @Column(name = "datos")
+    private byte[] datos;
+
+    @Column(name = "tipo")
+    private String tipo;  // ej: "image/jpeg"
+
+    @Column(name = "tamanio")
+    private Integer tamanio;
+
     /**
      * Fecha y hora exacta en la que se subió o se registró la foto.
      * <p>

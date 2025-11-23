@@ -1,63 +1,123 @@
 package com.SAFE_Rescue.API_Perfiles.util;
 
-import io.jsonwebtoken.Jwts; // <-- NECESARIA
-import io.jsonwebtoken.SignatureAlgorithm; // <-- NECESARIA
-import io.jsonwebtoken.security.Keys; // <-- RECOMENDADO para manejo de claves
+import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Base64;
 
 @Component
 public class JwtUtil {
 
-    private final Key signingKey = Keys.secretKeyFor(SignatureAlgorithm.HS256); // O usar la cadena de arriba:
+    // INYECTAR LA CLAVE DESDE application.properties
+    @Value("${jwt.secret}")
+    private String jwtSecret;
 
     // Tiempo de vida del token en milisegundos (10 horas)
     private final long JWT_TOKEN_VALIDITY = 1000 * 60 * 60 * 10;
 
     /**
+     * Obtiene la clave de firma (usando la clave del properties)
+     */
+    private Key getSigningKey() {
+        //  Decodificar la clave base64 y convertir a Key
+        byte[] decodedKey = Base64.getDecoder().decode(jwtSecret);
+        return Keys.hmacShaKeyFor(decodedKey);
+    }
+
+    /**
      * Genera un Token JWT para el usuario especificado.
      */
     public String generateToken(Integer id, String tipoPerfil) {
-
-        // Define los claims (id, tipoPerfil, etc.)
         Map<String, Object> claims = new HashMap<>();
         claims.put("tipoPerfil", tipoPerfil);
 
+        System.out.println(" Generando token JWT para userId: " + id + ", tipoPerfil: " + tipoPerfil);
+
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(id.toString()) // El ID del usuario (el 'subject' del token)
+                .setSubject(id.toString())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + JWT_TOKEN_VALIDITY))
-                .signWith(signingKey, SignatureAlgorithm.HS256) // Usar el objeto Key
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // ----------------------------------------------------------------------
-    // ⭐ OBJETOS ADICIONALES NECESARIOS (Mínimo)
-    // ----------------------------------------------------------------------
-
     /**
-     * Obtiene los claims (cuerpo) del token.
+     * Obtiene los claims del token.
      */
-    public io.jsonwebtoken.Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(signingKey)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+    public Claims extractAllClaims(String token) {
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (JwtException e) {
+            System.err.println(" Error extrayendo claims: " + e.getMessage());
+            throw e;
+        }
     }
 
     /**
-     * Valida si el token es válido (no expirado y correctamente firmado).
+     * Extrae el subject (userId) del token
      */
-    public Boolean validateToken(String token, Integer userId) {
-        final Integer tokenUserId = Integer.parseInt(extractAllClaims(token).getSubject());
-        final Date expiration = extractAllClaims(token).getExpiration();
+    public String extractSubject(String token) {
+        return extractAllClaims(token).getSubject();
+    }
 
-        return (tokenUserId.equals(userId) && expiration.after(new Date()));
+    /**
+     * Valida el token con userId específico
+     */
+    public boolean validateToken(String token, int userId) {
+        try {
+            Claims claims = extractAllClaims(token);
+
+            String tokenUserId = claims.getSubject();
+
+            if (!tokenUserId.equals(String.valueOf(userId))) {
+                System.err.println(" userId no coincide. Token: " + tokenUserId + ", Esperado: " + userId);
+                return false;
+            }
+
+            if (claims.getExpiration().before(new Date())) {
+                System.err.println(" Token expirado");
+                return false;
+            }
+
+            System.out.println(" Token válido para userId: " + userId);
+            return true;
+        } catch (ExpiredJwtException e) {
+            System.err.println(" Token expirado: " + e.getMessage());
+            return false;
+        } catch (JwtException e) {
+            System.err.println(" JWT inválido: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Valida el token sin verificar userId
+     */
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token);
+            System.out.println(" Token JWT válido");
+            return true;
+        } catch (ExpiredJwtException e) {
+            System.err.println(" Token expirado");
+            return false;
+        } catch (JwtException e) {
+            System.err.println(" JWT inválido: " + e.getMessage());
+            return false;
+        }
     }
 }

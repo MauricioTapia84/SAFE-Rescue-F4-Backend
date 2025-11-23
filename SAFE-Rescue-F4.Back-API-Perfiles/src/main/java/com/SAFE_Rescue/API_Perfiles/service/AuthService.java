@@ -57,17 +57,17 @@ public class AuthService {
 
         // 2. Obtener TipoUsuario para Ciudadano (id = 5)
         TipoUsuario tipoUsuario = tipoUsuarioService.findById(5);
-        System.out.println(" ✅ TipoUsuario obtenido: " + tipoUsuario.getNombre());
+        System.out.println("  TipoUsuario obtenido: " + tipoUsuario.getNombre());
 
         // 3. Crear dirección en API de Geolocalización PRIMERO
         DireccionDTO direccionCreada = crearDireccionEnGeolocalizacion(request.getDireccion());
-        System.out.println(" ✅ Dirección creada en Geolocalización - ID: " + direccionCreada.getIdDireccion());
+        System.out.println("  Dirección creada en Geolocalización - ID: " + direccionCreada.getIdDireccion());
 
         // 4. Crear y guardar Ciudadano
         Ciudadano ciudadano = crearCiudadano(request, tipoUsuario, direccionCreada.getIdDireccion());
         Ciudadano ciudadanoGuardado = ciudadanoRepository.save(ciudadano);
 
-        System.out.println(" ✅ Ciudadano creado - ID: " + ciudadanoGuardado.getIdUsuario());
+        System.out.println("  Ciudadano creado - ID: " + ciudadanoGuardado.getIdUsuario());
         System.out.println(" ========== REGISTRO COMPLETO EXITOSO ==========");
 
         return ciudadanoGuardado;
@@ -233,8 +233,19 @@ public class AuthService {
 
         // 4. Generar token
         System.out.println(" GENERANDO TOKEN JWT...");
+        System.out.println("   userId: " + usuario.getIdUsuario());
+        System.out.println("   tipoPerfil: " + tipoPerfil);
+
         String token = jwtUtil.generateToken(usuario.getIdUsuario(), tipoPerfil);
-        System.out.println(" TOKEN GENERADO: " + (token != null ? "***" : "null"));
+
+        if (token == null || token.isEmpty()) {
+            System.err.println(" ERROR: Token es nulo o vacío");
+            throw new RuntimeException("Error al generar el token JWT");
+        }
+
+        System.out.println(" ✅ TOKEN GENERADO");
+        System.out.println("   Longitud: " + token.length() + " caracteres");
+        System.out.println("   Primeros 50 chars: " + token.substring(0, Math.min(50, token.length())) + "...");
 
         // 5. Construir respuesta
         AuthResponseDTO response = new AuthResponseDTO();

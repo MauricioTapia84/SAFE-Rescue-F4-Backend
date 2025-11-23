@@ -140,6 +140,7 @@ public class UsuarioController {
             @ApiResponse(responseCode = "200", description = "Foto subida y usuario retornado con éxito.",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = Usuario.class))),
+            @ApiResponse(responseCode = "400", description = "Error al subir la foto o archivo inválido."),
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado."),
             @ApiResponse(responseCode = "500", description = "Error al comunicarse con el servicio de fotos o al actualizar la DB.")
     })
@@ -149,7 +150,32 @@ public class UsuarioController {
             @Parameter(description = "Archivo de imagen a subir", required = true)
             @RequestParam("foto") MultipartFile archivo) {
 
-        Usuario usuarioActualizado = usuarioService.subirYActualizarFotoUsuario(id, archivo);
-        return ResponseEntity.ok(usuarioActualizado);
+        System.out.println(" [UsuarioController] Recibiendo subida de foto para userId: " + id);
+        System.out.println("   Archivo: " + archivo.getOriginalFilename());
+        System.out.println("   Tamaño: " + archivo.getSize() + " bytes");
+
+        try {
+            if (archivo.isEmpty()) {
+                System.err.println(" Archivo vacío");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            }
+
+            //  Llamar servicio que retorna el Usuario actualizado
+            Usuario usuarioActualizado = usuarioService.subirYActualizarFotoUsuario(id, archivo);
+
+            System.out.println(" [UsuarioController] Foto subida exitosamente");
+            System.out.println("   Usuario actualizado - ID foto: " + usuarioActualizado.getIdFoto());
+
+            return ResponseEntity.ok(usuarioActualizado);
+
+        } catch (RuntimeException e) {
+            System.err.println(" [UsuarioController] Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        } catch (Exception e) {
+            System.err.println(" [UsuarioController] Error inesperado: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
+
 }

@@ -12,13 +12,13 @@ SAFE Rescue es una aplicación diseñada para la gestión eficiente y rápida de
 
 ## Últimos cambios
 
-### ❚❙❘ VERSIÓN 0.0.10
-> <br>• Se modificaron diversos archivos, entre: Controller, Services y Repository.
-> <br>• Se agregó el dato de nombreUsuario a la entidad Usuario de la base de datos.
-> <br>• Se modificó en general la entidad Comuna para poder agregarle una relación con la entidad Región.
-> <br>• Se ajustó la lógica para un correcto funcionamiento en Kotlin y la Web React.
-> <br>• El sistema de incidente es perfectamente funcional.
-> <br> > > > Se intentó cargar el historial de incidentes desde el front hacia el back, la idea se descartó por ser una mala práctica.
+### ❚❙❘ VERSIÓN 0.0.11
+
+> <br>• Se modificaron la autentificación de la api de Perfiles
+> <br>• Se modificaron lso métodos de subir imágenes
+> <br>• Se implementó una función para guardar las fotos en el backend (luego se puede cambiar para guardarlas en el servidor)
+> <br>• Se agregan los corsconfig para todas las apis
+> <br>• 
 > <br>
 
 ---

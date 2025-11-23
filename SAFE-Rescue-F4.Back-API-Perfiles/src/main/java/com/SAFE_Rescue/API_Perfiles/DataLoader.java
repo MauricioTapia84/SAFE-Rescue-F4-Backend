@@ -267,11 +267,11 @@ public class DataLoader implements CommandLineRunner {
                 usuario.setTelefono(crearTelefonoUnico());
                 usuario.setCorreo(crearCorreoUnico());
 
-                // 🔐 CONTRASEÑA HASHEADAS
+                //  CONTRASEÑA HASHEADAS
                 String rawPassword = "password123";
                 String hashedPassword = passwordEncoder.encode(rawPassword);
                 usuario.setContrasenia(hashedPassword);
-                System.out.println("🔐 Contraseña hasheada para " + usuario.getCorreo() + ": " + rawPassword + " -> " + hashedPassword);
+                System.out.println(" Contraseña hasheada para " + usuario.getCorreo() + ": " + rawPassword + " -> " + hashedPassword);
 
                 usuario.setIntentosFallidos(0);
                 usuario.setRazonBaneo(null);

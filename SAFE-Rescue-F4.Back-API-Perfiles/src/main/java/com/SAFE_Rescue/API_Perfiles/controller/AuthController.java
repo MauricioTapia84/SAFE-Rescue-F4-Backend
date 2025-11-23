@@ -25,14 +25,9 @@ public class AuthController {
     private AuthService authService;
 
     public AuthController() {
-        System.out.println(" ✅ AuthController instanciado!");
+        System.out.println("  AuthController instanciado!");
     }
 
-    @GetMapping("/test")
-    @Operation(summary = "Endpoint de prueba", description = "Verifica que el controlador esté funcionando")
-    public String test() {
-        return "AuthController funciona correctamente!";
-    }
 
     @PostMapping("/login")
     @Operation(summary = "Iniciar sesión", description = "Autentica un usuario y genera token JWT")
@@ -43,18 +38,18 @@ public class AuthController {
     })
     public ResponseEntity<AuthResponseDTO> login(@RequestBody @Valid LoginRequestDTO request) {
         try {
-            System.out.println(" 🔐 Intento de login para: " + request.getCorreo());
+            System.out.println("  Intento de login para: " + request.getCorreo());
 
             AuthResponseDTO response = authService.authenticateAndGenerateToken(
                     request.getCorreo(),
                     request.getContrasena()
             );
 
-            System.out.println(" ✅ Login exitoso para: " + request.getCorreo());
+            System.out.println("  Login exitoso para: " + request.getCorreo());
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            System.err.println(" ❌ Error en login: " + e.getMessage());
+            System.err.println("  Error en login: " + e.getMessage());
 
             // Puedes personalizar las respuestas según el tipo de error
             if (e.getMessage().contains("no encontrado")) {
@@ -81,15 +76,15 @@ public class AuthController {
 
             Ciudadano nuevoCiudadano = authService.registerNewCiudadano(request);
 
-            System.out.println(" ✅ Ciudadano registrado exitosamente - ID: " + nuevoCiudadano.getIdUsuario());
+            System.out.println("  Ciudadano registrado exitosamente - ID: " + nuevoCiudadano.getIdUsuario());
             return ResponseEntity.status(HttpStatus.CREATED).body(nuevoCiudadano);
 
         } catch (UserAlreadyExistsException e) {
-            System.err.println(" ❌ Usuario ya existe: " + e.getMessage());
+            System.err.println("  Usuario ya existe: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
 
         } catch (Exception e) {
-            System.err.println(" ❌ Error en registro: " + e.getMessage());
+            System.err.println("  Error en registro: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error interno del servidor: " + e.getMessage());
         }
