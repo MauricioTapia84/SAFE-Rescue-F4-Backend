@@ -111,7 +111,7 @@ public class AuthService {
      */
     private DireccionDTO crearDireccionEnGeolocalizacion(DireccionRequestDTO direccionRequest) {
         try {
-            System.out.println(" 📍 Creando dirección en microservicio de Geolocalización...");
+            System.out.println("  Creando dirección en microservicio de Geolocalización...");
 
             DireccionDTO direccionDTO = new DireccionDTO();
 
@@ -134,23 +134,23 @@ public class AuthService {
 
                 coordenadas.setLatitud(direccionRequest.getCoordenadas().getLatitud());
                 coordenadas.setLongitud(direccionRequest.getCoordenadas().getLongitud());
-                System.out.println(" 📍 Usando coordenadas proporcionadas por el usuario");
+                System.out.println("  Usando coordenadas proporcionadas por el usuario");
             } else {
                 // Coordenadas por defecto (Santiago centro)
                 coordenadas.setLatitud(-33.45694);
                 coordenadas.setLongitud(-70.64827);
-                System.out.println(" 📍 Usando coordenadas por defecto");
+                System.out.println("  Usando coordenadas por defecto");
             }
             direccionDTO.setCoordenadas(coordenadas);
 
             // Usar cliente para guardar la dirección
             DireccionDTO direccionCreada = geolocalizacionClient.guardarDireccion(direccionDTO);
-            System.out.println(" 📍 Dirección creada exitosamente - ID: " + direccionCreada.getIdDireccion());
+            System.out.println("  Dirección creada exitosamente - ID: " + direccionCreada.getIdDireccion());
 
             return direccionCreada;
 
         } catch (Exception e) {
-            System.err.println(" ❌ Error al crear dirección en Geolocalización: " + e.getMessage());
+            System.err.println("  Error al crear dirección en Geolocalización: " + e.getMessage());
             throw new RuntimeException("No se pudo crear la dirección en el servicio de geolocalización: " + e.getMessage());
         }
     }
@@ -208,15 +208,17 @@ public class AuthService {
         System.out.println(" CONTRASEÑA VÁLIDA");
 
         // 3. Determinar tipo de perfil
-        System.out.println("👤 DETERMINANDO TIPO DE PERFIL...");
+        System.out.println(" DETERMINANDO TIPO DE PERFIL...");
         String tipoPerfil;
         Object userData;
 
         Optional<Ciudadano> ciudadanoOpt = usuarioRepository.findCiudadanoById(usuario.getIdUsuario());
         Optional<Bombero> bomberoOpt = usuarioRepository.findBomberoById(usuario.getIdUsuario());
+        Optional<Usuario> userOpt = usuarioRepository.findById(usuario.getIdUsuario());
 
         System.out.println("   ¿Es ciudadano?: " + ciudadanoOpt.isPresent());
         System.out.println("   ¿Es bombero?: " + bomberoOpt.isPresent());
+        System.out.println("   ¿Esta registrado?: " + userOpt.isPresent());
 
         if (ciudadanoOpt.isPresent()) {
             tipoPerfil = "CIUDADANO";
@@ -226,6 +228,10 @@ public class AuthService {
             tipoPerfil = "BOMBERO";
             userData = bomberoOpt.get();
             System.out.println(" TIPO: BOMBERO");
+        } else if (userOpt.isPresent()) {
+            tipoPerfil = "USUARIO";
+            userData =userOpt.get();
+            System.out.println(" TIPO: OTROS");
         } else {
             System.out.println(" TIPO DE PERFIL NO DETERMINADO");
             throw new RuntimeException("Tipo de perfil no determinado para el usuario");
@@ -243,7 +249,7 @@ public class AuthService {
             throw new RuntimeException("Error al generar el token JWT");
         }
 
-        System.out.println(" ✅ TOKEN GENERADO");
+        System.out.println("  TOKEN GENERADO");
         System.out.println("   Longitud: " + token.length() + " caracteres");
         System.out.println("   Primeros 50 chars: " + token.substring(0, Math.min(50, token.length())) + "...");
 

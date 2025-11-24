@@ -12,13 +12,14 @@ SAFE Rescue es una aplicación diseñada para la gestión eficiente y rápida de
 
 ## Últimos cambios
 
-### ❚❙❘ VERSIÓN 0.0.11
+### ❚❙❘ VERSIÓN 0.0.11.1
 
-> <br>• Se modificaron la autentificación de la api de Perfiles
-> <br>• Se modificaron lso métodos de subir imágenes
-> <br>• Se implementó una función para guardar las fotos en el backend (luego se puede cambiar para guardarlas en el servidor)
-> <br>• Se agregan los corsconfig para todas las apis
-> <br>• 
+> <br>• Se modificaron la autentificación de la api de Perfiles.
+> <br>• Se modificaron los métodos de subir imágenes.
+> <br>• Se implementó una función para guardar las fotos en el backend (luego se puede cambiar para guardarlas en el servidor).
+> <br>• Se modifico el auth service para que pueda autenticar a los usuarios de la api de perfiles.
+> <br>• Se agregan los corsconfig para todas las apis.
+> <br>
 > <br>
 
 ---

@@ -1,10 +1,17 @@
+❚❙❘ VERSIÓN 0.0.11.1
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se modificaron la autentificación de la api de Perfiles.
+├─• Se modificaron los métodos de subir imágenes.
+├─• Se implementó una función para guardar las fotos en el backend (luego se puede cambiar para guardarlas en el servidor).
+├─• Se modifico el auth service para que pueda autenticar a los usuarios de la api de perfiles.
+└─• Se agregan los corsconfig para todas las apis.
+
 ❚❙❘ VERSIÓN 0.0.11
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
-├─• Se modificaron la autentificación de la api de Perfiles
-├─• Se modificaron lso métodos de subir imágenes
-├─• Se implementó una función para guardar las fotos en el backend (luego se puede cambiar para guardarlas en el servidor)
-└─• Se agregan los corsconfig para todas las apis
-
+├─• Se modificaron la autentificación de la api de Perfiles.
+├─• Se modificaron lso métodos de subir imágenes.
+├─• Se implementó una función para guardar las fotos en el backend (luego se puede cambiar para guardarlas en el servidor).
+└─• Se agregan los corsconfig para todas las apis.
 
 ❚❙❘ VERSIÓN 0.0.10
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
