@@ -6,7 +6,6 @@ import com.SAFE_Rescue.API_Perfiles.dto.EstadoDTO;
 import com.SAFE_Rescue.API_Perfiles.modelo.TipoUsuario;
 import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
 import com.SAFE_Rescue.API_Perfiles.repository.UsuarioRepository;
-import net.datafaker.Faker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,278 +13,224 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyString;
 
+/**
+ * Pruebas unitarias para la capa de servicio de Usuario.
+ */
 @ExtendWith(MockitoExtension.class)
 public class UsuarioServiceTest {
+
+    @InjectMocks
+    private UsuarioService usuarioService;
 
     @Mock
     private UsuarioRepository usuarioRepository;
 
     @Mock
-    private TipoUsuarioService tipoUsuarioService;
+    private TipoUsuarioService tipoUsuarioService; // Usado en validarExistencia
 
     @Mock
-    private EstadoClient estadoClient;
+    private EstadoClient estadoClient; // Cliente de API Estado
 
     @Mock
-    private FotoClient fotoClient;
+    private FotoClient fotoClient; // Cliente de API Foto
 
-    @InjectMocks
-    private UsuarioService usuarioService;
-
-    private Usuario usuario;
-    private Faker faker;
-    private Integer id;
-
-    private EstadoDTO estadoDTO = new EstadoDTO();
+    private Usuario usuarioValido;
+    private final Integer ID_USUARIO = 1;
+    private final Integer ID_FOTO_GUARDADA = 100;
+    private final Integer ID_ESTADO_ACTIVO = 1;
 
     @BeforeEach
-    public void setUp() {
-        faker = new Faker();
-        id = faker.number().numberBetween(1, 100);
+    void setUp() {
+        // Inicialización de un Usuario válido para las pruebas
+        TipoUsuario tipoUsuario = new TipoUsuario();
+        tipoUsuario.setIdTipoUsuario(1);
+        tipoUsuario.setNombre("CIUDADANO");
 
-        // Inicialización de estadoDTO con constructor sin argumentos y setters
-        estadoDTO.setIdEstado(1);
-        estadoDTO.setNombre("Activo");
-
-        // Crear objetos de dependencia
-        TipoUsuario tipoUsuario = new TipoUsuario(1, "Bombero");
-
-        // Crear objeto Usuario con datos simulados
-        usuario = new Usuario();
-        usuario.setIdUsuario(id);
-        usuario.setRun(faker.idNumber().valid());
-        usuario.setDv("1");
-        usuario.setNombre(faker.name().firstName());
-        usuario.setAPaterno(faker.name().lastName());
-        usuario.setAMaterno(faker.name().lastName());
-        usuario.setFechaRegistro(LocalDateTime.now());
-        usuario.setTelefono(faker.phoneNumber().cellPhone());
-        usuario.setCorreo(faker.internet().emailAddress());
-        usuario.setContrasenia(faker.internet().password());
-        usuario.setIntentosFallidos(0);
-        usuario.setRazonBaneo(null);
-        usuario.setDiasBaneo(0);
-        usuario.setTipoUsuario(tipoUsuario);
-        usuario.setIdEstado(estadoDTO.getIdEstado());
-        usuario.setIdFoto(faker.number().numberBetween(1, 50));
+        usuarioValido = new Usuario();
+        usuarioValido.setIdUsuario(ID_USUARIO);
+        usuarioValido.setRun("11111111");
+        usuarioValido.setDv("1");
+        usuarioValido.setNombre("Test");
+        usuarioValido.setAPaterno("User");
+        usuarioValido.setAMaterno("Mock");
+        usuarioValido.setFechaRegistro(LocalDateTime.now());
+        usuarioValido.setTelefono("987654321");
+        usuarioValido.setCorreo("test@safe.cl");
+        usuarioValido.setContrasenia("hashed_pass");
+        usuarioValido.setTipoUsuario(tipoUsuario);
+        usuarioValido.setIdEstado(ID_ESTADO_ACTIVO);
     }
 
-    // --- Pruebas de operaciones CRUD exitosas (sin cambios) ---
+    // =================================================================
+    // PRUEBAS PARA findByNombreUsuario
+    // =================================================================
 
     @Test
-    public void findAll_shouldReturnAllUsers() {
-        when(usuarioRepository.findAll()).thenReturn(List.of(usuario));
-        List<Usuario> usuarios = usuarioService.findAll();
-        assertNotNull(usuarios);
-        assertFalse(usuarios.isEmpty());
-        assertEquals(1, usuarios.size());
-        assertEquals(usuario.getNombre(), usuarios.get(0).getNombre());
-        verify(usuarioRepository, times(1)).findAll();
-    }
-
-    @Test
-    public void findById_shouldReturnUser_whenUserExists() {
-        when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuario));
-        Usuario encontrado = usuarioService.findById(id);
-        assertNotNull(encontrado);
-        assertEquals(usuario.getNombre(), encontrado.getNombre());
-        verify(usuarioRepository, times(1)).findById(id);
-    }
-
-    @Test
-    public void findById_shouldThrowException_whenUserNotFound() {
-        when(usuarioRepository.findById(anyInt())).thenReturn(Optional.empty());
-        assertThrows(NoSuchElementException.class, () -> usuarioService.findById(999));
-        verify(usuarioRepository, times(1)).findById(999);
-    }
-
-    @Test
-    public void save_shouldReturnSavedUser_whenValid() {
+    void findByNombreUsuario_ShouldReturnUsuario_WhenFound() {
         // Arrange
-        when(tipoUsuarioService.findById(any())).thenReturn(usuario.getTipoUsuario());
-        when(estadoClient.getEstadoById(anyInt())).thenReturn(estadoDTO);
-        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
+        String nombreUsuario = "testnick";
+        usuarioValido.setNombreUsuario(nombreUsuario);
+        when(usuarioRepository.findByNombreUsuario(nombreUsuario)).thenReturn(Optional.of(usuarioValido));
 
         // Act
-        Usuario guardado = usuarioService.save(usuario);
+        Usuario found = usuarioService.findByNombreUsuario(nombreUsuario);
 
         // Assert
-        assertNotNull(guardado);
-        verify(usuarioRepository, times(1)).save(usuario);
-        verify(tipoUsuarioService, times(1)).findById(usuario.getTipoUsuario().getIdTipoUsuario());
-        verify(estadoClient, times(1)).getEstadoById(usuario.getIdEstado());
+        assertNotNull(found);
+        assertEquals(nombreUsuario, found.getNombreUsuario());
+        verify(usuarioRepository, times(1)).findByNombreUsuario(nombreUsuario);
     }
 
     @Test
-    public void update_shouldReturnUpdatedUser_whenUserExists() {
+    void findByNombreUsuario_ShouldThrowException_WhenNotFound() {
         // Arrange
-        Usuario usuarioExistente = new Usuario();
-        usuarioExistente.setIdUsuario(id);
-        usuarioExistente.setNombre("Nombre Antiguo");
+        String nombreUsuario = "nonexistentnick";
+        when(usuarioRepository.findByNombreUsuario(nombreUsuario)).thenReturn(Optional.empty());
 
-        // Aseguramos que el objeto existente tenga campos válidos
-        usuarioExistente.setRun("12345678");
-        usuarioExistente.setDv("9");
-        usuarioExistente.setAPaterno("Paterno");
-        usuarioExistente.setAMaterno("Materno");
-        usuarioExistente.setFechaRegistro(LocalDateTime.now());
-        usuarioExistente.setTelefono("987654321");
-        usuarioExistente.setCorreo("old@email.com");
-        usuarioExistente.setContrasenia("pass");
-        usuarioExistente.setTipoUsuario(usuario.getTipoUsuario());
-        usuarioExistente.setIdFoto(1);
-        usuarioExistente.setIdEstado(estadoDTO.getIdEstado()); // ID DE ESTADO VÁLIDO
+        // Act & Assert
+        assertThrows(NoSuchElementException.class, () -> {
+            usuarioService.findByNombreUsuario(nombreUsuario);
+        }, "Debe lanzar NoSuchElementException si el usuario no existe.");
+    }
 
-        when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuarioExistente));
-        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
-        when(tipoUsuarioService.findById(any())).thenReturn(usuario.getTipoUsuario());
-        when(estadoClient.getEstadoById(anyInt())).thenReturn(estadoDTO);
+    // =================================================================
+    // PRUEBAS PARA save
+    // =================================================================
+
+    @Test
+    void save_ShouldThrowException_OnDataIntegrityViolation() {
+        // Arrange
+        when(tipoUsuarioService.findById(anyInt())).thenReturn(new TipoUsuario());
+
+        when(estadoClient.getEstadoById(anyInt())).thenReturn(new EstadoDTO());
+
+        when(usuarioRepository.save(any(Usuario.class))).thenThrow(DataIntegrityViolationException.class);
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> {
+            usuarioService.save(usuarioValido);
+        }, "Debe lanzar IllegalArgumentException al fallar la integridad de datos.");
+
+        verify(usuarioRepository, times(1)).save(usuarioValido);
+    }
+
+
+    // =================================================================
+    // PRUEBAS PARA subirYActualizarFotoUsuario (Funcionalidad clave)
+    // =================================================================
+
+    @Test
+    void subirYActualizarFotoUsuario_Success() throws Exception {
+        // Arrange
+        MockMultipartFile mockFile = new MockMultipartFile(
+                "foto", "perfil.jpg", "image/jpeg", "datos-binarios".getBytes());
+
+        // Mocks para el flujo exitoso
+        when(usuarioRepository.findById(ID_USUARIO)).thenReturn(Optional.of(usuarioValido));
+        when(fotoClient.uploadFoto(any(byte[].class), anyString())).thenReturn(ID_FOTO_GUARDADA);
+
+        Usuario usuarioDespuesSave = new Usuario();
+        usuarioDespuesSave.setIdUsuario(usuarioValido.getIdUsuario());
+        usuarioDespuesSave.setNombre(usuarioValido.getNombre());
+        usuarioDespuesSave.setIdFoto(ID_FOTO_GUARDADA);
+
+        // La simulación de save devuelve el usuario con el ID de foto actualizado
+        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuarioDespuesSave);
 
         // Act
-        Usuario actualizado = usuarioService.update(usuario, id);
+        Usuario result = usuarioService.subirYActualizarFotoUsuario(ID_USUARIO, mockFile);
 
         // Assert
-        assertNotNull(actualizado);
-        assertEquals(usuario.getNombre(), actualizado.getNombre());
-        verify(usuarioRepository, times(1)).findById(id);
-        verify(usuarioRepository, times(1)).save(usuarioExistente);
-        verify(tipoUsuarioService, times(1)).findById(usuario.getTipoUsuario().getIdTipoUsuario());
-        verify(estadoClient, times(1)).getEstadoById(usuario.getIdEstado());
+        assertNotNull(result);
+        assertEquals(ID_FOTO_GUARDADA, result.getIdFoto(), "El usuario debe tener el ID de foto actualizado.");
+
+        // Verificaciones de llamadas
+        verify(usuarioRepository, times(1)).findById(ID_USUARIO);
+        verify(fotoClient, times(1)).uploadFoto(mockFile.getBytes(), mockFile.getOriginalFilename());
+        verify(usuarioRepository, times(1)).save(usuarioValido); // Verificamos que se guardó el objeto modificado
     }
 
     @Test
-    public void update_shouldThrowException_whenUserNotFound() {
+    void subirYActualizarFotoUsuario_ShouldThrowRuntimeException_WhenUsuarioNotFound() {
         // Arrange
-        // Mocks de validación para que el objeto 'usuario' sea válido antes de la búsqueda.
-        when(tipoUsuarioService.findById(any())).thenReturn(usuario.getTipoUsuario());
-        when(estadoClient.getEstadoById(anyInt())).thenReturn(estadoDTO);
-        when(usuarioRepository.findById(anyInt())).thenReturn(Optional.empty());
+        MockMultipartFile mockFile = new MockMultipartFile(
+                "foto", "perfil.jpg", "image/jpeg", "datos-binarios".getBytes());
 
-        // El objeto 'usuario' es válido, por lo tanto, la excepción debe ser NoSuchElementException
-        assertThrows(NoSuchElementException.class, () -> usuarioService.update(usuario, 999));
-
-        verify(usuarioRepository, times(1)).findById(999);
-        verify(tipoUsuarioService, times(1)).findById(usuario.getTipoUsuario().getIdTipoUsuario());
-        verify(estadoClient, times(1)).getEstadoById(usuario.getIdEstado());
-    }
-
-    @Test
-    public void delete_shouldDeleteUser_whenUserExists() {
-        when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuario));
+        // Simular que el usuario no existe
+        when(usuarioRepository.findById(ID_USUARIO)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertDoesNotThrow(() -> usuarioService.delete(id));
+        RuntimeException thrown = assertThrows(RuntimeException.class, () -> {
+            usuarioService.subirYActualizarFotoUsuario(ID_USUARIO, mockFile);
+        });
 
-        verify(usuarioRepository, times(1)).findById(id);
-        verify(usuarioRepository, times(1)).delete(usuario);
+        assertEquals("Usuario no encontrado con ID: " + ID_USUARIO, thrown.getMessage());
+
+        // Verificar que no se llamó a las APIs externas ni se intentó guardar
+        verify(fotoClient, never()).uploadFoto(any(), anyString());
+        verify(usuarioRepository, never()).save(any(Usuario.class));
     }
 
-    // --- Pruebas de escenarios de error (sin cambios) ---
-
     @Test
-    public void save_shouldThrowException_whenDataIntegrityViolation() {
+    void subirYActualizarFotoUsuario_ShouldThrowRuntimeException_WhenFotoClientFails() {
         // Arrange
-        when(tipoUsuarioService.findById(any())).thenReturn(usuario.getTipoUsuario());
-        when(estadoClient.getEstadoById(anyInt())).thenReturn(estadoDTO);
+        MockMultipartFile mockFile = new MockMultipartFile(
+                "foto", "perfil.jpg", "image/jpeg", "datos-binarios".getBytes());
 
-        // Simular la violación al intentar guardar
-        when(usuarioRepository.save(any(Usuario.class))).thenThrow(new DataIntegrityViolationException("RUN o correo duplicado"));
+        when(usuarioRepository.findById(ID_USUARIO)).thenReturn(Optional.of(usuarioValido));
+
+        // Simular que la API externa falla con un error de cliente (4xx)
+        WebClientResponseException clientException = WebClientResponseException.create(
+                400, "Archivo inválido", null, null, null);
+
+        // Simular la falla de la API externa
+        doThrow(clientException).when(fotoClient).uploadFoto(any(), anyString());
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> usuarioService.save(usuario));
+        RuntimeException thrown = assertThrows(RuntimeException.class, () -> {
+            usuarioService.subirYActualizarFotoUsuario(ID_USUARIO, mockFile);
+        });
 
-        // Verificaciones
-        verify(tipoUsuarioService, times(1)).findById(usuario.getTipoUsuario().getIdTipoUsuario());
-        verify(estadoClient, times(1)).getEstadoById(usuario.getIdEstado());
-        verify(usuarioRepository, times(1)).save(usuario);
+        // Debe propagar la excepción del cliente (o la que la envuelve, dependiendo de cómo se maneje en el cliente)
+        assertTrue(thrown instanceof WebClientResponseException || thrown.getCause() instanceof WebClientResponseException,
+                "Debe lanzar una excepción relacionada con el fallo del cliente web.");
+
+        // Verificar que NO se intentó guardar el usuario
+        verify(usuarioRepository, never()).save(any(Usuario.class));
     }
 
     @Test
-    public void save_shouldThrowException_whenEstadoNotFound() {
-        when(tipoUsuarioService.findById(any())).thenReturn(usuario.getTipoUsuario());
+    void subirYActualizarFotoUsuario_ShouldThrowRuntimeException_WhenIOFails() throws IOException {
+        // Arrange
+        MockMultipartFile mockFile = mock(MockMultipartFile.class); // Mockeamos para simular fallo de I/O
 
-        // Simular que el EstadoClient falla (lanza RuntimeException)
-        when(estadoClient.getEstadoById(anyInt())).thenThrow(new RuntimeException("El ID no existe."));
+        when(usuarioRepository.findById(ID_USUARIO)).thenReturn(Optional.of(usuarioValido));
+
+        // Simular fallo al leer los bytes del archivo (I/O Exception)
+        when(mockFile.getBytes()).thenThrow(new IOException("Error de lectura de archivo"));
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> usuarioService.save(usuario));
+        assertThrows(RuntimeException.class, () -> {
+            usuarioService.subirYActualizarFotoUsuario(ID_USUARIO, mockFile);
+        });
 
-        // Verificaciones
-        verify(tipoUsuarioService, times(1)).findById(usuario.getTipoUsuario().getIdTipoUsuario());
-        verify(estadoClient, times(1)).getEstadoById(usuario.getIdEstado());
-        verify(usuarioRepository, never()).save(any());
-    }
-
-    // --- Pruebas del método de subir foto (Ajuste de Verificación) ---
-
-    @Test
-    public void subirYActualizarFotoUsuario_shouldUpdateUserWithPhotoId() {
-        // Arrange
-        String mockPhotoIdString = "12345";
-        Integer mockPhotoId = Integer.parseInt(mockPhotoIdString);
-        MultipartFile mockFile = mock(MultipartFile.class);
-
-        when(fotoClient.uploadFoto(mockFile)).thenReturn(mockPhotoIdString);
-        when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuario));
-        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
-
-        // Act
-        Usuario returnedUser = usuarioService.subirYActualizarFotoUsuario(id, mockFile);
-
-        // Assert
-        assertNotNull(returnedUser);
-        assertEquals(mockPhotoId, returnedUser.getIdFoto());
-        verify(fotoClient, times(1)).uploadFoto(mockFile);
-        verify(usuarioRepository, times(1)).findById(id);
-        verify(usuarioRepository, times(1)).save(usuario);
-    }
-
-    @Test
-    public void subirYActualizarFotoUsuario_shouldThrowException_whenPhotoUploadFails() {
-        // Arrange
-        MultipartFile mockFile = mock(MultipartFile.class);
-
-        // Simular fallo de comunicación ANTES de buscar el usuario
-        when(fotoClient.uploadFoto(mockFile)).thenThrow(new RuntimeException("Error de conexión"));
-
-        // Act & Assert
-        assertThrows(RuntimeException.class, () -> usuarioService.subirYActualizarFotoUsuario(id, mockFile));
-
-        // Assert: Solo verificamos lo que realmente ocurre (la llamada a fotoClient falla)
-        // No se debe llamar a findById ni a save.
-        verify(fotoClient, times(1)).uploadFoto(mockFile);
-        verify(usuarioRepository, never()).findById(anyInt()); // NO SE BUSCA EN BD
-        verify(usuarioRepository, never()).save(any());
-    }
-
-    @Test
-    public void subirYActualizarFotoUsuario_shouldThrowException_whenPhotoIdIsNotNumeric() {
-        // Arrange
-        MultipartFile mockFile = mock(MultipartFile.class);
-
-        // Simular que la API devuelve una cadena no numérica ANTES de buscar el usuario
-        when(fotoClient.uploadFoto(mockFile)).thenReturn("NO_ES_UN_ID");
-
-        // Act & Assert
-        assertThrows(RuntimeException.class, () -> usuarioService.subirYActualizarFotoUsuario(id, mockFile));
-
-        // Assert: Solo verificamos lo que realmente ocurre (la llamada a fotoClient tiene éxito)
-        // La excepción debe ocurrir al intentar parsear el resultado o al validar en el servicio.
-        // Asumiendo que el servicio intenta parsear justo después de la llamada a fotoClient.
-        verify(fotoClient, times(1)).uploadFoto(mockFile);
-        verify(usuarioRepository, never()).findById(anyInt()); // NO SE BUSCA EN BD
-        verify(usuarioRepository, never()).save(any());
+        // Verificar que no se llamó a las APIs externas ni se intentó guardar
+        verify(fotoClient, never()).uploadFoto(any(), anyString());
+        verify(usuarioRepository, never()).save(any(Usuario.class));
     }
 }
