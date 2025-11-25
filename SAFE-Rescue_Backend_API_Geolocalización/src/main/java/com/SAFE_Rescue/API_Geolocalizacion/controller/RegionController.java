@@ -27,7 +27,7 @@ import java.util.NoSuchElementException;
 public class RegionController {
 
     @Autowired
-    private RegionService regionService;
+    private RegionService regionService; // 👈 Servicio inyectado correcto
 
     // --- OPERACIONES CRUD BÁSICAS ---
 

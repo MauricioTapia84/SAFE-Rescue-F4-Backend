@@ -89,9 +89,7 @@ public class FotoServiceTest {
         when(fotoRepository.findById(idFoto)).thenReturn(Optional.empty());
 
         // Act & Assert
-        // El servicio lanza RuntimeException con mensaje "Foto no encontrada"
-        RuntimeException thrown = assertThrows(RuntimeException.class, () -> fotoService.findById(idFoto));
-        assertEquals("Foto no encontrada", thrown.getMessage());
+        assertThrows(NoSuchElementException.class, () -> fotoService.findById(idFoto));
         verify(fotoRepository, times(1)).findById(idFoto);
     }
 
@@ -114,35 +112,23 @@ public class FotoServiceTest {
     }
 
     @Test
-    void save_ShouldThrowRuntimeException_OnValidationFailure() {
-        // CORRECCIÓN: Este test reflejaba el comportamiento esperado (IllegalArgumentException),
-        // pero el log muestra que lanza RuntimeException debido a un error interno
-        // (probablemente la validación no se ejecutó, llevando a un NPE envuelto).
-        // Ajustamos la expectativa al comportamiento actual para que el test pase.
-
+    void save_ShouldThrowIllegalArgumentException_OnValidationFailure() {
         // Arrange: Invalidar la foto quitando la URL
         fotoValida.setUrl(null);
 
-        // Mockeamos para devolver null, forzando la NPE que el servicio envuelve.
-        when(fotoRepository.save(any(Foto.class))).thenReturn(null);
-
-        // Act & Assert: Esperamos el RuntimeException envuelto
-        RuntimeException thrown = assertThrows(RuntimeException.class, () -> fotoService.save(fotoValida));
-        assertTrue(thrown.getMessage().contains("Error al guardar la foto"),
-                "Esperaba el mensaje genérico de error de guardado del servicio.");
-        // Verificamos que 'save' fue llamado, lo que indica que la validación falló.
-        verify(fotoRepository, times(1)).save(any(Foto.class));
+        // Act & Assert: La excepción es lanzada por la validación interna del servicio
+        assertThrows(IllegalArgumentException.class, () -> fotoService.save(fotoValida));
+        verify(fotoRepository, never()).save(any(Foto.class));
     }
 
     @Test
-    void save_ShouldThrowRuntimeException_OnRepositorySaveFailure() {
-        // Arrange: Simular error de integridad de datos
-        doThrow(DataIntegrityViolationException.class).when(fotoRepository).save(any(Foto.class));
+    void save_ShouldThrowIllegalArgumentException_OnRepositorySaveFailure() {
+        // Arrange: Simular error de integridad de datos (unicidad de URL, por ejemplo)
+        doThrow(IllegalArgumentException.class).when(fotoRepository).save(any(Foto.class));
 
         // Act & Assert
-        // El servicio envuelve la excepción en RuntimeException con mensaje genérico
-        RuntimeException thrown = assertThrows(RuntimeException.class, () -> fotoService.save(fotoValida));
-        assertTrue(thrown.getMessage().contains("Error al guardar la foto"));
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> fotoService.save(fotoValida));
+        assertTrue(thrown.getMessage().contains("Error de integridad de datos."));
         verify(fotoRepository, times(1)).save(fotoValida);
     }
 
@@ -165,48 +151,40 @@ public class FotoServiceTest {
         fotoService.update(fotoActualizada, idFoto);
 
         // Assert
+        // Capturamos el argumento pasado a save para verificar la actualización
         verify(fotoRepository, times(1)).save(any(Foto.class));
         verify(fotoRepository, times(1)).findById(idFoto);
     }
 
     @Test
-    void update_ShouldThrowRuntimeException_WhenNotFound() {
+    void update_ShouldThrowNoSuchElementException_WhenNotFound() {
         // Arrange
         when(fotoRepository.findById(idFoto)).thenReturn(Optional.empty());
 
         // Act & Assert
-        // El servicio lanza RuntimeException con mensaje "Foto no encontrada"
-        RuntimeException thrown = assertThrows(RuntimeException.class, () -> fotoService.update(fotoValida, idFoto));
-        assertEquals("Foto no encontrada", thrown.getMessage());
+        assertThrows(NoSuchElementException.class, () -> fotoService.update(fotoValida, idFoto));
         verify(fotoRepository, times(1)).findById(idFoto);
         verify(fotoRepository, never()).save(any(Foto.class));
     }
 
     @Test
-    void update_ShouldThrowNullPointerException_WhenInputFotoIsNull() {
-        // CORRECCIÓN: El test original esperaba IllegalArgumentException, pero el servicio
-        // no valida si la foto de entrada es null, lo que resulta en una NullPointerException.
-
-        // Arrange: Simular que la foto existe para que el flujo intente acceder a foto.getUrl()
-        when(fotoRepository.findById(idFoto)).thenReturn(Optional.of(fotoValida));
-
-        // Act & Assert: Esperamos la NullPointerException que se propaga
-        assertThrows(NullPointerException.class, () -> fotoService.update(null, idFoto));
-        verify(fotoRepository, times(1)).findById(idFoto);
+    void update_ShouldThrowIllegalArgumentException_WhenInputFotoIsNull() {
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> fotoService.update(null, idFoto));
+        verify(fotoRepository, never()).findById(any(Integer.class));
         verify(fotoRepository, never()).save(any(Foto.class));
     }
 
     @Test
-    void update_ShouldThrowDataIntegrityViolationException_OnDataIntegrityViolation() {
-        // CORRECCIÓN: El servicio NO envuelve esta excepción. Esperamos la excepción original.
-
+    void update_ShouldThrowIllegalArgumentException_OnDataIntegrityViolation() {
         // Arrange
         when(fotoRepository.findById(idFoto)).thenReturn(Optional.of(fotoValida));
-        // Simular que el guardado falla por URL duplicada
+        // Simular que el guardado falla por URL duplicada (ej: otro registro ya tiene esta URL)
         doThrow(DataIntegrityViolationException.class).when(fotoRepository).save(any(Foto.class));
 
         // Act & Assert
-        assertThrows(DataIntegrityViolationException.class, () -> fotoService.update(fotoValida, idFoto));
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> fotoService.update(fotoValida, idFoto));
+        assertTrue(thrown.getMessage().contains("La URL de la foto ya existe."));
         verify(fotoRepository, times(1)).findById(idFoto);
         verify(fotoRepository, times(1)).save(any(Foto.class));
     }
@@ -217,46 +195,111 @@ public class FotoServiceTest {
 
     @Test
     void delete_ShouldBeSuccessful_WhenFound() {
-        // CORRECCIÓN: El servicio usa deleteById(id), ajustamos el mock y la verificación.
-
         // Arrange
         when(fotoRepository.findById(idFoto)).thenReturn(Optional.of(fotoValida));
-        doNothing().when(fotoRepository).deleteById(idFoto); // Mockeamos la llamada correcta
+        doNothing().when(fotoRepository).delete(fotoValida);
 
         // Act & Assert: No debería lanzar excepción
         assertDoesNotThrow(() -> fotoService.delete(idFoto));
         verify(fotoRepository, times(1)).findById(idFoto);
-        verify(fotoRepository, times(1)).deleteById(idFoto); // Verificamos la llamada correcta
-        verify(fotoRepository, never()).delete(any(Foto.class)); // Aseguramos que delete(entity) NO fue llamado
+        verify(fotoRepository, times(1)).delete(fotoValida);
     }
 
     @Test
-    void delete_ShouldThrowRuntimeException_WhenNotFound() {
+    void delete_ShouldThrowNoSuchElementException_WhenNotFound() {
         // Arrange
         when(fotoRepository.findById(idFoto)).thenReturn(Optional.empty());
 
         // Act & Assert
-        // El servicio lanza RuntimeException con mensaje "Foto no encontrada"
-        RuntimeException thrown = assertThrows(RuntimeException.class, () -> fotoService.delete(idFoto));
-        assertEquals("Foto no encontrada", thrown.getMessage());
+        assertThrows(NoSuchElementException.class, () -> fotoService.delete(idFoto));
         verify(fotoRepository, times(1)).findById(idFoto);
-        verify(fotoRepository, never()).deleteById(any(Integer.class));
+        verify(fotoRepository, never()).delete(any(Foto.class));
     }
 
     @Test
-    void delete_ShouldThrowDataIntegrityViolationException_OnDataIntegrityViolation() {
-        // CORRECCIÓN: El servicio NO envuelve esta excepción. Esperamos la excepción original.
-        // También ajustamos el mock a deleteById.
-
+    void delete_ShouldThrowIllegalArgumentException_OnDataIntegrityViolation() {
         // Arrange
         when(fotoRepository.findById(idFoto)).thenReturn(Optional.of(fotoValida));
-        // Simular un error de restricción de clave foránea en la llamada real (deleteById)
-        doThrow(DataIntegrityViolationException.class).when(fotoRepository).deleteById(idFoto);
+        // Simular un error de restricción de clave foránea al intentar eliminar (foto asociada a un usuario)
+        doThrow(DataIntegrityViolationException.class).when(fotoRepository).delete(fotoValida);
 
         // Act & Assert
-        assertThrows(DataIntegrityViolationException.class, () -> fotoService.delete(idFoto));
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> fotoService.delete(idFoto));
+        assertTrue(thrown.getMessage().contains("No se puede eliminar la foto, está siendo utilizada por un usuario."));
         verify(fotoRepository, times(1)).findById(idFoto);
-        verify(fotoRepository, times(1)).deleteById(idFoto);
+        verify(fotoRepository, times(1)).delete(fotoValida);
     }
 
+    // -------------------------------------------------------------------------
+    // TEST DE VALIDACIÓN DE ATRIBUTOS (validarAtributosFoto)
+    // -------------------------------------------------------------------------
+
+    @Test
+    void validarAtributosFoto_ShouldPass_WhenFotoIsValid() {
+        // Assert: No debería lanzar excepción
+        assertDoesNotThrow(() -> fotoService.validarAtributosFoto(fotoValida));
+    }
+
+    @Test
+    void validarAtributosFoto_ShouldThrowException_WhenFotoIsNull() {
+        // Act & Assert
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> fotoService.validarAtributosFoto(null));
+        assertEquals("La foto no puede ser nula.", thrown.getMessage());
+    }
+
+    @Test
+    void validarAtributosFoto_ShouldThrowException_WhenUrlIsNull() {
+        // Arrange
+        fotoValida.setUrl(null);
+
+        // Act & Assert
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> fotoService.validarAtributosFoto(fotoValida));
+        assertEquals("La URL de la foto es un campo obligatorio.", thrown.getMessage());
+    }
+
+    @Test
+    void validarAtributosFoto_ShouldThrowException_WhenUrlIsTooLong() {
+        // Arrange
+        String urlLarga = faker.lorem().characters(256); // Más de 255
+        fotoValida.setUrl(urlLarga);
+
+        // Act & Assert
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> fotoService.validarAtributosFoto(fotoValida));
+        assertEquals("La URL de la foto no puede exceder los 255 caracteres.", thrown.getMessage());
+    }
+
+    @Test
+    void validarAtributosFoto_ShouldThrowException_WhenFechaSubidaIsNull() {
+        // Arrange
+        fotoValida.setFechaSubida(null);
+
+        // Act & Assert
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> fotoService.validarAtributosFoto(fotoValida));
+        assertEquals("La Fecha Subida de la foto es un campo obligatorio.", thrown.getMessage());
+    }
+
+    @Test
+    void validarAtributosFoto_ShouldThrowException_WhenDescripcionIsTooLong() {
+        // Arrange
+        String descripcionLarga = faker.lorem().characters(101); // Más de 100
+        fotoValida.setDescripcion(descripcionLarga);
+
+        // Act & Assert
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> fotoService.validarAtributosFoto(fotoValida));
+        assertEquals("La Descripción de la foto no puede exceder los 100 caracteres.", thrown.getMessage());
+    }
+
+    @Test
+    void validarAtributosFoto_ShouldPass_WhenDescripcionIsNull() {
+        // Arrange
+        fotoValida.setDescripcion(null);
+
+        // Act & Assert: La descripción es opcional, debe pasar la validación
+        assertDoesNotThrow(() -> fotoService.validarAtributosFoto(fotoValida));
+    }
 }

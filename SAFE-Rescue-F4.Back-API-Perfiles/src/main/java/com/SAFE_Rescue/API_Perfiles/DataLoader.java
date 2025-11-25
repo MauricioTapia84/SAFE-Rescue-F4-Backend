@@ -18,7 +18,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * Componente de carga de datos de prueba para el entorno "dev".
@@ -47,8 +46,6 @@ public class DataLoader implements CommandLineRunner {
     @Autowired private FotoClient fotoClient;
     // ------------------------------------
 
-    // Contraseña fija para usuarios de prueba (RESTAURADO)
-    private static final String PRUEBA_PASSWORD_FIJA = "TestPassword123!";
 
     private final Faker faker = new Faker(new Locale("es"));
     private final Set<String> uniqueRuns = new HashSet<>();
@@ -65,12 +62,6 @@ public class DataLoader implements CommandLineRunner {
         System.out.println("Cargando datos de prueba...");
 
         try {
-            // Verifica si ya hay usuarios persistidos para evitar duplicados en reinicios (RESTAURADO)
-            if (usuarioRepository.count() > 0) {
-                System.out.println("La base de datos ya contiene usuarios. Omitiendo la carga de DataLoader.");
-                return;
-            }
-
             // 1. Cargar catálogos locales
             List<TipoUsuario> tiposUsuario = crearTiposUsuario();
             List<TipoEquipo> tiposEquipo = crearTiposEquipo();
@@ -99,11 +90,8 @@ public class DataLoader implements CommandLineRunner {
             // 4. Generar Equipos (usa idEstado externo y Compania nativa)
             List<Equipo> equipos = crearEquipos(tiposEquipo, companias, estadoDTOS);
 
-            // 5. Generar Usuarios Fijos (Para pruebas funcionales) (RESTAURADO Y CORREGIDO)
-            crearUsuariosFijos(tiposUsuario, estadoDTOS, equipos, direccionDTOS);
-
-            // 6. Generar Usuarios Aleatorios (Para volumen de datos) (RESTAURADO)
-            crearUsuariosAleatorios(tiposUsuario, estadoDTOS, equipos, direccionDTOS);
+            // 5. Generar Usuarios y Bomberos (usan idEstado y idFoto externos, y Equipo nativo)
+            crearUsuarios(tiposUsuario, estadoDTOS, equipos);
 
             System.out.println("Carga de datos finalizada.");
 
@@ -119,16 +107,7 @@ public class DataLoader implements CommandLineRunner {
     // --- Métodos de utilidad de APIs Externas ---
 
     private List<EstadoDTO> obtenerEstados() {
-        // Fallback por si el servicio de Estado está caído (RESTAURADO)
-        try {
-            return estadoClient.getAllEstados();
-        } catch (WebClientResponseException e) {
-            System.err.println("FALLBACK: Error al conectar con API Estado. Usando estado simulado ID=1.");
-            EstadoDTO fallback = new EstadoDTO();
-            fallback.setIdEstado(1);
-            fallback.setNombre("Activo");
-            return Collections.singletonList(fallback);
-        }
+        return estadoClient.getAllEstados();
     }
 
 
@@ -156,7 +135,6 @@ public class DataLoader implements CommandLineRunner {
         for (String nombre : nombres) {
             TipoEquipo tipo = new TipoEquipo();
             tipo.setNombre(nombre);
-            // CORREGIDO: Usar tipoEquipoRepository para TipoEquipo
             tiposEquipo.add(tipoEquipoRepository.save(tipo));
         }
         return tiposEquipo;
@@ -227,98 +205,20 @@ public class DataLoader implements CommandLineRunner {
         return equipos;
     }
 
-
-    // --- MÉTODO: Crear usuarios fijos para pruebas ---
-
-    private void crearUsuariosFijos(List<TipoUsuario> tiposUsuario, List<EstadoDTO> estadoDTOS, List<Equipo> equipos, List<DireccionDTO> direccionDTOS) {
-        System.out.println("--- Creando Usuarios Fijos de Prueba ---");
-
-        Map<String, TipoUsuario> tiposMap = tiposUsuario.stream()
-                .collect(Collectors.toMap(TipoUsuario::getNombre, t -> t));
-
-        // Obtener el primer ID de Estado y Dirección para consistencia
-        Integer estadoIdFijo = estadoDTOS != null && !estadoDTOS.isEmpty() && estadoDTOS.get(0).getIdEstado() != null ? estadoDTOS.get(0).getIdEstado() : 1;
-        Integer direccionIdFijo = direccionDTOS != null && !direccionDTOS.isEmpty() && direccionDTOS.get(0).getIdDireccion() != null ? direccionDTOS.get(0).getIdDireccion() : 200;
-
-        String hashedPassword = passwordEncoder.encode(PRUEBA_PASSWORD_FIJA);
-
-        // Datos fijos CORREGIDOS: Nombres de usuario alfanuméricos para evitar ConstraintViolationException
-        List<String[]> usuariosData = Arrays.asList(
-                new String[]{"Jefe de Compañía", "Jefe", "Compania", "jefe@test.com", "jefetest", "12345678"},
-                new String[]{BOMBERO_TIPO, "Bombero", "Terreno", "bombero@test.com", "bomberotest", "23456789"},
-                new String[]{OPERADOR_TIPO, "Operador", "Sala", "operador@test.com", "operadortest", "34567890"},
-                new String[]{"Administrador", "Admin", "Sistema", "admin@test.com", "admintest", "45678901"},
-                new String[]{"Ciudadano", "Ciudadano", "Comun", "ciudadano@test.com", "ciudadanotest", "56789012"}
-        );
-
-        for (String[] data : usuariosData) {
-            String tipoNombre = data[0];
-            TipoUsuario tipo = tiposMap.get(tipoNombre);
-            if (tipo == null) continue;
-
-            Usuario usuario;
-            if (tipoNombre.equalsIgnoreCase("Ciudadano")) {
-                Ciudadano ciudadano = new Ciudadano();
-                ciudadano.setIdDireccion(direccionIdFijo);
-                usuario = ciudadano;
-            } else if (tipoNombre.equalsIgnoreCase(BOMBERO_TIPO) || tipoNombre.equalsIgnoreCase(OPERADOR_TIPO)) {
-                Bombero bombero = new Bombero();
-                if (!equipos.isEmpty()) {
-                    bombero.setEquipo(equipos.get(0)); // Asignar al primer equipo
-                }
-                usuario = bombero;
-            } else {
-                usuario = new Usuario();
-            }
-
-            usuario.setRun(data[5]);
-            usuario.setDv(calcularDv(usuario.getRun()));
-            usuario.setNombre(data[1]);
-            usuario.setAPaterno(data[2]);
-            usuario.setAMaterno("Fijo");
-            usuario.setNombreUsuario(data[4]); // Nombre de usuario fijo (alfanumérico)
-            usuario.setFechaRegistro(java.time.LocalDate.now().atStartOfDay());
-            usuario.setTelefono("9" + data[5]); // Teléfono fijo
-            usuario.setCorreo(data[3]); // Correo fijo
-
-            usuario.setContrasenia(hashedPassword);
-            System.out.println("✅ Usuario Fijo " + usuario.getNombreUsuario() + " creado. Contraseña: " + PRUEBA_PASSWORD_FIJA);
-
-            usuario.setIntentosFallidos(0);
-            usuario.setRazonBaneo(null);
-            usuario.setDiasBaneo(null);
-            usuario.setTipoUsuario(tipo);
-            usuario.setIdEstado(estadoIdFijo);
-            usuario.setIdFoto(fotoClient.getRandomExistingFotoId());
-
-            // Persistir
-            if (usuario instanceof Bombero) {
-                bomberoRepository.save((Bombero) usuario);
-            } else {
-                usuarioRepository.save(usuario);
-            }
-
-            // Agregar a los sets para evitar colisiones con los aleatorios
-            uniqueNombresUsuario.add(usuario.getNombreUsuario());
-            uniqueCorreos.add(usuario.getCorreo());
-            uniqueRuns.add(usuario.getRun());
-            uniqueTelefonos.add(usuario.getTelefono());
-        }
-    }
-
-
     /**
-     * Método para crear usuarios aleatorios, con contraseña mejorada y asignando IDs de Estado y Foto.
+     * Método para crear usuarios y bomberos, asignando IDs de Estado y Foto (usando FotoClient).
      */
-    private void crearUsuariosAleatorios(List<TipoUsuario> tiposUsuario, List<EstadoDTO> estadoDTOS, List<Equipo> equipos, List<DireccionDTO> direccionDTOS) {
+    private void crearUsuarios(List<TipoUsuario> tiposUsuario, List<EstadoDTO> estadoDTOS, List<Equipo> equipos) {
+        if (usuarioRepository.count() > 0) return;
 
-        System.out.println("--- Creando Usuarios Aleatorios para volumen ---");
         int estadoDTOSize = (estadoDTOS != null) ? estadoDTOS.size() : 0;
+
+        // Obtener direcciones para asignar a ciudadanos
+        List<DireccionDTO> direccionDTOS = geolocalizacionClient.getAllDirecciones();
         int direccionDTOSize = (direccionDTOS != null) ? direccionDTOS.size() : 0;
 
         for (TipoUsuario tipo : tiposUsuario) {
-            int cantidad = 2; // Cantidad de usuarios aleatorios por tipo
-
+            int cantidad = 2;
             for (int i = 0; i < cantidad; i++) {
                 Usuario usuario;
 
@@ -327,23 +227,27 @@ public class DataLoader implements CommandLineRunner {
                     usuario = ciudadano;
 
                     if (direccionDTOSize > 0) {
-                        DireccionDTO direccionDTO = direccionDTOS.get(faker.random().nextInt(direccionDTOSize));
+                        DireccionDTO direccionDTO = direccionDTOS.get(i % direccionDTOSize);
                         Integer direccionId = direccionDTO.getIdDireccion();
                         if (direccionId == null) {
-                            direccionId = 200 + i;
+                            direccionId = 200 + i; // Fallback
                         }
                         ciudadano.setIdDireccion(direccionId);
+                        System.out.println("👤 Creando CIUDADANO: con idDireccion: " + direccionId);
                     } else {
                         ciudadano.setIdDireccion(200 + i);
+                        System.out.println("👤 Creando CIUDADANO: con idDireccion fallback: " + (200 + i));
                     }
 
                 } else if (tipo.getNombre().equalsIgnoreCase(BOMBERO_TIPO) || tipo.getNombre().equalsIgnoreCase(OPERADOR_TIPO)) {
                     usuario = new Bombero();
+                    System.out.println("👤 Creando BOMBERO");
                     if (!equipos.isEmpty()) {
                         ((Bombero) usuario).setEquipo(equipos.get(faker.random().nextInt(equipos.size())));
                     }
                 } else {
                     usuario = new Usuario();
+                    System.out.println("👤 Creando USUARIO BASE");
                 }
 
                 // Asignar atributos base
@@ -353,7 +257,9 @@ public class DataLoader implements CommandLineRunner {
                 usuario.setAPaterno(faker.name().lastName());
                 usuario.setAMaterno(faker.name().lastName());
 
+                // --- NUEVO: ASIGNAR NOMBRE DE USUARIO GENERADO ---
                 usuario.setNombreUsuario(crearNombreUsuarioUnico(usuario.getNombre()));
+                // ------------------------------------------------
 
                 Date pastDate = Date.from(faker.timeAndDate().past(5, TimeUnit.DAYS));
                 usuario.setFechaRegistro(pastDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate().atStartOfDay());
@@ -361,11 +267,11 @@ public class DataLoader implements CommandLineRunner {
                 usuario.setTelefono(crearTelefonoUnico());
                 usuario.setCorreo(crearCorreoUnico());
 
-                // --- MODIFICACIÓN: CONTRASEÑA ALEATORIA MEJORADA (RESTAURADO) ---
-                String rawPassword = generarContraseniaSeguraAleatoria(usuario.getNombre());
+                //  CONTRASEÑA HASHEADAS
+                String rawPassword = "password123";
                 String hashedPassword = passwordEncoder.encode(rawPassword);
                 usuario.setContrasenia(hashedPassword);
-                // ---------------------------------------------------
+                System.out.println(" Contraseña hasheada para " + usuario.getCorreo() + ": " + rawPassword + " -> " + hashedPassword);
 
                 usuario.setIntentosFallidos(0);
                 usuario.setRazonBaneo(null);
@@ -386,6 +292,8 @@ public class DataLoader implements CommandLineRunner {
                 // Persistir según el tipo
                 if (usuario instanceof Bombero) {
                     bomberoRepository.save((Bombero) usuario);
+                } else if (usuario instanceof Ciudadano) {
+                    usuarioRepository.save(usuario);
                 } else {
                     usuarioRepository.save(usuario);
                 }
@@ -420,7 +328,7 @@ public class DataLoader implements CommandLineRunner {
         return correo;
     }
 
-    // --- MÉTODO PARA NOMBRE DE USUARIO ÚNICO ---
+    // --- NUEVO MÉTODO PARA NOMBRE DE USUARIO ÚNICO ---
     private String crearNombreUsuarioUnico(String baseName) {
         String nombreUsuario;
         String safeBase = baseName.replaceAll("[^a-zA-Z0-9]", ""); // Solo letras y números
@@ -440,17 +348,6 @@ public class DataLoader implements CommandLineRunner {
         } while (!uniqueNombresUsuario.add(nombreUsuario));
 
         return nombreUsuario;
-    }
-
-    // --- MÉTODO: Generar contraseña segura aleatoria (Cumple Mayús, Minús, Números, Signos) (RESTAURADO) ---
-    private String generarContraseniaSeguraAleatoria(String baseName) {
-        String base = baseName.length() >= 5 ? baseName.substring(0, 5) : baseName;
-        // Asegura Mayúscula, Minúscula, Número y Símbolo
-        String upper = base.substring(0, 1).toUpperCase();
-        String lower = base.length() > 1 ? base.substring(1).toLowerCase() : "user";
-        String numbers = faker.number().digits(3);
-        String symbol = "!@#$%^&*".charAt(faker.random().nextInt(8)) + "";
-        return upper + lower + numbers + symbol;
     }
 
     private String calcularDv(String runStr) {

@@ -19,7 +19,7 @@
         <module name="API_Geolocalizacion" />
         <module name="API_Donaciones" />
       </profile>
-      <profile name="Annotation profile for API_Perfiles" enabled="true">
+      <profile name="Annotation profile for API_Configuraciones" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />

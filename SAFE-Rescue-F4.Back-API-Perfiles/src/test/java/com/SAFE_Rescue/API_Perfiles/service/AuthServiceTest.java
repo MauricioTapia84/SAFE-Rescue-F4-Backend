@@ -1,11 +1,9 @@
 package com.SAFE_Rescue.API_Perfiles.service;
 
 import com.SAFE_Rescue.API_Perfiles.dto.AuthResponseDTO;
-import com.SAFE_Rescue.API_Perfiles.dto.RegistroRequestDTO;
 import com.SAFE_Rescue.API_Perfiles.exception.InvalidCredentialsException;
 import com.SAFE_Rescue.API_Perfiles.exception.UserAlreadyExistsException;
 import com.SAFE_Rescue.API_Perfiles.exception.UserNotFoundException;
-import com.SAFE_Rescue.API_Perfiles.modelo.Ciudadano;
 import com.SAFE_Rescue.API_Perfiles.modelo.TipoUsuario; // Necesitas el modelo de TipoUsuario
 import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
 import com.SAFE_Rescue.API_Perfiles.repository.UsuarioRepository;
@@ -124,48 +122,61 @@ public class AuthServiceTest {
         verify(jwtUtil, never()).generateToken(anyInt(), anyString());
     }
 
+    // Si implementas UserNotActiveException, añadirías esta prueba:
+    /*
+    @Test
+    void authenticateAndGenerateToken_UserNotActive() {
+        // Asumiendo que has añadido la lógica de estado al usuarioPrueba y al service
+        usuarioPrueba.setActivo(false);
+        when(usuarioRepository.findByNombreUsuarioOrEmail(USUARIO_EMAIL, USUARIO_EMAIL))
+                .thenReturn(Optional.of(usuarioPrueba));
+        when(passwordEncoder.matches(CONTRASENA_RAW, CONTRASENA_HASH))
+                .thenReturn(true);
+
+        assertThrows(UserNotActiveException.class, () -> {
+            authService.authenticateAndGenerateToken(USUARIO_EMAIL, CONTRASENA_RAW);
+        });
+    }
+    */
+
     // =================================================================
     // PRUEBAS PARA registerNewUser (Registro)
     // =================================================================
 
     @Test
-    void registerNewCiudadano_Success() {
-        // Arrange
-        RegistroRequestDTO registroRequest = new RegistroRequestDTO();
-        registroRequest.setRun("11111111-1");
-        registroRequest.setContrasenia(CONTRASENA_RAW);
-        // Simular el Ciudadano que el servicio devolvería después de la creación
-        Ciudadano ciudadanoCreado = new Ciudadano();
-        ciudadanoCreado.setRun("11111111-1");
-        ciudadanoCreado.setContrasenia(CONTRASENA_HASH);
+    void registerNewUser_Success() {
+        Usuario nuevoUsuario = new Usuario();
+        nuevoUsuario.setRun("11111111-1");
+        nuevoUsuario.setContrasenia(CONTRASENA_RAW);
 
-        // Mocks
+        // Configuración de Mocks: el RUN no existe, se cifra y se guarda
         when(usuarioRepository.existsByRun("11111111-1")).thenReturn(false);
         when(passwordEncoder.encode(CONTRASENA_RAW)).thenReturn(CONTRASENA_HASH);
-        when(authService.registerNewCiudadano(any(RegistroRequestDTO.class))).thenReturn(ciudadanoCreado);
+        when(usuarioRepository.save(nuevoUsuario)).thenReturn(nuevoUsuario);
 
-        // Act
-        Ciudadano result = authService.registerNewCiudadano(registroRequest);
+        // Ejecución
+        Usuario result = authService.registerNewUser(nuevoUsuario);
 
-        // Assert
+        // Verificación
         assertNotNull(result);
-        assertEquals(CONTRASENA_HASH, result.getContrasenia());
+        // Verificar que la contraseña fue cifrada antes de guardar
+        assertEquals(CONTRASENA_HASH, result.getContrasenia(), "La contraseña debe ser cifrada antes de guardar.");
 
-        // Verificaciones
-        verify(usuarioRepository, times(1)).existsByRun("11111111-1");
+        // Verificar que el save se realizó
+        verify(usuarioRepository, times(1)).save(nuevoUsuario);
     }
 
     @Test
     void registerNewUser_UserAlreadyExists() {
-        RegistroRequestDTO registroRequest = new RegistroRequestDTO();
-        registroRequest.setRun("11111111-1");
-        registroRequest.setCorreo("registro@existente.cl");
+        Usuario nuevoUsuario = new Usuario();
+        nuevoUsuario.setRun("11111111-1");
 
+        // Configuración de Mocks: el RUN ya existe
         when(usuarioRepository.existsByRun("11111111-1")).thenReturn(true);
 
         // Verificación de la excepción
         assertThrows(UserAlreadyExistsException.class, () -> {
-            authService.registerNewCiudadano(registroRequest);
+            authService.registerNewUser(nuevoUsuario);
         }, "Debe lanzar UserAlreadyExistsException si el RUN ya existe.");
 
         // Verificar que NO se cifró la contraseña ni se intentó guardar

@@ -9,11 +9,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -39,6 +38,7 @@ public class FotoControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    // Inyecta un mock del servicio en el contexto de Spring
     @MockitoBean
     private FotoService fotoService;
 
@@ -112,7 +112,6 @@ public class FotoControllerTest {
     @Test
     void buscarFoto_ShouldReturn404AndMessage_WhenNotFound() throws Exception {
         // Arrange
-        // Aunque el servicio lanza RuntimeException, el controller espera NoSuchElementException
         when(fotoService.findById(fotoId)).thenThrow(new NoSuchElementException());
 
         // Act & Assert
@@ -130,16 +129,14 @@ public class FotoControllerTest {
     @Test
     void agregarFoto_ShouldReturn201AndSuccessMessage_WhenValid() throws Exception {
         // Arrange
-        // CORRECCIÓN: El controlador devuelve el objeto Foto, no un String de éxito.
-        when(fotoService.save(any(Foto.class))).thenReturn(fotoValida);
+        doNothing().when(fotoService).save(any(Foto.class));
 
         // Act & Assert
         mockMvc.perform(post(API_BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(fotoValida)))
                 .andExpect(status().isCreated())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.idFoto").value(fotoId));
+                .andExpect(content().string("Foto creada con éxito."));
 
         verify(fotoService, times(1)).save(any(Foto.class));
     }
@@ -160,6 +157,20 @@ public class FotoControllerTest {
         verify(fotoService, times(1)).save(any(Foto.class));
     }
 
+    @Test
+    void agregarFoto_ShouldReturn500AndGenericMessage_OnInternalError() throws Exception {
+        // Arrange
+        doThrow(new Exception("Error de conexión inesperado")).when(fotoService).save(any(Foto.class));
+
+        // Act & Assert
+        mockMvc.perform(post(API_BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(fotoValida)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string("Error interno del servidor."));
+
+        verify(fotoService, times(1)).save(any(Foto.class));
+    }
 
     // -------------------------------------------------------------------------
     // PUT /{id} (actualizarFoto)
@@ -211,6 +222,20 @@ public class FotoControllerTest {
         verify(fotoService, times(1)).update(any(Foto.class), eq(fotoId));
     }
 
+    @Test
+    void actualizarFoto_ShouldReturn500AndGenericMessage_OnInternalError() throws Exception {
+        // Arrange
+        doThrow(new Exception("Error de DB")).when(fotoService).update(any(Foto.class), eq(fotoId));
+
+        // Act & Assert
+        mockMvc.perform(put(API_BASE_URL + "/{id}", fotoId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(fotoValida)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string("Error interno del servidor."));
+
+        verify(fotoService, times(1)).update(any(Foto.class), eq(fotoId));
+    }
 
     // -------------------------------------------------------------------------
     // DELETE /{id} (eliminarFoto)
@@ -256,4 +281,16 @@ public class FotoControllerTest {
         verify(fotoService, times(1)).delete(fotoId);
     }
 
+    @Test
+    void eliminarFoto_ShouldReturn500AndGenericMessage_OnInternalError() throws Exception {
+        // Arrange
+        doThrow(new Exception("Error de red")).when(fotoService).delete(fotoId);
+
+        // Act & Assert
+        mockMvc.perform(delete(API_BASE_URL + "/{id}", fotoId))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string("Error interno del servidor."));
+
+        verify(fotoService, times(1)).delete(fotoId);
+    }
 }
