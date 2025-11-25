@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.IntStream;
+import java.util.stream.Collectors;
 
 /**
  * Clase que carga datos iniciales de configuración (Estados y Fotos de ejemplo)
@@ -39,17 +41,17 @@ public class DataLoader implements CommandLineRunner {
         // 2. Cargar las fotos de ejemplo
         crearFotosDeEjemplo();
 
-        System.out.println("Carga de datos de registros finalizada.");
+        System.out.println("Carga de datos de registros iniciales completada.");
     }
 
+    // --- METODOS PRIVADOS DE CARGA DE DATOS ---
+
     /**
-     * Crea y guarda los estados predefinidos.
-     * Estos estados pueden ser usados por otras entidades como Usuarios o Incidentes.
+     * Crea y guarda los estados predefinidos del sistema.
      */
     private void crearEstados() {
         List<String> nombresEstados = Arrays.asList(
-                "Activo", "Baneado", "Inactivo",
-                "En Proceso", "Localizado", "Cerrado",
+                "Activo", "En Proceso", "Localizado", "Cerrado",
                 "Enviado", "Recibido", "Visto"
         );
 
@@ -65,21 +67,27 @@ public class DataLoader implements CommandLineRunner {
     }
 
     /**
-     * Crea y guarda fotos de ejemplo con URLs ficticias.
+     * Crea y guarda 10 fotos de ejemplo con URLs ficticias API.
+     * La ruta es 'http://localhost:8080/api-registros/v1/fotos/{id}/archivo'.
      */
     private void crearFotosDeEjemplo() {
         // Simple verificación para no duplicar datos en cada reinicio (si no hay borrado previo)
         if (fotoRepository.count() == 0) {
-            List<String> urlsDeEjemplo = Arrays.asList(
-                    "http://api.ejemplo.com/fotos/1.jpg",
-                    "http://api.ejemplo.com/fotos/2.jpg",
-                    "http://api.ejemplo.com/fotos/3.jpg"
-            );
-            urlsDeEjemplo.forEach(url -> {
+
+
+            IntStream.rangeClosed(1, 10).forEach(i -> {
                 Foto foto = new Foto();
-                foto.setUrl(url);
-                foto.setDescripcion("Foto de ejemplo para DataLoader");
+
+                String urlSimulada = String.format("http://localhost:8080/api-registros/v1/fotos/%d/archivo", i);
+                foto.setUrl(urlSimulada);
+
+                foto.setDescripcion(String.format("Foto de ejemplo %d cargada.", i));
                 foto.setFechaSubida(LocalDateTime.now());
+
+                // Valores de ejemplo para campos opcionales/técnicos
+                foto.setTipo("image/png");
+                foto.setTamanio(102400 + i * 100);
+
                 fotoRepository.save(foto);
             });
             System.out.println("Fotos de ejemplo cargadas: " + fotoRepository.count());

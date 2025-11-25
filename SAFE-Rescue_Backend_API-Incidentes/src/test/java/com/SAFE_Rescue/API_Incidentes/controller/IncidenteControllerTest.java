@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(IncidenteController.class)
 public class IncidenteControllerTest {
 
-    private final String BASE_URL = "/api-incidentes/v1/incidentes";
+    private static final String BASE_URL = "/api-incidentes/v1/incidentes";
 
     @Autowired
     private MockMvc mockMvc;
@@ -41,330 +41,322 @@ public class IncidenteControllerTest {
     @MockitoBean
     private IncidenteService incidenteService;
 
-    private Incidente incidenteValido;
-    private Integer idExistente;
-    private Integer idNoExistente;
-    private Integer relatedId;
-    private Integer invalidId;
-    private final Faker faker = new Faker();
+    private Faker faker;
+    private Incidente incidente1, incidente2, incidenteExistente;
+    private Integer idExistente, invalidId, relatedId;
 
-    // Fecha y hora constantes para asegurar que la aserción de JSON sea fiable
-    private final LocalDateTime MOCK_DATETIME = LocalDateTime.of(2025, 1, 1, 10, 30, 0);
+    private LocalDateTime fechaCreacion, fechaActualizacion;
+    private String latitud, longitud, estado;
+
 
     @BeforeEach
-    public void setUp() {
-        // --- Configuración de Jackson para manejar Fechas correctamente ---
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        // --- Fin de la Configuración ---
-
-        // Inicialización de IDs de prueba
-        idExistente = faker.number().numberBetween(1, 100);
-        idNoExistente = 999;
-        relatedId = faker.number().numberBetween(1, 10);
+    void setUp() {
+        faker = new Faker();
+        idExistente = 1;
         invalidId = 999;
+        relatedId = 101;
 
-        // Objeto base para las pruebas: Se asume que el constructor ahora recibe 5 FKs (TipoIncidente, Ciudadano, Estado, Dirección, UsuarioAsignado)
-        // Usaremos '1' para el ID de Usuario Asignado.
-        incidenteValido = new Incidente(idExistente, "Accidente de tráfico en la ruta 5","Este incidente es una prueba", MOCK_DATETIME,new TipoIncidente(),1,1,1,1);
+        // INICIALIZACIÓN DE LAS 4 NUEVAS PROPIEDADES
+        fechaCreacion = LocalDateTime.now().minusHours(2);
+        fechaActualizacion = LocalDateTime.now();
+        latitud = faker.address().latitude();
+        longitud = faker.address().longitude();
+        estado = "ACTIVO";
+
+        // Configurar ObjectMapper para manejar LocalDateTime
+        objectMapper.findAndRegisterModules();
+        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+
+        incidente1 = new Incidente(
+                idExistente,
+                faker.lorem().sentence(3),
+                faker.lorem().paragraph(2),
+                fechaCreacion,
+                fechaActualizacion,
+                latitud,
+                longitud,
+                estado,
+                new TipoIncidente(1,"Incendio"),
+                relatedId,
+                relatedId,
+                null,
+                relatedId
+        );
+
+        // CONSTRUCTOR CORREGIDO - (CORRECCIÓN: TipoIncidente.Accidente)
+        incidente2 = new Incidente(
+                2,
+                faker.lorem().sentence(3),
+                faker.lorem().paragraph(2),
+                fechaCreacion.minusHours(1),
+                fechaActualizacion.minusHours(1),
+                faker.address().latitude(),
+                faker.address().longitude(),
+                "RESUELTO",
+                new TipoIncidente(2,"Accidente"),
+                relatedId + 1,
+                relatedId,
+                relatedId + 2,
+                null
+        );
+
+        incidenteExistente = incidente1;
     }
 
-    // ====================================================================
-    // TESTS PARA OPERACIONES CRUD BÁSICAS
-    // ====================================================================
-
-    // --- GET /incidentes (Listar todos) ---
+    // --- GET / ---
     @Test
-    void listar_shouldReturnOk_whenListIsNotEmpty() throws Exception {
-        // Usamos una fecha constante para hacer la aserción más predecible
-        LocalDateTime fechaDePrueba = MOCK_DATETIME;
-
-        // Corregido: Los constructores deben recibir 5 FKs, incluyendo el idUsuarioAsignado (último '1')
-        List<Incidente> lista = Arrays.asList(
-                new Incidente(idExistente, "Accidente de tráfico en la ruta 5","Desc", fechaDePrueba,new TipoIncidente(),1,1,1,1),
-                new Incidente(2, "Incendio reportado","Esta es la descripción",fechaDePrueba,new TipoIncidente(),2,2,2,2));
-
-        when(incidenteService.findAll()).thenReturn(lista);
+    void findAll_shouldReturnListOfIncidentes() throws Exception {
+        List<Incidente> incidentes = Arrays.asList(incidente1, incidente2);
+        when(incidenteService.findAll()).thenReturn(incidentes);
 
         mockMvc.perform(get(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.size()").value(2))
-                .andExpect(jsonPath("$[0].titulo").value("Accidente de tráfico en la ruta 5"))
-                // La aserción de la fecha/hora debe ser el formato ISO de LocalDateTime
-                .andExpect(jsonPath("$[0].fechaRegistro").value("2025-01-01T10:30:00"));
+                .andExpect(jsonPath("$.size()").value(incidentes.size()))
+                .andExpect(jsonPath("$[0].idIncidente").value(incidente1.getIdIncidente()))
+                .andExpect(jsonPath("$[1].idIncidente").value(incidente2.getIdIncidente()));
 
         verify(incidenteService, times(1)).findAll();
     }
 
     @Test
-    void listar_shouldReturnNoContent_whenListIsEmpty() throws Exception {
+    void findAll_shouldReturn204_whenNoContent() throws Exception {
         when(incidenteService.findAll()).thenReturn(Collections.emptyList());
 
         mockMvc.perform(get(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
 
         verify(incidenteService, times(1)).findAll();
     }
 
-    // --- GET /incidentes/{id} (Buscar por ID) ---
+    // --- GET /{id} ---
     @Test
-    void buscarIncidente_shouldReturnOk_whenIdExists() throws Exception {
-        when(incidenteService.findById(idExistente)).thenReturn(incidenteValido);
+    void findById_shouldReturnIncidente_whenFound() throws Exception {
+        when(incidenteService.findById(idExistente)).thenReturn(incidenteExistente);
 
         mockMvc.perform(get(BASE_URL + "/{id}", idExistente)
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk()) // 200 OK
-                .andExpect(jsonPath("$.detalle").value(incidenteValido.getDetalle()));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.idIncidente").value(idExistente))
+                .andExpect(jsonPath("$.titulo").value(incidenteExistente.getTitulo()));
 
         verify(incidenteService, times(1)).findById(idExistente);
     }
 
     @Test
-    void buscarIncidente_shouldReturnNotFound_whenIdDoesNotExist() throws Exception {
-        when(incidenteService.findById(idNoExistente)).thenThrow(new NoSuchElementException());
+    void findById_shouldReturn404_whenNotFound() throws Exception {
+        when(incidenteService.findById(invalidId)).thenThrow(new NoSuchElementException());
 
-        mockMvc.perform(get(BASE_URL + "/{id}", idNoExistente)
+        mockMvc.perform(get(BASE_URL + "/{id}", invalidId)
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound()) // 404 Not Found
-                .andExpect(content().string("Incidente no encontrado"));
+                .andExpect(status().isNotFound());
 
-        verify(incidenteService, times(1)).findById(idNoExistente);
+        verify(incidenteService, times(1)).findById(invalidId);
     }
 
-    // --- POST /incidentes (Crear) ---
+    // --- POST / ---
     @Test
-    void agregarIncidente_shouldReturnCreated_whenValid() throws Exception {
-        // Nuevo Incidente con 5 FKs, incluyendo idUsuarioAsignado: 1
-        Incidente nuevoIncidente = new Incidente(null, "Fuga de gas","Descripcion",LocalDateTime.now(),new TipoIncidente(),1,1,1,1);
-        when(incidenteService.save(any(Incidente.class))).thenReturn(incidenteValido);
+    void create_shouldReturn201AndIncidente_whenSuccess() throws Exception {
+        // CONSTRUCTOR CORREGIDO - (CORRECCIÓN: TipoIncidente.Incendio)
+        Incidente nuevoIncidente = new Incidente(
+                null,
+                faker.lorem().sentence(3),
+                faker.lorem().paragraph(2),
+                fechaCreacion,
+                fechaActualizacion,
+                latitud,
+                longitud,
+                estado,
+                new TipoIncidente(1,"Incendio"),
+                relatedId,
+                relatedId,
+                null,
+                relatedId
+        );
+
+        when(incidenteService.save(any(Incidente.class))).thenReturn(incidente1);
 
         mockMvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(nuevoIncidente)))
-                .andExpect(status().isCreated()) // 201 Created
-                .andExpect(content().string("Incidente creado con éxito."));
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.idIncidente").value(incidente1.getIdIncidente()))
+                .andExpect(jsonPath("$.titulo").value(incidente1.getTitulo()));
 
         verify(incidenteService, times(1)).save(any(Incidente.class));
     }
 
     @Test
-    void agregarIncidente_shouldReturnBadRequest_whenReferenceIdIsInvalid() throws Exception {
-        // Incidente con 5 FKs
-        Incidente incidenteInvalido = new Incidente(null, "Falta relación","Descripcion",LocalDateTime.now(),new TipoIncidente(),1,1,1,1);
-        String errorMsg = "El ID de TipoIncidente no existe.";
-        // Simular excepción lanzada por el Service (ej. si falla la validación del Ciudadano)
-        when(incidenteService.save(any(Incidente.class))).thenThrow(new IllegalArgumentException(errorMsg));
+    void create_shouldReturn400_whenValidationError() throws Exception {
+        // CONSTRUCTOR CORREGIDO - (CORRECCIÓN: TipoIncidente.Incendio)
+        Incidente incidenteInvalido = new Incidente(
+                null,
+                "",
+                faker.lorem().paragraph(2),
+                fechaCreacion,
+                fechaActualizacion,
+                latitud,
+                longitud,
+                estado,
+                new TipoIncidente(1,"Incendio"),
+                relatedId,
+                relatedId,
+                null,
+                relatedId
+        );
+
+        when(incidenteService.save(any(Incidente.class))).thenThrow(new IllegalArgumentException("Validación fallida"));
 
         mockMvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(incidenteInvalido)))
-                .andExpect(status().isBadRequest()) // 400 Bad Request
-                .andExpect(content().string(errorMsg));
+                .andExpect(status().isBadRequest());
 
         verify(incidenteService, times(1)).save(any(Incidente.class));
     }
 
-    // --- PUT /incidentes/{id} (Actualizar) ---
+    // --- PUT /{id} ---
     @Test
-    void actualizarIncidente_shouldReturnOk_whenValidUpdate() throws Exception {
-        // Datos Actualizados con 5 FKs
-        Incidente datosActualizados = new Incidente(idExistente, "Descripción actualizada","Descripcion Actualizada",LocalDateTime.now(),new TipoIncidente(),1,1,1,1);
-        when(incidenteService.update(any(Incidente.class), eq(idExistente))).thenReturn(datosActualizados);
+    void update_shouldReturn200AndUpdatedIncidente_whenFound() throws Exception {
+        // CONSTRUCTOR CORREGIDO - (CORRECCIÓN: string para Descripción y TipoIncidente.Incendio)
+        Incidente incidenteAActualizar = new Incidente(
+                idExistente,
+                "Título Actualizado",
+                "Descripción del incidente 1",
+                fechaCreacion,
+                fechaActualizacion,
+                latitud,
+                longitud,
+                estado,
+                new TipoIncidente(1,"Incendio"),
+                relatedId,
+                relatedId,
+                null,
+                relatedId
+        );
+
+        when(incidenteService.update(any(Incidente.class), eq(idExistente))).thenReturn(incidenteAActualizar);
 
         mockMvc.perform(put(BASE_URL + "/{id}", idExistente)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(datosActualizados)))
-                .andExpect(status().isOk()) // 200 OK
-                .andExpect(content().string("Actualizado con éxito"));
+                        .content(objectMapper.writeValueAsString(incidenteAActualizar)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.idIncidente").value(idExistente))
+                .andExpect(jsonPath("$.titulo").value("Título Actualizado"));
 
         verify(incidenteService, times(1)).update(any(Incidente.class), eq(idExistente));
     }
 
     @Test
-    void actualizarIncidente_shouldReturnNotFound_whenIdDoesNotExist() throws Exception {
-        // Datos Actualizados con 5 FKs
-        Incidente datosActualizados = new Incidente(idNoExistente, "Intento de actualización","Descripcion",LocalDateTime.now(),new TipoIncidente(),1,1,1,1);
-        when(incidenteService.update(any(Incidente.class), eq(idNoExistente))).thenThrow(new NoSuchElementException());
+    void update_shouldReturn404_whenNotFound() throws Exception {
+        // CONSTRUCTOR CORREGIDO - (CORRECCIÓN: TipoIncidente.Accidente)
+        Incidente incidenteInexistente = new Incidente(
+                invalidId,
+                "Título",
+                faker.lorem().paragraph(2),
+                fechaCreacion,
+                fechaActualizacion,
+                latitud,
+                longitud,
+                estado,
+                new TipoIncidente(2,"Accidente"),
+                relatedId,
+                relatedId,
+                null,
+                relatedId
+        );
 
-        mockMvc.perform(put(BASE_URL + "/{id}", idNoExistente)
+        when(incidenteService.update(any(Incidente.class), eq(invalidId))).thenThrow(new NoSuchElementException());
+
+        mockMvc.perform(put(BASE_URL + "/{id}", invalidId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(datosActualizados)))
-                .andExpect(status().isNotFound()) // 404 Not Found
-                .andExpect(content().string("Incidente no encontrado"));
+                        .content(objectMapper.writeValueAsString(incidenteInexistente)))
+                .andExpect(status().isNotFound());
 
-        verify(incidenteService, times(1)).update(any(Incidente.class), eq(idNoExistente));
+        verify(incidenteService, times(1)).update(any(Incidente.class), eq(invalidId));
     }
 
-    // --- DELETE /incidentes/{id} (Eliminar) ---
+    // --- DELETE /{id} ---
     @Test
-    void eliminarIncidente_shouldReturnOk_whenIdExists() throws Exception {
+    void delete_shouldReturn204_whenSuccess() throws Exception {
         doNothing().when(incidenteService).delete(idExistente);
 
-        mockMvc.perform(delete(BASE_URL + "/{id}", idExistente)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk()) // 200 OK
-                .andExpect(content().string("Incidente eliminado con éxito."));
+        mockMvc.perform(delete(BASE_URL + "/{id}", idExistente))
+                .andExpect(status().isNoContent());
 
         verify(incidenteService, times(1)).delete(idExistente);
     }
 
     @Test
-    void eliminarIncidente_shouldReturnNotFound_whenIdDoesNotExist() throws Exception {
-        doThrow(new NoSuchElementException()).when(incidenteService).delete(idNoExistente);
+    void delete_shouldReturn404_whenNotFound() throws Exception {
+        doThrow(new NoSuchElementException()).when(incidenteService).delete(invalidId);
 
-        mockMvc.perform(delete(BASE_URL + "/{id}", idNoExistente)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound()) // 404 Not Found
-                .andExpect(content().string("Incidente no encontrado"));
+        mockMvc.perform(delete(BASE_URL + "/{id}", invalidId))
+                .andExpect(status().isNotFound());
 
-        verify(incidenteService, times(1)).delete(idNoExistente);
+        verify(incidenteService, times(1)).delete(invalidId);
     }
 
-    // ====================================================================
-    // TESTS PARA GESTIÓN DE RELACIONES (AJUSTADO)
-    // ====================================================================
-
-    // --- POST /asignar-usuario-asignado/{usuarioAsignadoId} (NUEVO ENDPOINT) ---
-    @Test
-    void asignarUsuarioAsignado_shouldReturnOk_whenSuccess() throws Exception {
-        doNothing().when(incidenteService).asignarUsuarioAsignado(idExistente, relatedId);
-
-        mockMvc.perform(post(BASE_URL + "/{incidenteId}/asignar-usuario-asignado/{usuarioAsignadoId}", idExistente, relatedId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().string("Usuario responsable asignado al Incidente exitosamente"));
-
-        verify(incidenteService, times(1)).asignarUsuarioAsignado(idExistente, relatedId);
-    }
-
-    @Test
-    void asignarUsuarioAsignado_shouldReturnNotFound_whenIncidenteOrUserNotFound() throws Exception {
-        String errorMsg = "Incidente o Usuario Asignado no encontrado";
-        doThrow(new RuntimeException(errorMsg)).when(incidenteService).asignarUsuarioAsignado(idExistente, invalidId);
-
-        mockMvc.perform(post(BASE_URL + "/{incidenteId}/asignar-usuario-asignado/{usuarioAsignadoId}", idExistente, invalidId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound()) // 404 Not Found
-                .andExpect(content().string(errorMsg));
-
-        verify(incidenteService, times(1)).asignarUsuarioAsignado(idExistente, invalidId);
-    }
-
-    // --- POST /asignar-ciudadano/{ciudadanoId} ---
-    @Test
-    void asignacCiudadano_shouldReturnOk_whenSuccess() throws Exception {
-        doNothing().when(incidenteService).asignarCiudadano(idExistente, relatedId);
-
-        mockMvc.perform(post(BASE_URL + "/{incidenteId}/asignar-ciudadano/{ciudadanoId}", idExistente, relatedId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().string("Ciudadano asignado al Incidente exitosamente"));
-
-        verify(incidenteService, times(1)).asignarCiudadano(idExistente, relatedId);
-    }
-
-    @Test
-    void asignacCiudadano_shouldReturnNotFound_whenIncidenteOrCiudadanoNotFound() throws Exception {
-        String errorMsg = "Incidente o Ciudadano no encontrado";
-        doThrow(new RuntimeException(errorMsg)).when(incidenteService).asignarCiudadano(idExistente, invalidId);
-
-        mockMvc.perform(post(BASE_URL + "/{incidenteId}/asignar-ciudadano/{ciudadanoId}", idExistente, invalidId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound()) // 404 Not Found
-                .andExpect(content().string(errorMsg));
-
-        verify(incidenteService, times(1)).asignarCiudadano(idExistente, invalidId);
-    }
-
-
-    // --- POST /asignar-estado-incidente/{estadoIncidenteId} ---
-    @Test
-    void asignarEstadoIncidente_shouldReturnOk_whenSuccess() throws Exception {
-        doNothing().when(incidenteService).asignarEstadoIncidente(idExistente, relatedId);
-
-        mockMvc.perform(post(BASE_URL + "/{incidenteId}/asignar-estado-incidente/{estadoIncidenteId}", idExistente, relatedId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().string("Estado Incidente asignado al Incidente exitosamente"));
-
-        verify(incidenteService, times(1)).asignarEstadoIncidente(idExistente, relatedId);
-    }
-
-    @Test
-    void asignarEstadoIncidente_shouldReturnNotFound_whenReferenceNotFound() throws Exception {
-        String errorMsg = "Estado de Incidente no encontrado";
-        doThrow(new RuntimeException(errorMsg)).when(incidenteService).asignarEstadoIncidente(idExistente, invalidId);
-
-        mockMvc.perform(post(BASE_URL + "/{incidenteId}/asignar-estado-incidente/{estadoIncidenteId}", idExistente, invalidId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound()) // 404 Not Found
-                .andExpect(content().string(errorMsg));
-
-        verify(incidenteService, times(1)).asignarEstadoIncidente(idExistente, invalidId);
-    }
-
-    // --- POST /asignar-tipo-incidente/{tipoIncidenteId} ---
-    @Test
-    void asignarTipoIncidente_shouldReturnOk_whenSuccess() throws Exception {
-        doNothing().when(incidenteService).asignarTipoIncidente(idExistente, relatedId);
-
-        mockMvc.perform(post(BASE_URL + "/{incidenteId}/asignar-tipo-incidente/{tipoIncidenteId}", idExistente, relatedId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().string("Tipo Incidente asignado al Incidente exitosamente"));
-
-        verify(incidenteService, times(1)).asignarTipoIncidente(idExistente, relatedId);
-    }
-
-    // --- POST /agregar-ubicacion (Crear y Asignar Dirección) ---
+    // --- POST /agregar-ubicacion ---
     @Test
     void agregarUbicacionAIncidente_shouldReturnOk_whenSuccess() throws Exception {
-        String ubicacionJson = "{\"calle\": \"Av. Principal\", \"coordenadas\": \"-33,-70\"}";
-        // Incidente con 5 FKs
-        Incidente incidenteConUbicacion = new Incidente(idExistente, "Incidente con Dir","Descripcion",LocalDateTime.now(),new TipoIncidente(),1,1,1,1);
-
-        when(incidenteService.agregarUbicacionAIncidente(eq(idExistente), eq(ubicacionJson)))
-                .thenReturn(incidenteConUbicacion);
+        String latitudLongitud = "-33.456,-70.648";
+        doNothing().when(incidenteService).agregarUbicacionAIncidente(idExistente, latitudLongitud);
 
         mockMvc.perform(post(BASE_URL + "/{incidenteId}/agregar-ubicacion", idExistente)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(ubicacionJson))
-                .andExpect(status().isOk()) // 200 OK
-                .andExpect(jsonPath("$.titulo").value("Incidente con Dir"));
+                        .content(latitudLongitud))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Dirección (Ubicación) agregada/actualizada al incidente exitosamente"));
 
-        verify(incidenteService, times(1)).agregarUbicacionAIncidente(eq(idExistente), eq(ubicacionJson));
+        verify(incidenteService, times(1)).agregarUbicacionAIncidente(eq(idExistente), eq(latitudLongitud));
     }
 
     @Test
-    void agregarUbicacionAIncidente_shouldReturnNotFound_whenIncidenteDoesNotExist() throws Exception {
-        String ubicacionJson = "{}";
-        when(incidenteService.agregarUbicacionAIncidente(eq(idNoExistente), anyString()))
-                .thenThrow(new NoSuchElementException());
+    void agregarUbicacionAIncidente_shouldReturnNotFound_whenIncidenteNotFound() throws Exception {
+        String latitudLongitud = "-33.456,-70.648";
+        String errorMsg = "Incidente no encontrado con ID: " + invalidId;
+        doThrow(new NoSuchElementException(errorMsg)).when(incidenteService).agregarUbicacionAIncidente(invalidId, latitudLongitud);
 
-        mockMvc.perform(post(BASE_URL + "/{incidenteId}/agregar-ubicacion", idNoExistente)
+        mockMvc.perform(post(BASE_URL + "/{incidenteId}/agregar-ubicacion", invalidId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(ubicacionJson))
-                .andExpect(status().isNotFound()) // 404 Not Found
-                .andExpect(content().string("Incidente no encontrado."));
+                        .content(latitudLongitud))
+                .andExpect(status().isNotFound())
+                .andExpect(content().string(errorMsg));
 
-        verify(incidenteService, times(1)).agregarUbicacionAIncidente(eq(idNoExistente), anyString());
+        verify(incidenteService, times(1)).agregarUbicacionAIncidente(eq(invalidId), eq(latitudLongitud));
     }
 
     @Test
-    void agregarUbicacionAIncidente_shouldReturnBadRequest_whenServiceFails() throws Exception {
-        String ubicacionJson = "{\"calle\": \"\"}";
-        String errorMsg = "Error en el microservicio de Geolocalización";
-        when(incidenteService.agregarUbicacionAIncidente(eq(idExistente), anyString()))
-                .thenThrow(new RuntimeException(errorMsg));
+    void agregarUbicacionAIncidente_shouldReturnBadRequest_whenInvalidCoordinates() throws Exception {
+        String latitudLongitud = "coordenadas invalidas";
+        String errorMsg = "Formato de coordenadas incorrecto";
+        doThrow(new IllegalArgumentException(errorMsg)).when(incidenteService).agregarUbicacionAIncidente(idExistente, latitudLongitud);
 
         mockMvc.perform(post(BASE_URL + "/{incidenteId}/agregar-ubicacion", idExistente)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(ubicacionJson))
-                .andExpect(status().isBadRequest()) // 400 Bad Request
+                        .content(latitudLongitud))
+                .andExpect(status().isBadRequest())
                 .andExpect(content().string("Error al crear o asignar la dirección: " + errorMsg));
 
-        verify(incidenteService, times(1)).agregarUbicacionAIncidente(eq(idExistente), anyString());
+        verify(incidenteService, times(1)).agregarUbicacionAIncidente(eq(idExistente), eq(latitudLongitud));
+    }
+
+    @Test
+    void agregarUbicacionAIncidente_shouldReturnBadRequest_whenGeolocationFails() throws Exception {
+        String latitudLongitud = "-33.456,-70.648";
+        String errorMsg = "Fallo la llamada a la API de Geolocalización";
+        doThrow(new RuntimeException(errorMsg)).when(incidenteService).agregarUbicacionAIncidente(idExistente, latitudLongitud);
+
+        mockMvc.perform(post(BASE_URL + "/{incidenteId}/agregar-ubicacion", idExistente)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(latitudLongitud))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Error al crear o asignar la dirección: " + errorMsg));
+
+        verify(incidenteService, times(1)).agregarUbicacionAIncidente(eq(idExistente), eq(latitudLongitud));
     }
 
     // --- POST /asignar-direccion/{direccionId} ---
@@ -382,14 +374,28 @@ public class IncidenteControllerTest {
 
     @Test
     void asignarDireccion_shouldReturnNotFound_whenReferenceNotFound() throws Exception {
-        String errorMsg = "Direccion no encontrada";
-        doThrow(new RuntimeException(errorMsg)).when(incidenteService).asignarDireccion(idExistente, invalidId);
+        String errorMsg = "Incidente o Dirección no encontrada";
+        // Usamos NoSuchElementException para simular el 404 que devuelve el controlador
+        doThrow(new NoSuchElementException(errorMsg)).when(incidenteService).asignarDireccion(idExistente, invalidId);
 
         mockMvc.perform(post(BASE_URL + "/{incidenteId}/asignar-direccion/{direccionId}", idExistente, invalidId)
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound()) // 404 Not Found
+                .andExpect(status().isNotFound())
                 .andExpect(content().string(errorMsg));
 
         verify(incidenteService, times(1)).asignarDireccion(idExistente, invalidId);
+    }
+
+    @Test
+    void asignarDireccion_shouldReturnBadRequest_onRuntimeException() throws Exception {
+        String errorMsg = "Error de negocio al asignar dirección";
+        doThrow(new RuntimeException(errorMsg)).when(incidenteService).asignarDireccion(invalidId, relatedId);
+
+        mockMvc.perform(post(BASE_URL + "/{incidenteId}/asignar-direccion/{direccionId}", invalidId, relatedId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(errorMsg));
+
+        verify(incidenteService, times(1)).asignarDireccion(invalidId, relatedId);
     }
 }

@@ -1,5 +1,6 @@
 package com.SAFE_Rescue.API_Incidentes.modelo;
 
+import com.SAFE_Rescue.API_Incidentes.dto.FotoDTO;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
@@ -75,6 +76,8 @@ public class Incidente {
 
     @Column(name = "usuario_asignado_id", nullable = true)
     private Integer idUsuarioAsignado;
+
+    private Integer IdFoto;
 
     @PreUpdate
     protected void onUpdate() {

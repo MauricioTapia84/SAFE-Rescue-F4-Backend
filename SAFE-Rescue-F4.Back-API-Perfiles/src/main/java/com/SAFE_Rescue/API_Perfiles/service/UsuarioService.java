@@ -211,4 +211,127 @@ public class UsuarioService {
             throw new RuntimeException("Error al subir la foto: " + e.getMessage(), e);
         }
     }
+
+    /**
+     * Actualización parcial de usuario usando PATCH
+     * Solo actualiza los campos que se proporcionan en el request
+     */
+    public Usuario actualizarParcialmente(Integer id, Usuario usuarioParcial) {
+        System.out.println("🔄 [UsuarioService] Actualizando parcialmente usuario ID: " + id);
+        System.out.println("   Datos recibidos: " + usuarioParcial);
+
+        // Buscar el usuario existente
+        Usuario usuarioExistente = usuarioRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Usuario no encontrado con ID: " + id));
+
+        // Aplicar los cambios solo a los campos proporcionados (no null)
+        aplicarCambiosParciales(usuarioExistente, usuarioParcial);
+
+        // Validar el usuario actualizado
+        validarAtributosUsuario(usuarioExistente);
+
+        // Guardar los cambios
+        try {
+            Usuario usuarioActualizado = usuarioRepository.save(usuarioExistente);
+            System.out.println("✅ [UsuarioService] Usuario actualizado parcialmente - ID: " + id);
+            return usuarioActualizado;
+
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalArgumentException("Error de integridad de datos. El RUN, nombre de usuario o correo electrónico ya existen.");
+        }
+    }
+
+    /**
+     * Aplica los cambios parciales solo a los campos proporcionados en el PATCH
+     */
+    private void aplicarCambiosParciales(Usuario usuarioExistente, Usuario usuarioParcial) {
+        // Actualizar solo los campos que vienen en el request (no null)
+
+        if (usuarioParcial.getIdFoto() != null) {
+            System.out.println("   📸 Actualizando idFoto: " + usuarioExistente.getIdFoto() + " -> " + usuarioParcial.getIdFoto());
+            usuarioExistente.setIdFoto(usuarioParcial.getIdFoto());
+        }
+
+        if (usuarioParcial.getNombre() != null && !usuarioParcial.getNombre().trim().isEmpty()) {
+            System.out.println("   👤 Actualizando nombre: " + usuarioExistente.getNombre() + " -> " + usuarioParcial.getNombre());
+            usuarioExistente.setNombre(usuarioParcial.getNombre());
+        }
+
+        if (usuarioParcial.getAPaterno() != null && !usuarioParcial.getAPaterno().trim().isEmpty()) {
+            System.out.println("   📝 Actualizando aPaterno: " + usuarioExistente.getAPaterno() + " -> " + usuarioParcial.getAPaterno());
+            usuarioExistente.setAPaterno(usuarioParcial.getAPaterno());
+        }
+
+        if (usuarioParcial.getAMaterno() != null && !usuarioParcial.getAMaterno().trim().isEmpty()) {
+            System.out.println("   📝 Actualizando aMaterno: " + usuarioExistente.getAMaterno() + " -> " + usuarioParcial.getAMaterno());
+            usuarioExistente.setAMaterno(usuarioParcial.getAMaterno());
+        }
+
+        if (usuarioParcial.getTelefono() != null && !usuarioParcial.getTelefono().trim().isEmpty()) {
+            System.out.println("   📞 Actualizando telefono: " + usuarioExistente.getTelefono() + " -> " + usuarioParcial.getTelefono());
+            usuarioExistente.setTelefono(usuarioParcial.getTelefono());
+        }
+
+        if (usuarioParcial.getCorreo() != null && !usuarioParcial.getCorreo().trim().isEmpty()) {
+            System.out.println("   📧 Actualizando correo: " + usuarioExistente.getCorreo() + " -> " + usuarioParcial.getCorreo());
+
+            // Validar que el correo no esté en uso por otro usuario
+            if (!usuarioExistente.getCorreo().equals(usuarioParcial.getCorreo())) {
+                validarCorreoUnico(usuarioParcial.getCorreo(), usuarioExistente.getIdUsuario());
+            }
+            usuarioExistente.setCorreo(usuarioParcial.getCorreo());
+        }
+
+        if (usuarioParcial.getNombreUsuario() != null && !usuarioParcial.getNombreUsuario().trim().isEmpty()) {
+            System.out.println("   🔑 Actualizando nombreUsuario: " + usuarioExistente.getNombreUsuario() + " -> " + usuarioParcial.getNombreUsuario());
+
+            // Validar que el nombre de usuario no esté en uso por otro usuario
+            if (!usuarioExistente.getNombreUsuario().equals(usuarioParcial.getNombreUsuario())) {
+                validarNombreUsuarioUnico(usuarioParcial.getNombreUsuario(), usuarioExistente.getIdUsuario());
+            }
+            usuarioExistente.setNombreUsuario(usuarioParcial.getNombreUsuario());
+        }
+
+    }
+
+    /**
+     * Método específico para actualizar solo la foto
+     */
+    public Usuario actualizarSoloFoto(Integer id, Integer idFoto) {
+        System.out.println(" [UsuarioService] Actualizando solo foto para usuario ID: " + id + " con idFoto: " + idFoto);
+
+        Usuario usuarioExistente = usuarioRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Usuario no encontrado con ID: " + id));
+
+        usuarioExistente.setIdFoto(idFoto);
+
+        Usuario usuarioActualizado = usuarioRepository.save(usuarioExistente);
+        System.out.println(" [UsuarioService] Foto actualizada para usuario: " + id);
+
+        return usuarioActualizado;
+    }
+
+    /**
+     * Valida que el correo sea único (excepto para el mismo usuario)
+     */
+    private void validarCorreoUnico(String correo, Integer usuarioId) {
+        usuarioRepository.findByCorreo(correo)
+                .ifPresent(usuarioExistente -> {
+                    if (!usuarioExistente.getIdUsuario().equals(usuarioId)) {
+                        throw new IllegalArgumentException("El correo electrónico ya está en uso por otro usuario");
+                    }
+                });
+    }
+
+    /**
+     * Valida que el nombre de usuario sea único (excepto para el mismo usuario)
+     */
+    private void validarNombreUsuarioUnico(String nombreUsuario, Integer usuarioId) {
+        usuarioRepository.findByNombreUsuario(nombreUsuario)
+                .ifPresent(usuarioExistente -> {
+                    if (!usuarioExistente.getIdUsuario().equals(usuarioId)) {
+                        throw new IllegalArgumentException("El nombre de usuario ya está en uso por otro usuario");
+                    }
+                });
+    }
 }

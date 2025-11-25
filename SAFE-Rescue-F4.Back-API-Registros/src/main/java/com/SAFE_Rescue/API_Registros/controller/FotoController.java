@@ -11,18 +11,26 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
  * Controlador REST para la gestión de fotos de perfil.
- * Proporciona endpoints para operaciones CRUD.
+ * Proporciona endpoints para operaciones CRUD y servicio de archivos.
  */
 @RestController
 @RequestMapping("/api-registros/v1/fotos")
@@ -31,6 +39,130 @@ public class FotoController {
 
     @Autowired
     private FotoService fotoService;
+
+    private final Path fileStorageLocation = Paths.get("uploads/fotos").toAbsolutePath().normalize();
+
+    // ================== ENDPOINTS PARA SERVIR ARCHIVOS ==================
+
+    /**
+     * Servir foto por nombre de archivo
+     */
+    @GetMapping("/archivo/{filename:.+}")
+    @Operation(summary = "Servir archivo de foto", description = "Sirve el archivo físico de la foto por su nombre")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Archivo servido exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Archivo no encontrado"),
+            @ApiResponse(responseCode = "500", description = "Error al servir el archivo")
+    })
+    public ResponseEntity<Resource> servirFoto(
+            @Parameter(description = "Nombre del archivo de la foto", required = true)
+            @PathVariable String filename) {
+        try {
+            Path filePath = this.fileStorageLocation.resolve(filename).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                // Determinar el tipo de contenido
+                String contentType = Files.probeContentType(filePath);
+                if (contentType == null) {
+                    contentType = "application/octet-stream";
+                }
+
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                        .body(resource);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Servir foto por ID de la base de datos
+     */
+    @GetMapping("/{id}/archivo")
+    @Operation(summary = "Servir archivo de foto por ID", description = "Sirve el archivo físico de la foto buscando por ID en la BD")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Archivo servido exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Foto no encontrada"),
+            @ApiResponse(responseCode = "500", description = "Error al servir el archivo")
+    })
+    public ResponseEntity<Resource> servirFotoPorId(
+            @Parameter(description = "ID de la foto en la base de datos", required = true)
+            @PathVariable Integer id) {
+        try {
+            Foto foto = fotoService.findById(id);
+            String rutaArchivo = foto.getUrl();
+
+            // Extraer nombre del archivo de la ruta completa
+            String filename = extraerNombreArchivo(rutaArchivo);
+
+            Path filePath = this.fileStorageLocation.resolve(filename).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                String contentType = Files.probeContentType(filePath);
+                if (contentType == null) {
+                    // Fallback al tipo guardado en la BD
+                    contentType = foto.getTipo() != null ? foto.getTipo() : "application/octet-stream";
+                }
+
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                        .body(resource);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Obtener URL pública para una foto por ID
+     */
+    @GetMapping("/{id}/url")
+    @Operation(summary = "Obtener URL pública de foto", description = "Obtiene la URL pública para acceder a la foto")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "URL obtenida exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Foto no encontrada")
+    })
+    public ResponseEntity<String> obtenerUrlPublica(
+            @Parameter(description = "ID de la foto", required = true)
+            @PathVariable Integer id) {
+        try {
+            Foto foto = fotoService.findById(id);
+            String urlPublica = construirUrlPublica(foto.getUrl());
+            return ResponseEntity.ok(urlPublica);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // ================== MÉTODOS AUXILIARES ==================
+
+    private String extraerNombreArchivo(String rutaArchivo) {
+        if (rutaArchivo != null && rutaArchivo.contains("/")) {
+            return rutaArchivo.substring(rutaArchivo.lastIndexOf("/") + 1);
+        }
+        return rutaArchivo;
+    }
+
+    private String construirUrlPublica(String rutaArchivo) {
+        if (rutaArchivo == null || rutaArchivo.isEmpty()) {
+            return null;
+        }
+        String nombreArchivo = extraerNombreArchivo(rutaArchivo);
+        return "/api-registros/v1/fotos/archivo/" + nombreArchivo;
+    }
+
+    // ================== OPERACIONES CRUD EXISTENTES (MANTENIDAS) ==================
 
     @PostMapping("/upload")
     @Operation(summary = "Subir una foto", description = "Sube una foto en formato multipart/form-data")
@@ -97,6 +229,9 @@ public class FotoController {
             System.out.println("   URL: " + fotoGuardada.getUrl());
             System.out.println("   Tipo: " + fotoGuardada.getTipo());
             System.out.println("   Tamaño: " + fotoGuardada.getTamanio() + " bytes");
+
+            // Agregar URL pública a la respuesta
+            fotoGuardada.setUrl(construirUrlPublica(fotoGuardada.getUrl()));
 
             return ResponseEntity.status(HttpStatus.CREATED).body(fotoGuardada);
 
@@ -175,6 +310,8 @@ public class FotoController {
         if (fotos.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
+        // Agregar URLs públicas a cada foto
+        fotos.forEach(foto -> foto.setUrl(construirUrlPublica(foto.getUrl())));
         return ResponseEntity.ok(fotos);
     }
 
@@ -193,6 +330,8 @@ public class FotoController {
                                         @PathVariable int id) {
         try {
             Foto foto = fotoService.findById(id);
+            // Agregar URL pública
+            foto.setUrl(construirUrlPublica(foto.getUrl()));
             return ResponseEntity.ok(foto);
         } catch (NoSuchElementException e) {
             return new ResponseEntity<>("Foto no encontrada", HttpStatus.NOT_FOUND);
@@ -214,6 +353,8 @@ public class FotoController {
                                          Foto foto) {
         try {
             Foto fotoGuardada = fotoService.save(foto);
+            // Agregar URL pública
+            fotoGuardada.setUrl(construirUrlPublica(fotoGuardada.getUrl()));
             return ResponseEntity.status(HttpStatus.CREATED).body(fotoGuardada);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());

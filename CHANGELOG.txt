@@ -1,8 +1,12 @@
+❚❙❘ VERSIÓN 0.0.11.3
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se cambia la lógica para cargar fotos, habilitando un método para mostrar las fotos
+└─• Se agregan métodos Patch para perfiles e incidentes
+
 ❚❙❘ VERSIÓN 0.0.11.2
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Corrección de pruebas unitarias
 └─• Creación de usuarios fijos para pruebas
-
 
 ❚❙❘ VERSIÓN 0.0.11.1
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺

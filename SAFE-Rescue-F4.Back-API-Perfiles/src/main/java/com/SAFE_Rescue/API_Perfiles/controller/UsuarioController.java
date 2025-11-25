@@ -1,5 +1,7 @@
 package com.SAFE_Rescue.API_Perfiles.controller;
 
+import com.SAFE_Rescue.API_Perfiles.dto.UsuarioFotoRequest;
+import com.SAFE_Rescue.API_Perfiles.dto.UsuarioPatchRequest;
 import com.SAFE_Rescue.API_Perfiles.modelo.Usuario;
 import com.SAFE_Rescue.API_Perfiles.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Controlador REST para la gestión de usuarios
@@ -177,5 +180,60 @@ public class UsuarioController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    /**
+     * Actualización parcial de usuario (PATCH)
+     */
+    @PatchMapping("/{id}")
+    public ResponseEntity<Usuario> actualizarParcialUsuario(
+            @PathVariable Integer id,
+            @RequestBody Usuario usuarioParcial) {
+
+        System.out.println("📝 [UsuarioController] PATCH recibido para usuario ID: " + id);
+        System.out.println("   Datos: " + usuarioParcial);
+
+        try {
+            Usuario usuarioActualizado = usuarioService.actualizarParcialmente(id, usuarioParcial);
+            return ResponseEntity.ok(usuarioActualizado);
+
+        } catch (NoSuchElementException e) {
+            System.out.println("❌ Usuario no encontrado: " + id);
+            return ResponseEntity.notFound().build();
+
+        } catch (IllegalArgumentException e) {
+            System.out.println("❌ Error de validación: " + e.getMessage());
+            return ResponseEntity.badRequest().build();
+
+        } catch (Exception e) {
+            System.out.println("❌ Error inesperado: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Endpoint específico para actualizar solo la foto (PATCH)
+     */
+    @PatchMapping("/{id}/foto")
+    public ResponseEntity<Usuario> actualizarFotoUsuario(
+            @PathVariable Integer id,
+            @RequestBody UsuarioFotoRequest fotoRequest) {
+
+        System.out.println("🖼 [UsuarioController] PATCH foto recibido para usuario ID: " + id);
+        System.out.println("   idFoto: " + fotoRequest.getIdFoto());
+
+        try {
+            Usuario usuarioActualizado = usuarioService.actualizarSoloFoto(id, fotoRequest.getIdFoto());
+            return ResponseEntity.ok(usuarioActualizado);
+
+        } catch (NoSuchElementException e) {
+            System.out.println(" Usuario no encontrado: " + id);
+            return ResponseEntity.notFound().build();
+
+        } catch (Exception e) {
+            System.out.println(" Error actualizando foto: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
 
 }

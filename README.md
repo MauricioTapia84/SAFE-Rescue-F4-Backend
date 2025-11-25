@@ -12,7 +12,7 @@ SAFE Rescue es una aplicación diseñada para la gestión eficiente y rápida de
 
 ## Últimos cambios
 
-### ❚❙❘ VERSIÓN 0.0.11.2
+### ❚❙❘ VERSIÓN 0.0.11.3
 
 ## ❚❙❘ VERSIÓN 0.0.11.1
 > <br>• Se modificaron la autentificación de la api de Perfiles.
@@ -23,6 +23,9 @@ SAFE Rescue es una aplicación diseñada para la gestión eficiente y rápida de
 ## ❚❙❘ VERSIÓN 0.0.11.2
 > <br>• Corrección de pruebas unitarias
 > <br>• Creación de usuarios fijos para pruebas
+## ❚❙❘ VERSIÓN 0.0.11.3
+> <br>• Se cambia la lógica para cargar fotos, habilitando un método para mostrar las fotos
+> <br>• Se agregan métodos Patch para perfiles e incidentes
 > <br>
 ---
 

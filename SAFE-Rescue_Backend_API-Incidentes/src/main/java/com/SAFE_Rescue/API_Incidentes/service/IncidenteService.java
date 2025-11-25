@@ -208,4 +208,190 @@ public class IncidenteService {
         inc.setFechaUltimaActualizacion(LocalDateTime.now());
         incidenteRepository.save(inc);
     }
+
+
+    /**
+     * Actualiza solo el idFoto de un incidente
+     */
+    public Incidente actualizarFotoIncidente(Integer idIncidente, Integer idFoto) {
+        Incidente incidente = incidenteRepository.findById(idIncidente)
+                .orElseThrow(() -> new RuntimeException("Incidente no encontrado con ID: " + idIncidente));
+
+        incidente.setIdFoto(idFoto);
+        return incidenteRepository.save(incidente);
+    }
+
+    /**
+     * Método para compatibilidad - actualiza con URL (si necesitas procesarla)
+     */
+    public Incidente actualizarImagenIncidente(Integer idIncidente, String imagenUrl) {
+        Incidente incidente = incidenteRepository.findById(idIncidente)
+                .orElseThrow(() -> new RuntimeException("Incidente no encontrado con ID: " + idIncidente));
+
+        Integer idFoto = Math.toIntExact(extraerIdFotoDeUrl(imagenUrl));
+
+        incidente.setIdFoto(idFoto);
+        return incidenteRepository.save(incidente);
+    }
+
+    /**
+     * Método para extraer ID de foto de la URL (ajusta según tu lógica)
+     */
+    private Long extraerIdFotoDeUrl(String imagenUrl) {
+        if (imagenUrl == null || imagenUrl.isEmpty()) {
+            return null;
+        }
+
+        try {
+            // Ejemplo: si la URL es "/api/fotos/123" o "https://.../fotos/123"
+            String[] partes = imagenUrl.split("/");
+            String idStr = partes[partes.length - 1];
+
+            // Remover extensión de archivo si existe
+            if (idStr.contains(".")) {
+                idStr = idStr.substring(0, idStr.lastIndexOf('.'));
+            }
+
+            return Long.parseLong(idStr);
+        } catch (Exception e) {
+            // Si no puedes extraer el ID, genera uno nuevo o usa lógica alternativa
+            return System.currentTimeMillis(); // O usa otro método para generar IDs
+        }
+    }
+
+
+    /**
+     * Actualización parcial de incidente usando PATCH
+     * Solo actualiza los campos que se proporcionan en el request
+     */
+    public Incidente actualizarParcialmente(Integer id, Incidente incidenteParcial) {
+        System.out.println(" [IncidenteService] Actualizando parcialmente incidente ID: " + id);
+        System.out.println("   Datos recibidos: " + incidenteParcial);
+
+        // Buscar el incidente existente
+        Incidente incidenteExistente = incidenteRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Incidente no encontrado con ID: " + id));
+
+        // Aplicar los cambios solo a los campos proporcionados (no null)
+        aplicarCambiosParciales(incidenteExistente, incidenteParcial);
+
+        // Validar el incidente actualizado
+        validarActualizacion(incidenteExistente);
+
+        // Guardar los cambios
+        try {
+            Incidente incidenteActualizado = incidenteRepository.save(incidenteExistente);
+            System.out.println(" [IncidenteService] Incidente actualizado parcialmente - ID: " + id);
+
+            // Registrar cambios en el historial
+            registrarCambiosEnHistorial(incidenteExistente, incidenteParcial);
+
+            return incidenteActualizado;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error al guardar el incidente: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Aplica los cambios parciales solo a los campos proporcionados en el PATCH
+     */
+    private void aplicarCambiosParciales(Incidente incidenteExistente, Incidente incidenteParcial) {
+        // Actualizar solo los campos que vienen en el request (no null)
+
+        if (incidenteParcial.getTitulo() != null && !incidenteParcial.getTitulo().trim().isEmpty()) {
+            System.out.println("    Actualizando título: " + incidenteExistente.getTitulo() + " -> " + incidenteParcial.getTitulo());
+            incidenteExistente.setTitulo(incidenteParcial.getTitulo());
+        }
+
+        if (incidenteParcial.getDetalle() != null && !incidenteParcial.getDetalle().trim().isEmpty()) {
+            System.out.println("    Actualizando detalle: " + incidenteExistente.getDetalle() + " -> " + incidenteParcial.getDetalle());
+            incidenteExistente.setDetalle(incidenteParcial.getDetalle());
+        }
+
+        if (incidenteParcial.getRegion() != null && !incidenteParcial.getRegion().trim().isEmpty()) {
+            System.out.println("    Actualizando región: " + incidenteExistente.getRegion() + " -> " + incidenteParcial.getRegion());
+            incidenteExistente.setRegion(incidenteParcial.getRegion());
+        }
+
+        if (incidenteParcial.getComuna() != null && !incidenteParcial.getComuna().trim().isEmpty()) {
+            System.out.println("    Actualizando comuna: " + incidenteExistente.getComuna() + " -> " + incidenteParcial.getComuna());
+            incidenteExistente.setComuna(incidenteParcial.getComuna());
+        }
+
+        if (incidenteParcial.getDireccion() != null && !incidenteParcial.getDireccion().trim().isEmpty()) {
+            System.out.println("   Actualizando dirección: " + incidenteExistente.getDireccion() + " -> " + incidenteParcial.getDireccion());
+            incidenteExistente.setDireccion(incidenteParcial.getDireccion());
+        }
+
+        // Campos de IDs - con validación de referencias externas
+        if (incidenteParcial.getIdDireccion() != null) {
+            System.out.println("    Actualizando idDireccion: " + incidenteExistente.getIdDireccion() + " -> " + incidenteParcial.getIdDireccion());
+            validarExistenciaReferencia(geolocalizacionClient, incidenteParcial.getIdDireccion(), "Direccion");
+            incidenteExistente.setIdDireccion(incidenteParcial.getIdDireccion());
+        }
+
+        if (incidenteParcial.getIdCiudadano() != null) {
+            System.out.println("    Actualizando idCiudadano: " + incidenteExistente.getIdCiudadano() + " -> " + incidenteParcial.getIdCiudadano());
+            validarExistenciaReferencia(usuarioClient, incidenteParcial.getIdCiudadano(), "Ciudadano");
+            incidenteExistente.setIdCiudadano(incidenteParcial.getIdCiudadano());
+        }
+
+        if (incidenteParcial.getIdEstadoIncidente() != null) {
+            System.out.println("    Actualizando idEstadoIncidente: " + incidenteExistente.getIdEstadoIncidente() + " -> " + incidenteParcial.getIdEstadoIncidente());
+            validarExistenciaReferencia(estadoClient, incidenteParcial.getIdEstadoIncidente(), "Estado");
+            incidenteExistente.setIdEstadoIncidente(incidenteParcial.getIdEstadoIncidente());
+        }
+
+        if (incidenteParcial.getIdUsuarioAsignado() != null) {
+            System.out.println("    Actualizando idUsuarioAsignado: " + incidenteExistente.getIdUsuarioAsignado() + " -> " + incidenteParcial.getIdUsuarioAsignado());
+            validarExistenciaReferencia(usuarioClient, incidenteParcial.getIdUsuarioAsignado(), "Usuario Asignado");
+            incidenteExistente.setIdUsuarioAsignado(incidenteParcial.getIdUsuarioAsignado());
+        }
+
+        // Relación con TipoIncidente
+        if (incidenteParcial.getTipoIncidente() != null && incidenteParcial.getTipoIncidente().getIdTipoIncidente() != null) {
+            System.out.println("    Actualizando tipoIncidente: " +
+                    (incidenteExistente.getTipoIncidente() != null ? incidenteExistente.getTipoIncidente().getIdTipoIncidente() : "null") +
+                    " -> " + incidenteParcial.getTipoIncidente().getIdTipoIncidente());
+
+            TipoIncidente tipoEncontrado = tipoIncidenteRepository.findById(incidenteParcial.getTipoIncidente().getIdTipoIncidente())
+                    .orElseThrow(() -> new NoSuchElementException("Tipo Incidente no encontrado"));
+            incidenteExistente.setTipoIncidente(tipoEncontrado);
+        }
+
+        // Actualizar fecha de modificación
+        incidenteExistente.setFechaUltimaActualizacion(LocalDateTime.now());
+    }
+
+
+    /**
+     * Registra los cambios en el historial
+     */
+    private void registrarCambiosEnHistorial(Incidente incidenteExistente, Incidente incidenteParcial) {
+        try {
+            Integer estadoActual = incidenteExistente.getIdEstadoIncidente();
+
+            // Registrar cambios específicos en el historial
+            if (incidenteParcial.getTitulo() != null && !incidenteParcial.getTitulo().equals(incidenteExistente.getTitulo())) {
+                historialIncidenteService.registrarCambioEstado(incidenteExistente,
+                        estadoActual, estadoActual, "Se cambió el título a: " + incidenteParcial.getTitulo());
+            }
+
+            if (incidenteParcial.getDetalle() != null && !incidenteParcial.getDetalle().equals(incidenteExistente.getDetalle())) {
+                historialIncidenteService.registrarCambioEstado(incidenteExistente,
+                        estadoActual, estadoActual, "Se actualizó la descripción del incidente.");
+            }
+
+            if (incidenteParcial.getIdEstadoIncidente() != null && !incidenteParcial.getIdEstadoIncidente().equals(estadoActual)) {
+                EstadoDTO estadoDto = (EstadoDTO) validarExistenciaReferencia(estadoClient, incidenteParcial.getIdEstadoIncidente(), "Estado");
+                String nombreNuevoEstado = estadoDto.getNombre();
+                historialIncidenteService.registrarCambioEstado(incidenteExistente,
+                        estadoActual, incidenteParcial.getIdEstadoIncidente(), "Se cambió el estado a: " + nombreNuevoEstado);
+            }
+
+        } catch (Exception e) {
+            System.err.println("⚠️ Error registrando cambios en historial: " + e.getMessage());
+        }
+    }
 }

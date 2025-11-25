@@ -1,5 +1,7 @@
 package com.SAFE_Rescue.API_Incidentes.controller;
 
+import com.SAFE_Rescue.API_Incidentes.dto.ActualizarFotoRequest;
+import com.SAFE_Rescue.API_Incidentes.dto.IncidentePatchRequest;
 import com.SAFE_Rescue.API_Incidentes.modelo.Incidente;
 import com.SAFE_Rescue.API_Incidentes.service.IncidenteService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 /**
@@ -294,6 +297,99 @@ public class IncidenteController {
         } catch (RuntimeException e) {
             // Cambiado a usar direccionId para claridad en la ruta y el método
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
+    /**
+     * Actualización parcial de incidente (PATCH)
+     */
+    @Operation(summary = "Actualización parcial de incidente", description = "Actualiza solo los campos proporcionados del incidente.")
+    @ApiResponse(responseCode = "200", description = "Incidente actualizado parcialmente con éxito.")
+    @ApiResponse(responseCode = "404", description = "Incidente no encontrado.")
+    @ApiResponse(responseCode = "400", description = "Error de validación o ID de referencia no válido.")
+    @PatchMapping("/{id}")
+    public ResponseEntity<?> actualizarParcialIncidente(
+            @Parameter(description = "ID del incidente a actualizar", required = true)
+            @PathVariable Integer id,
+            @RequestBody IncidentePatchRequest patchRequest) {
+
+        System.out.println(" [IncidenteController] PATCH recibido para incidente ID: " + id);
+        System.out.println("   Datos: " + patchRequest);
+
+        try {
+            // Convertir DTO a entidad
+            Incidente incidenteParcial = new Incidente();
+            incidenteParcial.setTitulo(patchRequest.getTitulo());
+            incidenteParcial.setDetalle(patchRequest.getDetalle());
+            incidenteParcial.setRegion(patchRequest.getRegion());
+            incidenteParcial.setComuna(patchRequest.getComuna());
+            incidenteParcial.setDireccion(patchRequest.getDireccion());
+            incidenteParcial.setIdDireccion(patchRequest.getIdDireccion());
+            incidenteParcial.setIdCiudadano(patchRequest.getIdCiudadano());
+            incidenteParcial.setIdEstadoIncidente(patchRequest.getIdEstadoIncidente());
+            incidenteParcial.setIdUsuarioAsignado(patchRequest.getIdUsuarioAsignado());
+            incidenteParcial.setTipoIncidente(patchRequest.getTipoIncidente());
+
+            Incidente incidenteActualizado = incidenteService.actualizarParcialmente(id, incidenteParcial);
+            return ResponseEntity.ok(incidenteActualizado);
+
+        } catch (NoSuchElementException e) {
+            System.out.println(" Incidente no encontrado: " + id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Incidente no encontrado");
+
+        } catch (IllegalArgumentException e) {
+            System.out.println(" Error de validación: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+
+        } catch (Exception e) {
+            System.out.println(" Error inesperado: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor");
+        }
+    }
+
+    /**
+     * Endpoint para actualizar por idFoto
+     */
+    @PatchMapping("/{id}/foto")
+    public ResponseEntity<?> actualizarFotoIncidente(
+            @PathVariable Long id,
+            @RequestBody ActualizarFotoRequest request) {
+
+        try {
+            Incidente incidenteActualizado = incidenteService.actualizarFotoIncidente(Math.toIntExact(id), Math.toIntExact(request.getIdFoto()));
+
+            return ResponseEntity.ok().body(Map.of(
+                    "mensaje", "Foto del incidente actualizada correctamente",
+                    "idIncidente", incidenteActualizado.getIdIncidente(),
+                    "idFoto", incidenteActualizado.getIdFoto()
+            ));
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Endpoint para compatibilidad - actualizar por URL de imagen
+     */
+    @PatchMapping("/{id}/imagen")
+    public ResponseEntity<?> actualizarImagenIncidente(
+            @PathVariable Long id,
+            @RequestBody String imagenUrl) {
+
+        try {
+            Incidente incidenteActualizado = incidenteService.actualizarImagenIncidente(Math.toIntExact(id), imagenUrl);
+
+            return ResponseEntity.ok().body(Map.of(
+                    "mensaje", "Imagen del incidente actualizada correctamente",
+                    "idIncidente", incidenteActualizado.getIdIncidente(),
+                    "idFoto", incidenteActualizado.getIdFoto()
+            ));
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 
